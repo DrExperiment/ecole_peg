@@ -1,0 +1,223 @@
+"use client";
+
+import { useCallback, use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/button";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/card";
+import { Input } from "@/components/input";
+import { Label } from "@/components/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/select";
+import { Calendar } from "@/components/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
+import { CalendarIcon, ArrowLeft, Save } from "lucide-react";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import { cn, fetchApi } from "@/lib/utils";
+import axios from "axios";
+import { useForm } from "react-hook-form";
+
+interface Eleve {
+  id: number;
+  nom: string;
+  prenom: string;
+}
+
+interface Session {
+  id: number;
+  cours__nom: string;
+  cours__type: string;
+  cours__niveau: string;
+  date_debut: Date;
+  date_fin: Date;
+}
+
+export default function InscrirePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm();
+
+  const router = useRouter();
+
+  const resolvedParams = use(params);
+
+  const [date, setDate] = useState<Date | undefined>(undefined);
+
+  const [eleve, setEleve] = useState<Eleve | undefined>(undefined);
+
+  const [sessions, setSessions] = useState<Session[]>([]);
+  const [id_session, setIdSession] = useState<number>();
+  const [preinscription, setPreinscription] = useState<boolean>(false);
+
+  const onSoumission = useCallback(
+    async (donnees: object) => {
+      const donneesCompletes = {
+        ...donnees,
+        date: date ? format(date, "yyyy-MM-dd") : undefined,
+        id_session,
+        preinscription: false
+      };
+       console.log(donneesCompletes);
+      try {
+        
+        await axios.post(`http://localhost:8000/api/cours/${resolvedParams.id}/inscription/`, donneesCompletes);
+
+        router.push(`/ecole_peg/eleves/eleve/${resolvedParams?.id}/`);
+      } catch (erreur) {
+        console.error("Erreur: ", erreur);
+      }
+    },
+    [date, eleve?.id, id_session, router]
+  );
+
+  useEffect(() => {
+    async function fetchEleve() {
+  const url = `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`;
+  console.log("fetchEleve →", url);
+  try {
+    const { data } = await axios.get<Eleve>(url);
+    setEleve(data);
+  } catch (e) {
+    console.error("Erreur fetchEleve:", e);
+  }
+}
+
+
+    async function fetchSessions() {
+      try {
+        const reponse = await axios.get("http://localhost:8000/api/cours/sessions/");
+
+        setSessions(reponse.data);
+      } catch (erreur) {
+        console.error("Erreur: ", erreur);
+      }
+    }
+
+    fetchEleve();
+    fetchSessions();
+  }, [resolvedParams.id]);
+
+  return (
+    <div className="flex flex-col gap-4">
+      <div className="flex items-center gap-2">
+        <Button variant="ghost" size="icon" asChild>
+          <Link href={`/ecole_peg/eleves/eleve/${eleve?.id}`}>
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+        </Button>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Inscrire {eleve?.nom} {eleve?.prenom} à une session
+        </h1>
+      </div>
+
+      <form onSubmit={handleSubmit(onSoumission)}>
+        <Card>
+          <CardHeader>
+            <CardTitle>Inscrire</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="session">Session</Label>
+              <Select
+                name="session"
+                required
+                onValueChange={(valeur) => {
+                  setIdSession(Number(valeur));
+                }}
+              >
+                <SelectTrigger id="session">
+                  <SelectValue placeholder="Sélectionner la session" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sessions.map((session) => (
+                    <SelectItem key={session.id} value={session.id.toString()}>
+                      {session.cours__nom}{" "}
+                      {session.cours__type === "I"
+                        ? "Intensif"
+                        : "Semi-intensif"}{" "}
+                      {session.cours__niveau} (Du{" "}
+                      {format(session.date_debut, "yyyy-MM-dd")} à{" "}
+                      {format(session.date_fin, "yyyy-MM-dd")})
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Date de l&apos;inscription</Label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant={"outline"}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? (
+                      format(date, "dd-MM-yyyy", { locale: fr })
+                    ) : (
+                      <span>Séléctionner la date de l&apos;inscription</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar mode="single" selected={date} onSelect={setDate} />
+                </PopoverContent>
+              </Popover>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="but">But</Label>
+              <Input
+                id="but"
+                placeholder="Le but de l'inscription"
+                {...register("but")}
+              />
+            </div>
+            
+
+            <div className="space-y-2">
+              <Label htmlFor="heure-fin">Frais de l&apos;inscription</Label>
+              <Input
+                id="frais_inscription"
+                type="number"
+                placeholder="Les frais de l'inscription"
+                required
+                {...register("frais_inscription", {
+                  required: "Les frais de l'inscription sont obligatoires",
+                })}
+              />
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button type="submit" disabled={isSubmitting}>
+              <Save className="mr-2 h-4 w-4" />
+              {isSubmitting ? "En cours..." : "Enregistrer"}
+            </Button>
+          </CardFooter>
+        </Card>
+      </form>
+    </div>
+  );
+}

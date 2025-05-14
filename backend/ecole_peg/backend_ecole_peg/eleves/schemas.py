@@ -1,0 +1,115 @@
+from datetime import date
+from ninja import Schema, UploadedFile, File
+
+# ------------------- GARANT -------------------
+class GarantIn(Schema):
+    nom: str
+    prenom: str
+    rue: str | None = None
+    numero: str | None = None
+    npa: str | None = None
+    localite: str | None = None
+    telephone: str
+    email: str
+
+class GarantOut(Schema):
+    id: int
+    nom: str
+    prenom: str
+    rue: str | None = None
+    numero: str | None = None
+    npa: str | None = None
+    localite: str | None = None
+    telephone: str
+    email: str
+
+# ------------------- PAYS -------------------
+class PaysOut(Schema):
+    id: int
+    nom: str
+    indicatif: str
+
+# ------------------- TEST -------------------
+class TestIn(Schema):
+    date_test: date
+    niveau: str
+    note: float
+
+class TestOut(Schema):
+    id: int
+    date_test: date
+    niveau: str
+    note: float
+
+# ------------------- DOCUMENT -------------------
+class DocumentIn(Schema):
+    nom: str
+    fichier: UploadedFile
+
+class DocumentOut(Schema):
+    id: int
+    nom: str
+    date_ajout: date
+    fichier_url: str | None = None
+
+    @staticmethod
+    def resolve_fichier_url(obj):
+        return obj.fichier.url if obj.fichier else None
+
+class DocumentUpdateIn(Schema):
+    nom: str | None = None
+    fichier: UploadedFile | None = File(None)
+
+# ------------------- ELEVE -------------------
+class EleveIn(Schema):
+    nom: str
+    prenom: str
+    date_naissance: date
+    lieu_naissance: str
+    sexe: str
+    rue: str | None = None
+    numero: str | None = None
+    npa: str | None = None
+    localite: str | None = None
+    telephone: str
+    email: str
+    adresse_facturation: str | None = None
+    type_permis: str | None = None
+    date_permis: date | None = None
+    niveau: str
+    langue_maternelle: str | None = None
+    autres_langues: str | None = None
+    src_decouverte: str | None = None
+    commentaires: str | None = None
+    pays_id: int
+
+class ElevesOut(Schema):
+    id: int
+    nom: str
+    prenom: str
+    date_naissance: date
+    telephone: str
+    email: str
+    pays__nom: str
+
+class EleveOut(Schema, from_attributes=True):
+    nom: str
+    prenom: str
+    date_naissance: date
+    lieu_naissance: str
+    sexe: str
+    rue: str | None = None
+    numero: str | None = None
+    npa: str | None = None
+    localite: str | None = None
+    telephone: str
+    email: str
+    adresse_facturation: str | None = None
+    type_permis: str | None = None
+    date_permis: date | None = None
+    niveau: str
+    langue_maternelle: str | None = None
+    autres_langues: str | None = None
+    src_decouverte: str | None = None
+    commentaires: str | None = None
+    pays__nom: str
