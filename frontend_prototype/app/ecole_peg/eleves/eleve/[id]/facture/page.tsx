@@ -25,10 +25,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
 import { CalendarIcon, ArrowLeft, Save, Trash2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { cn, fetchApi } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { Textarea } from "@/components/textarea";
 import axios from "axios";
+
 interface Eleve {
   id: number;
   nom: string;
@@ -41,6 +42,17 @@ interface Inscription {
   statut: string;
   preinscription: boolean;
   frais_inscription: number;
+}
+
+interface CoursPrive {
+  id: number;
+  date_cours_prive: Date;
+  heure_debut: string;
+  heure_fin: string;
+  tarif: number;
+  lieu: string;
+  enseignant__nom: string;
+  enseignant__prenom: string;
 }
 
 interface DetailFacture {
@@ -56,25 +68,21 @@ export default function NouvelleFacturePage({
   params: Promise<{ id: string }>;
 }) {
   const {
-    register,
     handleSubmit,
     formState: { isSubmitting },
   } = useForm();
 
   const router = useRouter();
-
   const resolvedParams = use(params);
 
   const [date, setDate] = useState<Date | undefined>(undefined);
-
   const [total, setTotal] = useState<string>("0");
-
   const [details_facture, setDetailsFacture] = useState<DetailFacture[]>([]);
-
   const [eleve, setEleve] = useState<Eleve | undefined>(undefined);
-
   const [inscriptions, setInscriptions] = useState<Inscription[]>([]);
-  const [id_inscription, setIdInscription] = useState<number>();
+  const [coursPrives, setCoursPrives] = useState<CoursPrive[]>([]);
+  const [typeFacturation, setTypeFacturation] = useState<"inscription" | "cours_prive">("inscription");
+  const [idReference, setIdReference] = useState<number>();
 
   const ajouterDetail = () => {
     setDetailsFacture([
@@ -89,8 +97,8 @@ export default function NouvelleFacturePage({
   };
 
   const supprimerDetail = (index: number) => {
-    const nouveauxDetails = [...details_facture].splice(index, 1);
-
+    const nouveauxDetails = [...details_facture];
+    nouveauxDetails.splice(index, 1);
     setDetailsFacture(nouveauxDetails);
     calculerTotal(nouveauxDetails);
   };
@@ -105,9 +113,7 @@ export default function NouvelleFacturePage({
       ...nouveauxDetails[index],
       [champ]: valeur,
     };
-
     setDetailsFacture(nouveauxDetails);
-
     if (champ === "montant") calculerTotal(nouveauxDetails);
   };
 
@@ -115,15 +121,11 @@ export default function NouvelleFacturePage({
     const total = details.reduce((sum, detail) => {
       return sum + (Number.parseFloat(detail.montant) || 0);
     }, 0);
-
-    const totalFormatted = total.toFixed(2);
-
-    setTotal(totalFormatted);
+    setTotal(total.toFixed(2));
   };
 
   const onSoumission = useCallback(async () => {
-    const donneesCompletes = {
-      id_inscription,
+    const donneesCompletes: any = {
       date_emission: date ? format(date, "yyyy-MM-dd") : undefined,
       details_facture: details_facture.map((detail) => ({
         description: detail.description,
@@ -136,45 +138,52 @@ export default function NouvelleFacturePage({
         montant: Number.parseFloat(detail.montant),
       })),
     };
-
-    console.log(donneesCompletes);
     
-
+    // Ajoute la bonne clé selon le type de référence
+    if (typeFacturation === "inscription") {
+      donneesCompletes.id_inscription = idReference;
+    } else if (typeFacturation === "cours_prive") {
+      donneesCompletes.id_cours_prive = idReference;
+    }
     try {
       await axios.post(`http://localhost:8000/api/factures/facture/`, donneesCompletes);
-
       router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
     } catch (erreur) {
       console.error("Erreur: ", erreur);
     }
-  }, [date, details_facture, eleve?.id, id_inscription, router]);
+  }, [date, details_facture, idReference, typeFacturation, router]);
 
-  
   useEffect(() => {
     async function fetchEleve() {
-  const url = `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`;
-  console.log("fetchEleve →", url);
-  try {
-    const { data } = await axios.get<Eleve>(url);
-    setEleve(data);
-  } catch (e) {
-    console.error("Erreur fetchEleve:", e);
-  }
-}
+      try {
+        const { data } = await axios.get<Eleve>(`http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`);
+        setEleve(data);
+      } catch (e) {
+        console.error("Erreur fetchEleve:", e);
+      }
+    }
+
     async function fetchInscriptions() {
       try {
-        const donnees = await axios.get(
-          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`
-        );
+        const { data } = await axios.get(`http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`);
+        setInscriptions(data);
+      } catch (e) {
+        console.error("Erreur fetchInscriptions:", e);
+      }
+    }
 
-        setInscriptions(donnees.data); // c'est ici que sont vraiment les inscriptions
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+    async function fetchCoursPrives() {
+      try {
+        const { data } = await axios.get(`http://localhost:8000/api/cours/eleves/${resolvedParams.id}/cours_prives/`);
+        setCoursPrives(data);
+      } catch (e) {
+        console.error("Erreur fetchCoursPrives:", e);
       }
     }
 
     fetchEleve();
     fetchInscriptions();
+    fetchCoursPrives();
   }, [resolvedParams.id]);
 
   return (
@@ -197,54 +206,73 @@ export default function NouvelleFacturePage({
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="inscription">Inscription</Label>
+              <Label>Type de facturation</Label>
               <Select
-                name="inscription"
-                required
-                onValueChange={(valeur) => {
-                  setIdInscription(Number(valeur));
+                defaultValue={typeFacturation}
+                onValueChange={(val) => {
+                  setTypeFacturation(val as "inscription" | "cours_prive");
+                  setIdReference(undefined);
                 }}
               >
-                <SelectTrigger id="inscription">
-                  <SelectValue placeholder="Sélectionner l'inscription" />
+                <SelectTrigger>
+                  <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {inscriptions
-                    .filter(
-                      (inscription) => inscription.preinscription === false
-                    )
-                    .map((inscription) => (
-                      <SelectItem
-                        key={inscription.id}
-                        value={inscription.id.toString()}
-                      >
-                        {format((inscription.date_inscription), "dd-MM-yyyy")}
-                        (
-                        {inscription.statut === "A" ? "Active" : "Inactive"}) (
-                        {inscription.frais_inscription} CHF)
-                      </SelectItem>
-                    ))}
+                  <SelectItem value="inscription">Inscription</SelectItem>
+                  <SelectItem value="cours_prive">Cours Privé</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
+            {typeFacturation === "inscription" ? (
+              <div className="space-y-2">
+                <Label>Inscription</Label>
+                <Select required onValueChange={(val) => setIdReference(Number(val))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner l'inscription" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {inscriptions
+                      .filter((i) => !i.preinscription)
+                      .map((i) => (
+                        <SelectItem key={i.id} value={i.id.toString()}>
+                          {format(i.date_inscription, "dd-MM-yyyy")} (
+                          {i.statut === "A" ? "Active" : "Inactive"}) (
+                          {i.frais_inscription} CHF)
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>Cours Privé</Label>
+                <Select required onValueChange={(val) => setIdReference(Number(val))}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un cours privé" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {coursPrives.map((c) => (
+                      <SelectItem key={c.id} value={c.id.toString()}>
+                        {format(c.date_cours_prive, "dd-MM-yyyy")} (
+                        {c.enseignant__nom} {c.enseignant__prenom} - {c.tarif} CHF)
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
 
             <div className="space-y-2">
               <Label>Date de la facture</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
+                    variant="outline"
+                    className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? (
-                      format(date, "dd-MM-yyyy", { locale: fr })
-                    ) : (
-                      <span>Séléctionner la date de la facture</span>
-                    )}
+                    {date ? format(date, "dd-MM-yyyy", { locale: fr }) : <span>Sélectionner une date</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -258,22 +286,14 @@ export default function NouvelleFacturePage({
         <Card className="mt-4">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Détails de la facture</CardTitle>
-            <Button
-              type="button"
-              variant="outline"
-              size="sm"
-              onClick={ajouterDetail}
-            >
+            <Button type="button" variant="outline" size="sm" onClick={ajouterDetail}>
               <Plus className="mr-2 h-4 w-4" />
               Ajouter un détail
             </Button>
           </CardHeader>
           <CardContent className="space-y-6">
             {details_facture.map((detail, index) => (
-              <div
-                key={index}
-                className="space-y-4 p-4 border rounded-md relative"
-              >
+              <div key={index} className="space-y-4 p-4 border rounded-md relative">
                 {details_facture.length > 1 && (
                   <Button
                     type="button"
@@ -287,14 +307,10 @@ export default function NouvelleFacturePage({
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor={`description-${index}`}>Description</Label>
+                  <Label>Description</Label>
                   <Textarea
-                    id={`description-${index}`}
                     value={detail.description}
-                    onChange={(e) =>
-                      modifierDetail(index, "description", e.target.value)
-                    }
-                    placeholder="Description"
+                    onChange={(e) => modifierDetail(index, "description", e.target.value)}
                     required
                   />
                 </div>
@@ -304,31 +320,18 @@ export default function NouvelleFacturePage({
                     <Label>Période du</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !detail.date_debut_periode &&
-                              "text-muted-foreground"
-                          )}
-                        >
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !detail.date_debut_periode && "text-muted-foreground")}>
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {detail.date_debut_periode ? (
-                            format(detail.date_debut_periode, "dd-MM-yyyy", {
-                              locale: fr,
-                            })
-                          ) : (
-                            <span>Sélectionner une date</span>
-                          )}
+                          {detail.date_debut_periode
+                            ? format(detail.date_debut_periode, "dd-MM-yyyy", { locale: fr })
+                            : "Sélectionner une date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
                           selected={detail.date_debut_periode}
-                          onSelect={(date) =>
-                            modifierDetail(index, "date_debut_periode", date)
-                          }
+                          onSelect={(date) => modifierDetail(index, "date_debut_periode", date)}
                         />
                       </PopoverContent>
                     </Popover>
@@ -338,30 +341,18 @@ export default function NouvelleFacturePage({
                     <Label>au</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button
-                          variant={"outline"}
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !detail.date_fin_periode && "text-muted-foreground"
-                          )}
-                        >
+                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !detail.date_fin_periode && "text-muted-foreground")}>
                           <CalendarIcon className="mr-2 h-4 w-4" />
-                          {detail.date_fin_periode ? (
-                            format(detail.date_fin_periode, "dd-MM-yyyy", {
-                              locale: fr,
-                            })
-                          ) : (
-                            <span>Sélectionner une date</span>
-                          )}
+                          {detail.date_fin_periode
+                            ? format(detail.date_fin_periode, "dd-MM-yyyy", { locale: fr })
+                            : "Sélectionner une date"}
                         </Button>
                       </PopoverTrigger>
                       <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
                           selected={detail.date_fin_periode}
-                          onSelect={(date) =>
-                            modifierDetail(index, "date_fin_periode", date)
-                          }
+                          onSelect={(date) => modifierDetail(index, "date_fin_periode", date)}
                         />
                       </PopoverContent>
                     </Popover>
@@ -369,27 +360,22 @@ export default function NouvelleFacturePage({
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor={`montant-${index}`}>Montant (CHF)</Label>
+                  <Label>Montant (CHF)</Label>
                   <Input
-                    id={`montant-${index}`}
                     type="number"
                     min="0"
                     step="0.01"
                     value={detail.montant}
-                    onChange={(e) =>
-                      modifierDetail(index, "montant", e.target.value)
-                    }
+                    onChange={(e) => modifierDetail(index, "montant", e.target.value)}
                     required
                   />
                 </div>
               </div>
             ))}
 
-            <div className="flex justify-end space-x-4 pt-4 border-t">
+            <div className="flex justify-end pt-4 border-t">
               <div className="text-right">
-                <p className="text-sm font-medium text-muted-foreground">
-                  Montant total:
-                </p>
+                <p className="text-sm text-muted-foreground">Montant total:</p>
                 <p className="text-xl font-bold">{total} CHF</p>
               </div>
             </div>

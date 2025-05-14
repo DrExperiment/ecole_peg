@@ -341,6 +341,7 @@ const dta = use(params);
               <Table>
                 <TableHeader>
                   <TableRow>
+                    <TableHead>Numero</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Montant</TableHead>
                     <TableHead>Statut</TableHead>
@@ -351,6 +352,7 @@ const dta = use(params);
                   {factures.length > 0 ? (
                     factures.map((facture) => (
                       <TableRow key={facture.id}>
+                        <TableCell>{facture.id}</TableCell> 
                         <TableCell>
                         {format((facture.date_emission), "yyyy-MM-dd")}
                         </TableCell>
@@ -362,7 +364,7 @@ const dta = use(params);
                             </span>
                           ) : (
                             <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">
-                              En attente
+                              Non payé
                             </span>
                           )}
                         </TableCell>
