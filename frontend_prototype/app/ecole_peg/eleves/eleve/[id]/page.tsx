@@ -57,6 +57,15 @@ interface inscription {
   nom_cours: string;
   
 }
+interface Document {
+  id: number;
+  nom: string;
+  fichier_url: string;
+  date_ajout: string;
+}
+
+
+
 
 
 interface Paiement {
@@ -86,6 +95,15 @@ const dta = use(params);
   const [eleve, setEleve] = useState<Eleve | undefined>(undefined);
   const [paiements, setPaiements] = useState<Paiement[]>([]);
   const [factures, setFactures] = useState<Facture[]>([]);
+  const [documents, setDocuments] = useState<Document[]>([]);
+  async function fetchDocuments() {
+    try {
+      const res = await axios.get(`http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/`);
+      setDocuments(res.data);
+    } catch (err) {
+      console.error("Erreur de chargement des documents", err);
+    }
+  }
 
   useEffect(() => {
     async function fetchEleve() {
@@ -100,6 +118,8 @@ const dta = use(params);
       }
     }
     fetchEleve();
+    fetchDocuments();
+   
 
     async function fetchPaiements() {
       try {
@@ -112,6 +132,7 @@ const dta = use(params);
         console.error("Erreur: ", erreur);
       }
     }
+    
     
     async function fetchFactures() {
       try {
@@ -141,7 +162,36 @@ const dta = use(params);
     } catch (erreur) {
       console.error("Erreur: ", erreur);
     }
+
   }
+  async function handleUpload(event: React.FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    const form = event.currentTarget;
+    const formData = new FormData(form);
+  
+    try {
+      await axios.post(
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/`,
+        formData // ✅ PAS DE headers ici
+      );
+      form.reset();
+      fetchDocuments(); // Recharge la liste
+    } catch (error) {
+      console.error("Erreur d'upload", error);
+    }
+  }
+  
+  async function supprimerDocument(documentId: number) {
+    try {
+      await axios.delete(
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/${documentId}/`
+      );
+      fetchDocuments();
+    } catch (error) {
+      console.error("Erreur de suppression", error);
+    }
+  }
+  
 
   return (
     <div className="flex flex-col gap-4">
@@ -236,6 +286,8 @@ const dta = use(params);
                   </p>
                   <p>{eleve?.email ?? "-"}</p>
                 </div>
+                
+                
                 <div>
                   <p className="text-sm font-medium text-muted-foreground">
                     Type de permis
@@ -364,7 +416,7 @@ const dta = use(params);
                             </span>
                           ) : (
                             <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">
-                              Non payé
+                              on payé
                             </span>
                           )}
                         </TableCell>
@@ -560,21 +612,51 @@ const dta = use(params);
         </TabsContent>
 
         <TabsContent value="documents">
-          <Card>
-            <CardHeader>
-              <CardTitle>Documents</CardTitle>
-              <CardDescription>
-                Documents administratifs de l&apos;étudiant
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-             
-            </CardContent>
-            <CardFooter className="justify-end border-t px-6 py-4">
-              <Button>Ajouter un document</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
+  <Card>
+    <CardHeader>
+      <CardTitle>Documents</CardTitle>
+      <CardDescription>
+        Documents administratifs de l&apos;étudiant
+      </CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <ul className="space-y-2">
+        {documents.length > 0 ? (
+          documents.map((doc) => (
+            <li key={doc.id} className="flex justify-between items-center">
+              <a
+                  href={doc.fichier_url}
+                  target="_blank"
+                 rel="noopener noreferrer"
+                 className="text-blue-600 underline"
+               >
+                      {doc.nom}
+              </a>
+
+              <span className="text-sm text-muted-foreground">{doc.date_ajout}</span>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => supprimerDocument(doc.id)}
+              >
+                Supprimer
+              </Button>
+            </li>
+          ))
+        ) : (
+          <p>Aucun document trouvé.</p>
+        )}
+      </ul>
+
+      <form onSubmit={handleUpload}>
+        <input type="text" name="nom" placeholder="Nom du document" required className="border p-2 w-full my-2" />
+        <input type="file" name="fichier" required className="my-2" />
+        <Button type="submit">Ajouter un document</Button>
+      </form>
+    </CardContent>
+  </Card>
+</TabsContent>
+
       </Tabs>
     </div>
   );

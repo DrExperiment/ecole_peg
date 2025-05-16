@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, use, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { Button } from "@/components/button";
 import {
@@ -15,7 +15,6 @@ import {
 import { Input } from "@/components/input";
 import { Label } from "@/components/label";
 import { ArrowLeft, Save } from "lucide-react";
-import { fetchApi } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 
 interface Eleve {
@@ -24,51 +23,47 @@ interface Eleve {
   prenom: string;
 }
 
-export default function NouveauGarantPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const {
-    register,
-    handleSubmit,
-    formState: { isSubmitting },
-  } = useForm();
-
+export default function NouveauGarantPage() {
+  const { register, handleSubmit, formState: { isSubmitting } } = useForm();
   const router = useRouter();
+  const params = useParams();
+console.log("params :", params);
 
-  const resolvedParams = use(params);
+  const eleveId = Array.isArray(params?.id) ? params.id[0] : params?.id;
 
-  const [eleve, setEleve] = useState<Eleve>();
 
-  const onSoumission = useCallback(
-    async (donnees: object) => {
-      try {
-        await axios.post(`http://localhost:8000/api/eleves/eleve/${eleve?.id}/garant/`);
+  
 
-        router.push(`/ecole_peg/eleves/eleve/${eleve?.id}/`);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
-      }
-    },
-    [eleve?.id, router]
-  );
+  const [eleve, setEleve] = useState<Eleve | null>(null);
+
+  const onSoumission = useCallback(async (donnees: object) => {
+    try {
+      await axios.post(`http://localhost:8000/api/eleves/eleves/${eleveId}/garant/`, donnees);
+      router.push(`/ecole_peg/eleves/eleve/${eleveId}/`);
+    } catch (erreur) {
+      console.error("Erreur lors de l'ajout du garant :", erreur);
+    }
+  }, [eleve?.id, router]);
 
   useEffect(() => {
     async function fetchEleve() {
       try {
-        const donnees: Eleve = await axios.get(
-          `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`
-        );
+        console.log("eleveId récupéré:", eleveId);
 
-        setEleve(donnees);
+        const response = await axios.get(`http://localhost:8000/api/eleves/eleve/${eleveId}/`);
+        setEleve(response.data);
+        console.log("Réponse reçue:", response.data);
+
+        
       } catch (erreur) {
-        console.error("Erreur: ", erreur);
+        console.error("Erreur lors du chargement de l'élève :", erreur);
       }
     }
 
-    fetchEleve();
-  }, [resolvedParams.id]);
+    if (eleveId) {
+      fetchEleve();
+    }
+  }, [eleveId]);
 
   return (
     <div className="flex flex-col gap-4">
@@ -98,8 +93,7 @@ export default function NouveauGarantPage({
                   {...register("nom", {
                     pattern: {
                       value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
-                      message:
-                        "Le nom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
+                      message: "Le nom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
                     },
                     setValueAs: (v) => v.trim(),
                   })}
@@ -113,8 +107,7 @@ export default function NouveauGarantPage({
                   {...register("prenom", {
                     pattern: {
                       value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
-                      message:
-                        "Le prénom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
+                      message: "Le prénom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
                     },
                     setValueAs: (v) => v.trim(),
                   })}
@@ -129,8 +122,7 @@ export default function NouveauGarantPage({
                   {...register("telephone", {
                     pattern: {
                       value: /^(?:(?:\+|00)33\s?|0)[1-9](?:[\s.-]*\d{2}){4}$/,
-                      message:
-                        "Le numéro de téléphone doit être au format français.",
+                      message: "Le numéro de téléphone doit être au format français.",
                     },
                     setValueAs: (v) => v.trim(),
                   })}
@@ -157,11 +149,7 @@ export default function NouveauGarantPage({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="numero">Numéro</Label>
-                <Input
-                  id="numero"
-                  placeholder="Numéro"
-                  {...register("numero")}
-                />
+                <Input id="numero" placeholder="Numéro" {...register("numero")} />
               </div>
             </div>
 
@@ -172,11 +160,7 @@ export default function NouveauGarantPage({
               </div>
               <div className="space-y-2">
                 <Label htmlFor="localite">Localité</Label>
-                <Input
-                  id="localite"
-                  placeholder="Localité"
-                  {...register("localite")}
-                />
+                <Input id="localite" placeholder="Localité" {...register("localite")} />
               </div>
             </div>
           </CardContent>

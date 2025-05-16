@@ -43,7 +43,7 @@ interface Eleve {
   date_naissance: string;
   telephone: string;
   email: string;
-  nom__pays: string;
+  pays__nom: string;
 }
 
 interface ReponseEleves {
@@ -210,7 +210,7 @@ const handleDateChange = (date: Date | undefined) => {
                         <TableCell>{eleve.date_naissance ?? "-"}</TableCell>
                         <TableCell>{eleve.telephone ?? "-"}</TableCell>
                         <TableCell>{eleve.email ?? "-"}</TableCell>
-                        <TableCell>{eleve.nom__pays ?? "-"}</TableCell>
+                        <TableCell>{eleve.pays__nom ?? "-"}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" asChild>
                             <Link href={`/ecole_peg/eleves/eleve/${eleve.id}`}>

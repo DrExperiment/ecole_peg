@@ -77,23 +77,28 @@ export default function EditElevePage({ params }: { params: Promise<{ id: string
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    console.log("ID résolu depuis params:", id);
-    async function fetchData() {
-      const [{ data: e }, { data: pays }] = await Promise.all([
-        axios.get<Eleve>(`http://localhost:8000/api/eleves/eleve/${id}/`),
-        axios.get<Pays[]>(`http://localhost:8000/api/eleves/pays/`),
-      ]);
-      setEleve(e);
-      setSexe(e.sexe);
-      setDateNaissance(new Date(e.date_naissance));
-      setNiveau(e.niveau);
-      setTypePermis(e.type_permis ?? "P");
-      setDatePermis(e.date_permis ? new Date(e.date_permis) : undefined);
-      setIdPays(e.pays_id);
-      setPaysList(pays);
-    }
-    fetchData().catch(console.error);
-  }, [id]);
+  async function fetchData() {
+    const [{ data: e }, { data: pays }] = await Promise.all([
+      axios.get<Eleve>(`http://localhost:8000/api/eleves/eleve/${id}/`),
+      axios.get<Pays[]>(`http://localhost:8000/api/eleves/pays/`),
+    ]);
+    
+    setPaysList(pays); // ⬅️ mettre en premier
+    setEleve(e);
+    setSexe(e.sexe);
+    setDateNaissance(new Date(e.date_naissance));
+    setNiveau(e.niveau);
+    setTypePermis(e.type_permis ?? "P");
+    setDatePermis(e.date_permis ? new Date(e.date_permis) : undefined);
+    setIdPays(e.pays_id); // ⬅️ mettre après que paysList est défini
+    console.log("paysList:", paysList);
+      console.log("pays trouvé:", paysList.find((p) => p.id === idPays));
+      
+  }
+
+  fetchData().catch(console.error);
+}, [id]);
+
 
   const handleChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -197,26 +202,30 @@ export default function EditElevePage({ params }: { params: Promise<{ id: string
             </div>
 
             <div>
-              <Label htmlFor="pays">Pays</Label>
-              <Select value={String(idPays)} onValueChange={(v) => setIdPays(Number(v))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un pays" />
-                </SelectTrigger>
-                <SelectContent>
-                  {paysList.map((p) => (
-                    <SelectItem key={p.id} value={p.id.toString()}>
-                      {p.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+                <Label htmlFor="pays">Pays</Label>
+          <Select
+               value={idPays ? String(idPays) : ""}
+               onValueChange={(v) => setIdPays(Number(v))}
+                  >
+          <SelectTrigger>
+  <SelectValue>
+    {paysList.find((p) => p.id === idPays)?.nom || "Sélectionner un pays"}
+  </SelectValue>
+</SelectTrigger>
 
+           <SelectContent>
+               {paysList.map((p) => (
+           <SelectItem key={p.id} value={p.id.toString()}>
+              {p.nom}
+           </SelectItem>
+           ))}
+           </SelectContent>
+           </Select>
+           </div>
             <div>
               <Label htmlFor="langue_maternelle">Langue maternelle</Label>
               <Input id="langue_maternelle" name="langue_maternelle" value={eleve.langue_maternelle ?? ""} onChange={handleChange} />
             </div>
-
             <div>
               <Label htmlFor="autres_langues">Autres langues</Label>
               <Input id="autres_langues" name="autres_langues" value={eleve.autres_langues ?? ""} onChange={handleChange} />

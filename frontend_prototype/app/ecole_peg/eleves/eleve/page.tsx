@@ -100,13 +100,23 @@ export default function NouveauElevePage() {
           "http://localhost:8000/api/eleves/eleve/",
           donneesCompletes // Ajoutez les données ici  
         );
+        console.log("Réponse complète backend :", reponse.data);
+
 
         if (a_garant)
           router.push(`/ecole_peg/eleves/eleve/${reponse.data.id}/garant/`);
         else router.push(`/ecole_peg/eleves/eleve/${reponse.data.id}/`);
-      } catch (error) {
-        console.error("Erreur: ", error);
-      }
+
+      } catch (error: any) {
+  if (axios.isAxiosError(error) && error.response) {
+    console.error("🛑 Erreurs de validation :", error.response.data.erreurs);
+    alert("Erreur de validation : vérifie tous les champs.");
+  } else {
+    console.error("🛑 Erreur inconnue :", error);
+  }
+}
+
+      
     },
     [
       a_garant,

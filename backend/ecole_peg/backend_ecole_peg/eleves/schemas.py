@@ -49,13 +49,17 @@ class DocumentIn(Schema):
 class DocumentOut(Schema):
     id: int
     nom: str
+    fichier_url: str  # 🧠 pas fichier, mais le lien public
     date_ajout: date
-    fichier_url: str | None = None
 
-    @staticmethod
-    def resolve_fichier_url(obj):
-        return obj.fichier.url if obj.fichier else None
-
+    @classmethod
+    def from_model(cls, document, request) -> "DocumentOut":
+        return cls(
+            id=document.id,
+            nom=document.nom,
+            fichier_url=request.build_absolute_uri(document.fichier.url),
+            date_ajout=document.date_ajout
+        )
 class DocumentUpdateIn(Schema):
     nom: str | None = None
     fichier: UploadedFile | None = File(None)
