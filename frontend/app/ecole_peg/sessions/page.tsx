@@ -30,12 +30,12 @@ import { fetchApi } from "@/lib/utils";
 import axios from "axios";
 interface Session {
   id: number;
-  nom: string;
-  type: string;
-  niveau: string;
+  cours__nom: string;
+  cours__niveau: string;
   date_debut: string;
   date_fin: string;
   statut: string;
+  cours__type: string; // Added cours__type property
 }
 
 export default function SessionsPage() {
@@ -45,8 +45,11 @@ export default function SessionsPage() {
     async function fetchSessions() {
       try {
         const reponse = await axios.get("http://localhost:8000/api/cours/sessions/");
+        console.log("Sessions récupérées :", reponse.data);
+        setSessions(reponse.data.sessions);
 
-        setSessions(reponse.data); // c'est ici que sont vraiment les sessions
+
+         // c'est ici que sont vraiment les sessions
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
@@ -60,7 +63,7 @@ export default function SessionsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
-            Sessions 
+            Sessions
           </h1>
           <p className="text-muted-foreground">
             Gérez les sessions de l&apos;école
@@ -73,7 +76,7 @@ export default function SessionsPage() {
               Nouvelle session
             </Link>
           </Button>
-        
+
         </div>
       </div>
 
@@ -127,12 +130,12 @@ export default function SessionsPage() {
                     sessions.map((session) => (
                       <TableRow key={session.id}>
                         <TableCell className="font-medium">
-                          {session.nom}
+                          {session.cours__nom}
                         </TableCell>
                         <TableCell>
-                          {session.type === "I" ? "Intensif" : "Semi-intensif"}
+                          {session.cours__type === "I" ? "Intensif" : "Semi-intensif"}
                         </TableCell>
-                        <TableCell>{session.niveau}</TableCell>
+                        <TableCell>{session.cours__niveau}</TableCell>
                         <TableCell>
                           Du {session.date_debut} à {session.date_fin}
                         </TableCell>

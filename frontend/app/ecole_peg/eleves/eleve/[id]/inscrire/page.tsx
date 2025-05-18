@@ -25,9 +25,10 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
 import { CalendarIcon, ArrowLeft, Save } from "lucide-react";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import { cn, fetchApi } from "@/lib/utils";
+import { cn } from "@/lib/utils";
 import axios from "axios";
 import { useForm } from "react-hook-form";
+import { Checkbox } from "@/components/checkbox";
 
 interface Eleve {
   id: number;
@@ -73,39 +74,42 @@ export default function InscrirePage({
         ...donnees,
         date: date ? format(date, "yyyy-MM-dd") : undefined,
         id_session,
-        preinscription: false
+        preinscription,
       };
-       console.log(donneesCompletes);
+
       try {
-        
-        await axios.post(`http://localhost:8000/api/cours/${resolvedParams.id}/inscription/`, donneesCompletes);
+        await axios.post(
+          `http://localhost:8000/api/cours/${resolvedParams.id}/inscription/`,
+          donneesCompletes
+        );
 
         router.push(`/ecole_peg/eleves/eleve/${resolvedParams?.id}/`);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
     },
-    [date, eleve?.id, id_session, router]
+    [date, id_session, preinscription, resolvedParams.id, router]
   );
 
   useEffect(() => {
     async function fetchEleve() {
-  const url = `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`;
-  console.log("fetchEleve →", url);
-  try {
-    const { data } = await axios.get<Eleve>(url);
-    setEleve(data);
-  } catch (e) {
-    console.error("Erreur fetchEleve:", e);
-  }
-}
-
+      const url = `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`;
+      console.log("fetchEleve →", url);
+      try {
+        const { data } = await axios.get<Eleve>(url);
+        setEleve(data);
+      } catch (e) {
+        console.error("Erreur fetchEleve:", e);
+      }
+    }
 
     async function fetchSessions() {
       try {
-        const reponse = await axios.get("http://localhost:8000/api/cours/sessions/");
+        const reponse = await axios.get(
+          "http://localhost:8000/api/cours/sessions/"
+        );
 
-        setSessions(reponse.data);
+        setSessions(reponse.data.sessions);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
@@ -195,7 +199,6 @@ export default function InscrirePage({
                 {...register("but")}
               />
             </div>
-            
 
             <div className="space-y-2">
               <Label htmlFor="heure-fin">Frais de l&apos;inscription</Label>
@@ -208,6 +211,19 @@ export default function InscrirePage({
                   required: "Les frais de l'inscription sont obligatoires",
                 })}
               />
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="preinscription"
+                  checked={preinscription}
+                  onCheckedChange={(checked) =>
+                    setPreinscription(checked as boolean)
+                  }
+                />
+                <Label htmlFor="preinscription">Préinscription</Label>
+              </div>
             </div>
           </CardContent>
           <CardFooter>

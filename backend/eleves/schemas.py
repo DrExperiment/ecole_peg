@@ -42,14 +42,11 @@ class TestOut(Schema):
     note: float
 
 # ------------------- DOCUMENT -------------------
-class DocumentIn(Schema):
-    nom: str
-    fichier: UploadedFile
 
 class DocumentOut(Schema):
     id: int
     nom: str
-    fichier_url: str  # 🧠 pas fichier, mais le lien public
+    fichier_url: str  
     date_ajout: date
 
     @classmethod

@@ -8,7 +8,7 @@ from factures.models import Facture
 from django.db.models import F, Count, ExpressionWrapper, IntegerField
 from .schemas import (
     GarantIn, GarantOut, PaysOut, TestIn, TestOut,
-    DocumentIn, DocumentOut, EleveIn, EleveOut , ElevesOut
+     DocumentOut, EleveIn, EleveOut , ElevesOut
 )
 from django.db.models.functions import Lower
 from django.db.models import Q, Sum
@@ -213,43 +213,31 @@ def get_documents_eleve(request, eleve_id: int):
 
 
 @router.post("/eleves/{eleve_id}/documents/")
-def creer_document_eleve(
-    request,
-    eleve_id: int,
-    nom: str = Form(...),
-    fichier: UploadedFile = File(...)
-):
+def creer_document_eleve(request,eleve_id: int,nom: str = Form(...),fichier: UploadedFile = File(...)):
     eleve = get_object_or_404(Eleve, id=eleve_id)
     document = Document(eleve=eleve, nom=nom)
     document.fichier.save(fichier.name, fichier)
     document.full_clean()
     document.save()
+    return DocumentOut.from_model(document, request)
 
-    return {
-        "id": document.id,
-        "nom": document.nom,
-        "fichier_url": request.build_absolute_uri(document.fichier.url),
-        "date_ajout": document.date_ajout,
-    }
 @router.delete("/eleves/{eleve_id}/documents/{document_id}/")
 def supprimer_document_eleve(request, eleve_id: int, document_id: int):
     document = get_object_or_404(Document.objects.select_related("eleve"), id=document_id, eleve_id=eleve_id)
     
-    # 🔥 Supprimer le fichier du disque
+   
     if document.fichier and document.fichier.storage.exists(document.fichier.name):
         document.fichier.delete(save=False)
 
-    # ❌ Puis supprimer l'objet
+   
     document.delete()
     return {"success": True}
 
 # ------------------- PAYS -------------------
-
 @router.get("/pays/")
 def pays(request):
-    pays_list = Pays.objects.all()
+    pays_list = Pays.objects.all().order_by("nom")
     return [PaysOut.from_orm(p) for p in pays_list]
-
 
 
 # ------------------- STATISTIQUES -------------------

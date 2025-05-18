@@ -1,6 +1,7 @@
 from ninja import Schema
 from datetime import date, time
 
+
 # ------------------- COURS -------------------
 class CoursOut(Schema):
     id: int
@@ -11,6 +12,7 @@ class CoursOut(Schema):
     duree_semaines: int
     tarif: float
 
+
 class CoursIn(Schema):
     nom: str
     type: str
@@ -19,15 +21,18 @@ class CoursIn(Schema):
     duree_semaines: int | None = None
     tarif: float
 
+
 # ------------------- ENSEIGNANT -------------------
 class EnseignantOut(Schema):
     id: int
     nom: str
     prenom: str
 
+
 class EnseignantIn(Schema):
     nom: str
     prenom: str
+
 
 # ------------------- SESSION -------------------
 class SessionIn(Schema):
@@ -37,6 +42,8 @@ class SessionIn(Schema):
     date_fin: date
     periode_journee: str
     capacite_max: int
+    seances_mois: int
+
 
 class SessionOut(Schema):
     id: int
@@ -47,6 +54,8 @@ class SessionOut(Schema):
     date_fin: date
     periode_journee: str | None = None
     statut: str
+    seances_mois: int
+
 
 # ------------------- COURS PRIVES -------------------
 class CoursPriveIn(Schema):
@@ -57,6 +66,7 @@ class CoursPriveIn(Schema):
     lieu: str
     eleves_ids: list[int]
     enseignant: int
+
 
 class CoursPriveOut(Schema):
     id: int
@@ -69,6 +79,7 @@ class CoursPriveOut(Schema):
     enseignant__prenom: str
     eleves: list[str] = []
 
+
 # ------------------- INSCRIPTION -------------------
 class InscriptionIn(Schema):
     frais_inscription: float
@@ -76,6 +87,7 @@ class InscriptionIn(Schema):
     preinscription: bool | None = None
     id_session: int
     date_inscription: date | None = None
+
 
 class InscriptionOut(Schema):
     id: int
@@ -87,6 +99,7 @@ class InscriptionOut(Schema):
     motif_sortie: str | None = None
     preinscription: bool
 
+
 class InscriptionUpdateIn(Schema):
     date_inscription: date | None = None
     frais_inscription: float | None = None
@@ -96,3 +109,33 @@ class InscriptionUpdateIn(Schema):
     motif_sortie: str | None = None
     preinscription: bool | None = None
     id_session: int | None = None
+
+
+class FichePresencesIn(Schema):
+    mois: str
+    annee: int
+
+
+class FichesPresencesOut(Schema):
+    id: int
+    mois: str
+    annee: int
+
+
+class PresenceIn(Schema):
+    id: int
+    statut: str
+
+
+class PresenceOut(Schema):
+    id: int
+    id_eleve: int
+    date_presence: date
+    statut: str
+
+
+class FichePresencesOut(Schema):
+    id: int
+    mois: str
+    annee: int
+    presences: list[PresenceOut]

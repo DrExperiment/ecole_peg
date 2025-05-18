@@ -35,7 +35,7 @@ export default function EnseignantsPage() {
       try {
         const reponse = await axios.get("http://localhost:8000/api/cours/enseignants/");
 
-        setEnseignants(reponse.data); // c'est ici que sont vraiment les enseignants
+        setEnseignants(reponse.data.enseignants); // c'est ici que sont vraiment les enseignants
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }

@@ -61,12 +61,14 @@ export default function NouvelleSessionPage() {
   const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
   const [id_enseignant, setIdEnseignant] = useState<number>();
   const [periode_journee, setPeriodeJournee] = useState<"M"| "S">("M");
+  const [seances_mois, setSeancesMois] = useState<number | undefined>(undefined);
 
   const onSoumission = useCallback(
     async (donnees: object) => {
       const donneesCompletes = {
         ...donnees,
         date_debut: date_debut ? format(date_debut, "yyyy-MM-dd") : undefined,
+        seances_mois,
         date_fin: date_fin ? format(date_fin, "yyyy-MM-dd") : undefined,
         id_cours,
         id_enseignant,
@@ -77,6 +79,7 @@ export default function NouvelleSessionPage() {
       try {
         console.log(donneesCompletes);
         await axios.post("http://localhost:8000/api/cours/session/", donneesCompletes);
+        
 
         router.push("/ecole_peg/sessions/");
       } catch (erreur) {
@@ -88,7 +91,7 @@ export default function NouvelleSessionPage() {
       }
       
     },
-    [date_debut, date_fin, id_cours, id_enseignant, router]
+    [date_debut, date_fin, id_cours, id_enseignant, seances_mois, periode_journee, router]
   );
 
   useEffect(() => {
@@ -107,7 +110,8 @@ export default function NouvelleSessionPage() {
       try {
         const reponse = await axios.get("http://localhost:8000/api/cours/enseignants/");
 
-        setEnseignants(reponse.data); // c'est ici que sont vraiment les enseignants
+        setEnseignants(reponse.data.enseignants); // ✅ on extrait le tableau
+ // c'est ici que sont vraiment les enseignants
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
@@ -153,6 +157,19 @@ export default function NouvelleSessionPage() {
                 </SelectContent>
               </Select>
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="seances_mois">Séances par mois</Label>
+              <Input
+                id="seances_mois"
+                type="number"
+                required
+                {...register("seances_mois", {
+                  required: "Séances par mois est obligatoire",
+                  valueAsNumber: true,
+                })}
+                onChange={(e) => setSeancesMois(Number(e.target.value))}
+              /></div>
+
 
             <div className="space-y-2">
               <Label>Date de début</Label>

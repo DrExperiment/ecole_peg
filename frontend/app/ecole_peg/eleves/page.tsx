@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useRef, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent } from "react";
 import Link from "next/link";
 import axios from "axios";
 import { format } from "date-fns";
@@ -30,11 +30,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/select";
-import { Calendar } from "@/components/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
-import { Plus, Search, CalendarIcon } from "lucide-react";
-
-import { cn } from "@/lib/utils";
+import { Plus, Search } from "lucide-react";
 
 interface Eleve {
   id: number;
@@ -48,7 +44,7 @@ interface Eleve {
 
 interface ReponseEleves {
   eleves: Eleve[];
-  nombreTotal: number;
+  nombre_total: number;
 }
 
 export default function ElevesPage() {
@@ -58,63 +54,56 @@ export default function ElevesPage() {
   const [valeurRecherche, setValeurRecherche] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [numPage, setNumPage] = useState<number>(1);
+  const [statut, setStatut] = useState<string>("actifs");
   const taillePage = 10;
 
-  useEffect(() => {
-    const fetchEleves = async () => {
-      setLoading(true);
-      try {
-        const params: Record<string, any> = {
-          page: numPage,
-          taille: taillePage,
-        };
+  const fetchEleves = async () => {
+    setLoading(true);
+    try {
+      const params: Record<string, any> = {
+        page: numPage,
+        taille: taillePage,
+      };
 
-        if (valeurRecherche) {
-          params.recherche = valeurRecherche;
-        }
-        if (dateNaissance) {
-          params.date_naissance = format(dateNaissance, "yyyy-MM-dd");
-        }
-
-        const reponse = await axios.get<ReponseEleves>(
-          "http://localhost:8000/api/eleves/eleves/",
-          { params : {
-            page: numPage,
-            taille: taillePage,
-            recherche: valeurRecherche || undefined,
-            date_naissance: dateNaissance
-              ? format(dateNaissance, "yyyy-MM-dd")
-              : undefined,
-          },}
-        );
-        console.log("Élèves reçus :", reponse.data.eleves);
-
-        setEleves(reponse.data.eleves ?? []);
-        setNombreTotal(reponse.data.nombreTotal ?? 0);
-      } catch (erreur) {
-        console.error("Erreur:", erreur);
-      } finally {
-        setLoading(false);
+      if (valeurRecherche) {
+        params.recherche = valeurRecherche;
       }
-    };
+      if (dateNaissance) {
+        params.date_naissance = format(dateNaissance, "yyyy-MM-dd");
+      }
 
-    fetchEleves();
-  }, [numPage, valeurRecherche, dateNaissance]);
+      let url = "http://localhost:8000/api/eleves/eleves/";
+      if (statut === "actifs") {
+        url += "actifs/";
+      } else if (statut === "inactifs") {
+        url += "inactifs/";
+      }
 
-  // Mise à jour de la valeur de recherche
-const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-  setValeurRecherche(e.target.value);
-};
-
-// Mise à jour de la date de naissance
-const handleDateChange = (date: Date | undefined) => {
-  setDateNaissance(date);
-};
-
+      const reponse = await axios.get<ReponseEleves>(url, { params });
+      setEleves(reponse.data.eleves ?? []);
+      setNombreTotal(reponse.data.nombre_total ?? 0);
+    } catch (erreur) {
+      console.error("Erreur:", erreur);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    setNumPage(1); // reset page quand date change
-  }, [dateNaissance]);
+    fetchEleves();
+  }, [numPage, valeurRecherche, dateNaissance, statut]);
+
+  useEffect(() => {
+    setNumPage(1);
+  }, [dateNaissance, statut]);
+
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setValeurRecherche(e.target.value);
+  };
+
+  const handleDateChange = (date: Date | undefined) => {
+    setDateNaissance(date);
+  };
 
   const pagesTotales = Math.ceil(nombreTotal / taillePage);
 
@@ -122,7 +111,7 @@ const handleDateChange = (date: Date | undefined) => {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Eleves</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Élèves</h1>
           <p className="text-muted-foreground">Gérez les élèves de l&apos;école</p>
         </div>
         <Button asChild>
@@ -140,8 +129,8 @@ const handleDateChange = (date: Date | undefined) => {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4">
-              <div className="relative flex-1">
+            <div className="flex items-center gap-4 flex-wrap">
+              <div className="relative flex-1 min-w-[250px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
@@ -151,35 +140,25 @@ const handleDateChange = (date: Date | undefined) => {
                   onChange={handleInputChange}
                 />
               </div>
-              <div className="space-y-2">
-                <p className="text-sm font-medium">Rechercher par date de naissance</p>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-[240px] justify-start text-left font-normal",
-                        !dateNaissance && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {dateNaissance ? (
-                        format(dateNaissance, "dd-MM-yyyy", { locale: fr })
-                      ) : (
-                        <span>Sélectionner une date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={dateNaissance}
-                      onSelect={setDateNaissance}
-                    />
-                  </PopoverContent>
-                </Popover>
-              </div>
-              {/* Les filtres Statut / Niveau peuvent être ajoutés ici plus tard */}
+              <Input
+                type="date"
+                className="w-[200px]"
+                value={dateNaissance ? format(dateNaissance, "yyyy-MM-dd") : ""}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  setDateNaissance(value ? new Date(value) : undefined);
+                }}
+              />
+              <Select value={statut} onValueChange={setStatut}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Statut des élèves" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="actifs">Élèves actifs</SelectItem>
+                  <SelectItem value="inactifs">Élèves inactifs</SelectItem>
+                  <SelectItem value="tous">Tous les élèves</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             {loading && (

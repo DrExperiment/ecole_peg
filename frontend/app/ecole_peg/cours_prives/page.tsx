@@ -50,12 +50,13 @@ export default function CoursPrivesPage() {
 
   useEffect(() => {
     axios
-      .get<CoursPrive[]>("http://localhost:8000/api/cours/cours_prive/")
-      .then((res) => {
-        console.log(res.data);
-        setCoursPrives(res.data);
-        setFilteredCours(res.data);
-      })
+  .get<{ cours_prives: CoursPrive[] }>("http://localhost:8000/api/cours/cours_prive/")
+  .then((res) => {
+    const cours = res.data.cours_prives;
+    setCoursPrives(cours);
+    setFilteredCours(cours);
+  })
+
       .catch(console.error);
   }, []);
 

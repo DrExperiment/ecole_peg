@@ -1,16 +1,45 @@
+import calendar
+from datetime import date, timedelta
+from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.db import models
 from ninja import Router
-from .models import Cours, Enseignant, Session,CoursPrive, Eleve, Inscription
+from .models import (
+    Cours,
+    Enseignant,
+    Presence,
+    Session,
+    CoursPrive,
+    Eleve,
+    Inscription,
+    FichePresences,
+    StatutPresenceChoices,
+)
+from eleves.schemas import ElevesOut
 from django.db.models import Q
 from .schemas import (
-    CoursIn, CoursOut, EnseignantIn, EnseignantOut,
-    SessionIn, SessionOut,CoursPriveIn, CoursPriveOut, InscriptionIn, InscriptionOut, InscriptionUpdateIn
+    CoursIn,
+    CoursOut,
+    EnseignantIn,
+    EnseignantOut,
+    FichePresencesOut,
+    FichesPresencesOut,
+    PresenceIn,
+    PresenceOut,
+    SessionIn,
+    SessionOut,
+    CoursPriveIn,
+    CoursPriveOut,
+    InscriptionIn,
+    InscriptionOut,
+    InscriptionUpdateIn,
+    FichePresencesIn,
 )
+from django.db import transaction
 
 router = Router()
-
+from django.core.paginator import Paginator
 # ------------------- COURS -------------------
 
 @router.get("/cours/")
@@ -55,15 +84,20 @@ def delete_cours(request, cours_id: int):
     cours.delete()
 
 # ------------------- ENSEIGNANT -------------------
-
 @router.get("/enseignants/")
-def list_enseignants(request, search: str | None = None):
+def list_enseignants(request, search: str | None = None , page: int = 1, taille: int = 10):
     enseignants = Enseignant.objects.all()
     if search:
         enseignants = enseignants.filter(
             Q(nom__icontains=search) | Q(prenom__icontains=search)
         )
-    return [EnseignantOut.from_orm(e) for e in enseignants]
+    paginator = Paginator(enseignants, taille)
+    page_obj = paginator.get_page(page)
+    return {
+        "enseignants": [EnseignantOut.from_orm(e) for e in page_obj.object_list],
+        "nombre_total": paginator.count,
+    }
+
 
 
 @router.post("/enseignant/")
@@ -96,18 +130,61 @@ def delete_enseignant(request, enseignant_id: int):
     enseignant.delete()
 
 # ------------------- SESSION -------------------
-
 @router.get("/sessions/")
-def sessions(request):
-    sessions = (
+def sessions(request, page: int = 1, taille: int = 10):
+    sessions_qs = (
         Session.objects.select_related("cours", "enseignant")
         .annotate(
             cours__nom=models.F("cours__nom"),
             cours__type=models.F("cours__type"),
             cours__niveau=models.F("cours__niveau"),
         )
+        .order_by("date_debut")
     )
-    return [SessionOut.from_orm(s) for s in sessions]
+    paginator = Paginator(sessions_qs, taille)
+    page_obj = paginator.get_page(page)
+    return {
+        "sessions": [SessionOut.from_orm(s) for s in page_obj.object_list],
+        "nombre_total": paginator.count,
+    }
+
+@router.get("/sessions/ouvertes/")
+def sessions_ouvertes(request, page: int = 1, taille: int = 10):
+    sessions_qs = (
+        Session.objects.filter(statut="OUVERTE")
+        .select_related("cours", "enseignant")
+        .annotate(
+            cours__nom=models.F("cours__nom"),
+            cours__type=models.F("cours__type"),
+            cours__niveau=models.F("cours__niveau"),
+        )
+        .order_by("date_debut")
+    )
+    paginator = Paginator(sessions_qs, taille)
+    page_obj = paginator.get_page(page)
+    return {
+        "sessions": [SessionOut.from_orm(s) for s in page_obj.object_list],
+        "nombre_total": paginator.count,
+    }
+
+@router.get("/sessions/fermees/")
+def sessions_fermees(request, page: int = 1, taille: int = 10):
+    sessions_qs = (
+        Session.objects.filter(statut="FERMÉE")
+        .select_related("cours", "enseignant")
+        .annotate(
+            cours__nom=models.F("cours__nom"),
+            cours__type=models.F("cours__type"),
+            cours__niveau=models.F("cours__niveau"),
+        )
+        .order_by("date_debut")
+    )
+    paginator = Paginator(sessions_qs, taille)
+    page_obj = paginator.get_page(page)
+    return {
+        "sessions": [SessionOut.from_orm(s) for s in page_obj.object_list],
+        "nombre_total": paginator.count,
+    }
 
 
 @router.get("/sessions/{id_session}/")
@@ -135,6 +212,7 @@ def create_session(request, session: SessionIn):
             periode_journee=session.periode_journee,
             capacite_max=session.capacite_max,
             enseignant=enseignant,
+            seances_mois=session.seances_mois,
         )
         session_obj.full_clean()
         return {"id": session_obj.id}
@@ -164,10 +242,9 @@ def delete_session(request, id_session: int):
     session.delete()
 
 # ------------------- COURS PRIVE -------------------
-
-@router.get("/cours_prive/", response=list[CoursPriveOut])
-def list_cours_prive(request):
-    cours_prives = (
+@router.get("/cours_prive/")
+def list_cours_prive(request, page: int = 1, taille: int = 10):
+    cours_prives_qs = (
         CoursPrive.objects.select_related("enseignant")
         .prefetch_related("eleves")
         .annotate(
@@ -175,20 +252,25 @@ def list_cours_prive(request):
             enseignant__prenom=models.F("enseignant__prenom"),
         )
     )
-    return [
-        CoursPriveOut(
-            id=cours_prive.id,
-            date_cours_prive=cours_prive.date_cours_prive,
-            heure_debut=cours_prive.heure_debut,
-            heure_fin=cours_prive.heure_fin,
-            tarif=cours_prive.tarif,
-            lieu=cours_prive.lieu,
-            enseignant__nom=cours_prive.enseignant.nom,
-            enseignant__prenom=cours_prive.enseignant.prenom,
-            eleves=[f"{eleve.nom} {eleve.prenom}" for eleve in cours_prive.eleves.all()],
-        )
-        for cours_prive in cours_prives
-    ]
+    paginator = Paginator(cours_prives_qs, taille)
+    page_obj = paginator.get_page(page)
+    return {
+        "cours_prives": [
+            CoursPriveOut(
+                id=cours_prive.id,
+                date_cours_prive=cours_prive.date_cours_prive,
+                heure_debut=cours_prive.heure_debut,
+                heure_fin=cours_prive.heure_fin,
+                tarif=cours_prive.tarif,
+                lieu=cours_prive.lieu,
+                enseignant__nom=cours_prive.enseignant.nom,
+                enseignant__prenom=cours_prive.enseignant.prenom,
+                eleves=[f"{eleve.nom} {eleve.prenom}" for eleve in cours_prive.eleves.all()],
+            )
+            for cours_prive in page_obj.object_list
+        ],
+        "nombre_total": paginator.count,
+    }
 
 
 @router.get("/cours_prive/{cours_prive_id}/", response=CoursPriveOut)
@@ -197,8 +279,6 @@ def get_cours_prive(request, cours_prive_id: int):
         CoursPrive.objects.select_related("enseignant").prefetch_related("eleves"),
         id=cours_prive_id
     )
-
-    # Utiliser le schéma CoursPriveOut pour structurer la réponse
     return CoursPriveOut(
         id=cours_prive.id,
         date_cours_prive=cours_prive.date_cours_prive,
@@ -276,12 +356,12 @@ def update_cours_prive(request, cours_prive_id: int, cours_prive: CoursPriveIn):
 def delete_cours_prive(request, cours_prive_id: int):
     cours_prive = get_object_or_404(CoursPrive, id=cours_prive_id)
     cours_prive.delete()
-
 # ------------------- INSCRIPTIONS -------------------
+
 
 @router.get("/{eleve_id}/inscriptions/")
 def get_inscriptions_by_eleve(request, eleve_id: int):
-    inscriptions = Inscription.objects.select_related("session", "eleve").filter(eleve_id=eleve_id)
+    inscriptions = Inscription.objects.select_related("session", "eleve").filter(eleve_id=eleve_id, preinscription=False)
     return [InscriptionOut.from_orm(i) for i in inscriptions]
 
 
@@ -338,7 +418,152 @@ def delete_inscription(request, eleve_id: int, inscription_id: int):
     inscription = get_object_or_404(Inscription, id=inscription_id, eleve_id=eleve_id)
     inscription.delete()
 
+
 @router.get("/eleves/preinscrits")
-def get_eleves_preinscrits(request):
+def get_eleves_preinscrits(request, page: int = 1, taille: int = 10):
     eleves_preinscrits = Eleve.objects.filter(inscriptions__preinscription=True).distinct()
-    return [{"id": eleve.id, "nom": eleve.nom, "prenom": eleve.prenom} for eleve in eleves_preinscrits]
+    paginator = Paginator(eleves_preinscrits, taille)
+    page_obj = paginator.get_page(page)
+    return {
+        "eleves": [ElevesOut.from_orm(e) for e in page_obj.object_list],
+        "nombre_total": paginator.count,
+    }
+
+@router.get("/session/{id_session}/eleves/")
+def eleves_session(request, id_session: int):
+    inscriptions = get_object_or_404(
+        Session, id=id_session
+    ).inscriptions.select_related("eleve")
+
+    return [
+        {
+            "id": inscription.eleve.id,
+            "nom": inscription.eleve.nom,
+            "prenom": inscription.eleve.prenom,
+        }
+        for inscription in inscriptions
+    ]
+
+
+@router.post("/session/{id_session}/fiche_presences/")
+def creer_fiche_presences(request, id_session: int, payload: FichePresencesIn):
+    session = get_object_or_404(Session, id=id_session)
+
+    try:
+        with transaction.atomic():
+            fiche = FichePresences(
+                session=session,
+                **payload.dict(),
+            )
+            fiche.full_clean()
+            fiche.save()
+
+            mois = int(payload.mois)
+
+            premier_du_mois = date(payload.annee, mois, 1)
+            dernier_jour = calendar.monthrange(payload.annee, mois)[1]
+            dernier_du_mois = date(payload.annee, mois, dernier_jour)
+
+            dates = []
+
+            actuel = premier_du_mois
+
+            while actuel <= dernier_du_mois:
+                dates.append(actuel)
+                actuel += timedelta(days=1)
+
+            inscriptions = Inscription.objects.filter(session=session).select_related(
+                "eleve"
+            )
+
+            presences_a_creer = []
+
+            for ins in inscriptions:
+                eleve = ins.eleve
+
+                for d in dates:
+                    presences_a_creer.append(
+                        Presence(
+                            fiche_presences=fiche,
+                            eleve=eleve,
+                            date_presence=d,
+                            statut=StatutPresenceChoices.ABSENT,
+                        )
+                    )
+
+            Presence.objects.bulk_create(presences_a_creer, ignore_conflicts=True)
+
+        return {"id": fiche.id}
+    except Exception as e:
+        return {"message": "Erreur lors de la création", "detail": str(e)}
+
+
+@router.get("/session/{id_session}/fiches_presences/")
+def fiches_presences_session(request, id_session: int):
+    session = get_object_or_404(Session, id=id_session)
+
+    return [
+        FichesPresencesOut.from_orm(fiche)
+        for fiche in FichePresences.objects.filter(session=session)
+    ]
+
+@router.get(
+    "/fiche_presences/{id_fiche_presences}/",
+    response=FichePresencesOut,
+)
+def get_fiche_presences(request, id_fiche_presences: int):
+    fiche = get_object_or_404(FichePresences, id=id_fiche_presences)
+
+    liste_presences = [
+        PresenceOut(
+            id=presence.id,
+            id_eleve=presence.eleve.id,  # ✅ correction ici
+            date_presence=presence.date_presence,
+            statut=presence.statut,
+        ).dict()
+        for presence in fiche.presences.select_related('eleve').all()
+    ]
+
+    return FichePresencesOut(
+        id=fiche.id,
+        mois=fiche.mois,
+        annee=fiche.annee,
+        presences=liste_presences,
+    )
+
+
+@router.delete("/fiche_presences/{id_fiche_presences}/")
+def supprimer_fiche_presences(request, id_fiche_presences: int):
+    get_object_or_404(FichePresences, id=id_fiche_presences).delete()
+
+
+@router.put("/fiche_presences/{id_fiche_presences}/")
+def modifier_fiche_presences(
+    request, id_fiche_presences: int, payload: list[PresenceIn]
+):
+    fiche = get_object_or_404(FichePresences, id=id_fiche_presences)
+
+    ids_presences = [presence.id for presence in payload]
+
+    qs = Presence.objects.filter(fiche_presences=fiche, id__in=ids_presences)
+
+    map_presences = {presence.id: presence for presence in qs}
+
+    a_modifier = []
+
+    for entree in payload:
+        presence = map_presences.get(entree.id)
+
+        if not presence:
+            raise Http404(f"Présence {entree.id} not found in fiche {fiche.id}")
+
+        presence.statut = entree.statut
+        presence.full_clean()
+
+        a_modifier.append(presence)
+
+    with transaction.atomic():
+        if a_modifier:
+            Presence.objects.bulk_update(a_modifier, ["statut"])
+
+    return {"success": True}

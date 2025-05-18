@@ -6,26 +6,21 @@ from .models import CoursPrive, Inscription, Session, StatutInscriptionChoices, 
 @receiver([post_save, post_delete], sender=Inscription)
 @receiver(post_save, sender=Session)
 def gerer_statut_session(sender, instance, **kwargs):
-    """
-    Gestion dynamique du statut des sessions :
-    - Fermeture si capacité atteinte ou date passée
-    - Réouverture si places libérées
-    """
     session = instance.session if isinstance(instance, Inscription) else instance
-    
-    conditions_fermeture = (
-        session.inscriptions.count() >= session.capacite_max,
-        session.date_debut <= timezone.now().date()
-    )
-    
-    if any(conditions_fermeture):
+
+    today = timezone.now().date()
+    capacite_pleine = session.inscriptions.count() >= session.capacite_max
+    session_commencee = session.date_debut <= today
+
+    if capacite_pleine or session_commencee:
         nouveau_statut = StatutSessionChoices.FERMÉE
     else:
         nouveau_statut = StatutSessionChoices.OUVERTE
-    
+
     if session.statut != nouveau_statut:
         session.statut = nouveau_statut
         session.save(update_fields=['statut'])
+
 
 
 @receiver(post_save, sender=Session)

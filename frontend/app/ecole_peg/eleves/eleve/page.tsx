@@ -81,14 +81,14 @@ export default function NouveauElevePage() {
         ...donnees,
         sexe,
         date_naissance: date_naissance
-        ? format(date_naissance, "yyyy-MM-dd")
-        : undefined,
+          ? format(date_naissance, "yyyy-MM-dd")
+          : undefined,
         niveau,
         type_permis,
         date_permis: date_permis
-        ? format(date_permis, "yyyy-MM-dd")
-        : undefined,
-         pays_id: id_pays,
+          ? format(date_permis, "yyyy-MM-dd")
+          : undefined,
+        pays_id: id_pays,
       };
 
       console.log(donneesCompletes);
@@ -108,15 +108,15 @@ export default function NouveauElevePage() {
         else router.push(`/ecole_peg/eleves/eleve/${reponse.data.id}/`);
 
       } catch (error: any) {
-  if (axios.isAxiosError(error) && error.response) {
-    console.error("🛑 Erreurs de validation :", error.response.data.erreurs);
-    alert("Erreur de validation : vérifie tous les champs.");
-  } else {
-    console.error("🛑 Erreur inconnue :", error);
-  }
-}
+        if (axios.isAxiosError(error) && error.response) {
+          console.error("🛑 Erreurs de validation :", error.response.data.erreurs);
+          alert("Erreur de validation : vérifie tous les champs.");
+        } else {
+          console.error("🛑 Erreur inconnue :", error);
+        }
+      }
 
-      
+
     },
     [
       a_garant,
@@ -225,32 +225,18 @@ export default function NouveauElevePage() {
 
               <div className="space-y-2">
                 <Label htmlFor="date_naissance">Date de naissance</Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !date_naissance && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date_naissance ? (
-                        format(date_naissance, "yyyy-MM-dd", { locale: fr })
-                      ) : (
-                        <span>Sélectionner une date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={date_naissance}
-                      onSelect={setDateNaissance}
-                      required
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Input
+                  type="date"
+                  id="date_naissance"
+                  name="date_naissance"
+                  required
+                  className="w-full"
+                  value={date_naissance ? format(date_naissance, "yyyy-MM-dd") : ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setDateNaissance(value ? new Date(value) : undefined);
+                  }}
+                />
               </div>
 
               <div className="space-y-2">
@@ -341,35 +327,20 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_permis">
-                  Date d&apos;expiration de permis
-                </Label>
-                <Popover>
-                  <PopoverTrigger asChild>
-                    <Button
-                      variant={"outline"}
-                      className={cn(
-                        "w-full justify-start text-left font-normal",
-                        !date_permis && "text-muted-foreground"
-                      )}
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      {date_permis ? (
-                        format(date_permis, "yyyy-MM-dd", { locale: fr })
-                      ) : (
-                        <span>Sélectionner une date</span>
-                      )}
-                    </Button>
-                  </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0">
-                    <Calendar
-                      mode="single"
-                      selected={date_permis}
-                      onSelect={setDatePermis}
-                    />
-                  </PopoverContent>
-                </Popover>
+                <Label htmlFor="date_permis">Date d&apos;expiration de permis</Label>
+                <Input
+                  type="date"
+                  id="date_permis"
+                  name="date_permis"
+                  className="w-full"
+                  value={date_permis ? format(date_permis, "yyyy-MM-dd") : ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setDatePermis(value ? new Date(value) : undefined);
+                  }}
+                />
               </div>
+
 
               <div className="space-y-2">
                 <Label htmlFor="src_decouverte">Source de découverte</Label>

@@ -114,7 +114,6 @@ def supprimer_facture(request, facture_id: int):
     facture = get_object_or_404(Facture, id=facture_id)
     facture.delete()
 
-
 # ------------------- PAIEMENTS -------------------
 
 @router.post("/paiements/")
@@ -128,7 +127,6 @@ def create_paiement(request, data: PaiementIn):
             methode_paiement=data.methode_paiement,
             facture=facture
         )
-        facture.reset_cache()
         return {"id": paiement.id}
     except ValidationError as e:
         return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
@@ -145,7 +143,7 @@ def delete_paiement(request, paiement_id: int):
     paiement = get_object_or_404(Paiement, id=paiement_id)
     facture = paiement.facture
     paiement.delete()
-    facture.reset_cache()
+
 
 
 @router.put("/paiements/{paiement_id}/")
@@ -157,7 +155,6 @@ def update_paiement(request, paiement_id: int, data: PaiementIn):
             setattr(paiement, attr, value)
         paiement.full_clean()
         paiement.save()
-        paiement.facture.reset_cache()
         return {"id": paiement.id}
     except ValidationError as e:
         return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
@@ -179,10 +176,12 @@ def get_total_paiements_facture(request, facture_id: int):
     total = paiements.aggregate(total_amount=models.Sum('montant'))['total_amount'] or 0
     return total
 
-
 @router.get("/paiements/eleve/{eleve_id}/")
 def get_paiements_eleve(request, eleve_id: int):
-    paiements = Paiement.objects.filter(facture__inscription__eleve_id=eleve_id)
+    paiements = Paiement.objects.filter(
+        models.Q(facture__inscription__eleve_id=eleve_id) |
+        models.Q(facture__eleve_id=eleve_id)
+    ).distinct()
     return [PaiementOut.from_orm(p) for p in paiements]
 
 

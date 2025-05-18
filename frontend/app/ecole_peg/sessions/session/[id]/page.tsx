@@ -36,6 +36,12 @@ interface Session {
   capacite_max: number;
   statut: string;
 }
+interface FichePresence {
+  id: number;
+  mois: string;
+  annee: number;
+}
+
 
 
 export default function SessionPage({
@@ -48,6 +54,24 @@ export default function SessionPage({
   const resolvedParams = use(params);
 
   const [session, setSession] = useState<Session>();
+  const [fiches, setFiches] = useState<FichePresence[]>([]);
+
+  useEffect(() => {
+    async function fetchFiches() {
+      try {
+
+        const response = await axios.get<  FichePresence[] >(
+          `http://localhost:8000/api/cours/session/${resolvedParams.id}/fiches_presences/`
+        );
+        console.log("Fiches reçues:", response.data);
+        setFiches(response.data);
+      } catch (erreur) {
+        console.error("Erreur lors du chargement des fiches :", erreur);
+      }
+    }
+
+    fetchFiches();
+  }, [resolvedParams.id]);
 
 
 
@@ -57,14 +81,14 @@ export default function SessionPage({
         const response = await axios.get(
           `http://localhost:8000/api/cours/sessions/${resolvedParams.id}`
         );
-        setSession(response.data); 
+        setSession(response.data);
         console.log("Session reçue:", response.data);
-// ✅ ici on prend juste les données utiles
+        // ✅ ici on prend juste les données utiles
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
     }
-    
+
 
 
     fetchSession();
@@ -94,6 +118,20 @@ export default function SessionPage({
       console.error("Erreur:", erreur);
     }
   }
+  // Supprimer une fiche de présence
+  async function supprimerFiche(id_fiche: number) {
+    try {
+      await axios.delete(
+        `http://localhost:8000/api/cours/fiche_presences/${id_fiche}/`
+      );
+      // on retire la fiche du state pour mettre à jour l’affichage
+      setFiches((prev) => prev.filter((f) => f.id !== id_fiche));
+    } catch (erreur) {
+      console.error("Erreur suppression fiche :", erreur);
+      alert("Impossible de supprimer la fiche, réessayez.");
+    }
+  }
+
 
   return (
     <div className="flex flex-col gap-4">
@@ -108,62 +146,101 @@ export default function SessionPage({
           {session?.cours__niveau} (Du {session?.date_debut} à {session?.date_fin})
         </h1>
       </div>
-
-      <Tabs defaultValue="details" className="space-y-4">
+      <Tabs defaultValue="details" className="w-full">
         <TabsList>
           <TabsTrigger value="details">Détails</TabsTrigger>
+          <TabsTrigger value="fiche">Fiche de presences</TabsTrigger>
         </TabsList>
 
+
         <TabsContent value="details">
-          <Card>
-            <CardHeader>
-              <CardTitle>Détails</CardTitle>
-              <CardDescription>Détails de la session</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Nom</p>
-                <p>{session?.cours__nom}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Type
-                </p>
-                <p>{session?.type === "I" ? "Intensif" : "Semi-intensif"}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Niveau
-                </p>
-                <p>{session?.cours__niveau}</p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Période
-                </p>
-                <p>
-                  Du {session?.date_debut} à {session?.date_fin}
-                </p>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">
-                  Statut
-                </p>
-                <p>{session?.statut === "O" ? "Ouverte" : "Fermée"}</p>
-              </div>
-            </CardContent>
-            <CardFooter className="justify-between border-t px-6 py-4">
-              <Button variant="outline" onClick={changerStatut}>
-                Changer statut
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => supprimerSession(Number(resolvedParams.id))}
-              >
-                Supprimer
-              </Button>
-            </CardFooter>
-          </Card>
+
+          <CardContent className="space-y-4">
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">Nom</p>
+              <p>{session?.cours__nom}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Type
+              </p>
+              <p>{session?.type === "I" ? "Intensif" : "Semi-intensif"}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Niveau
+              </p>
+              <p>{session?.cours__niveau}</p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Période
+              </p>
+              <p>
+                Du {session?.date_debut} à {session?.date_fin}
+              </p>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-muted-foreground">
+                Statut
+              </p>
+              <p>{session?.statut === "O" ? "Ouverte" : "Fermée"}</p>
+            </div>
+          </CardContent>
+          <CardFooter className="justify-between border-t px-6 py-4">
+            <Button variant="outline" onClick={changerStatut}>
+              Changer statut
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => supprimerSession(Number(resolvedParams.id))}
+            >
+              Supprimer
+            </Button>
+          </CardFooter>
+
+        </TabsContent>
+        <TabsContent value="fiche">
+          <CardTitle>Fiche de présences</CardTitle>
+
+          <CardContent className="space-y-4">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="w-[300px]">ID</TableHead>
+                  <TableHead className="text-center p-2 w-24">Mois</TableHead>
+                  <TableHead className="text-center p-2 w-24">Année</TableHead>
+                  <TableHead className="text-center p-2 w-32">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {fiches.map((fiche) => (
+                  <TableRow key={fiche.id}>
+                    <TableCell className="font-medium">{fiche.id}</TableCell>
+                    <TableCell className="text-center">{fiche.mois}</TableCell>
+                    <TableCell className="text-center">{fiche.annee}</TableCell>
+                    <TableCell className="text-center flex justify-center gap-2">
+                      <Button variant="outline">
+                        <Link href={`${resolvedParams.id}/fiche/${fiche.id}`}> Ouvrir</Link>
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        onClick={() => supprimerFiche(fiche.id)}
+                      >
+                        Supprimer
+                      </Button>
+
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <Button variant="outline">
+              <Link href={`/ecole_peg/sessions/session/${resolvedParams.id}/fiche`}>
+                Ajouter une fiche
+              </Link>
+            </Button>
+          </CardContent>
         </TabsContent>
 
       </Tabs>
