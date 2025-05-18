@@ -4,7 +4,6 @@ import { useEffect, useState, ChangeEvent } from "react";
 import Link from "next/link";
 import axios from "axios";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 
 import { Button } from "@/components/button";
 import {
@@ -48,7 +47,9 @@ interface ReponseEleves {
 }
 
 export default function ElevesPage() {
-  const [dateNaissance, setDateNaissance] = useState<Date | undefined>(undefined);
+  const [dateNaissance, setDateNaissance] = useState<Date | undefined>(
+    undefined
+  );
   const [eleves, setEleves] = useState<Eleve[]>([]);
   const [nombreTotal, setNombreTotal] = useState<number>(0);
   const [valeurRecherche, setValeurRecherche] = useState<string>("");
@@ -112,7 +113,9 @@ export default function ElevesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Élèves</h1>
-          <p className="text-muted-foreground">Gérez les élèves de l&apos;école</p>
+          <p className="text-muted-foreground">
+            Gérez les élèves de l&apos;école
+          </p>
         </div>
         <Button asChild>
           <Link href="/ecole_peg/eleves/eleve">
@@ -125,7 +128,9 @@ export default function ElevesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Liste des élèves</CardTitle>
-          <CardDescription>Tous les élèves inscrits à l&apos;école</CardDescription>
+          <CardDescription>
+            Tous les élèves inscrits à l&apos;école
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="flex flex-col gap-4">
@@ -219,7 +224,9 @@ export default function ElevesPage() {
                 Précédent
               </button>
 
-              <span>Page {numPage} sur {pagesTotales}</span>
+              <span>
+                Page {numPage} sur {pagesTotales}
+              </span>
 
               <button
                 onClick={() => setNumPage((prec) => prec + 1)}
