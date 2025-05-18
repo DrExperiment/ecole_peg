@@ -54,3 +54,6 @@ next-env.d.ts
 
 # IDEs and editors
 .vscode/
+/backend/cours/migrations
+/backend/eleves/migrations
+/backend/factures/migrations
