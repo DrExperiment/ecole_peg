@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, ChangeEvent } from "react";
+import { useEffect, useState, ChangeEvent, useCallback } from "react";
 import Link from "next/link";
 import axios from "axios";
 import { format } from "date-fns";
@@ -48,7 +48,7 @@ interface ReponseEleves {
 
 export default function ElevesPage() {
   const [dateNaissance, setDateNaissance] = useState<Date | undefined>(
-    undefined
+    undefined,
   );
   const [eleves, setEleves] = useState<Eleve[]>([]);
   const [nombreTotal, setNombreTotal] = useState<number>(0);
@@ -58,10 +58,10 @@ export default function ElevesPage() {
   const [statut, setStatut] = useState<string>("actifs");
   const taillePage = 10;
 
-  const fetchEleves = async () => {
+  const fetchEleves = useCallback(async () => {
     setLoading(true);
     try {
-      const params: Record<string, any> = {
+      const params: Record<string, string | number | undefined> = {
         page: numPage,
         taille: taillePage,
       };
@@ -88,11 +88,11 @@ export default function ElevesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [numPage, valeurRecherche, dateNaissance, statut]);
 
   useEffect(() => {
     fetchEleves();
-  }, [numPage, valeurRecherche, dateNaissance, statut]);
+  }, [numPage, valeurRecherche, dateNaissance, statut, fetchEleves]);
 
   useEffect(() => {
     setNumPage(1);
@@ -100,10 +100,6 @@ export default function ElevesPage() {
 
   const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
     setValeurRecherche(e.target.value);
-  };
-
-  const handleDateChange = (date: Date | undefined) => {
-    setDateNaissance(date);
   };
 
   const pagesTotales = Math.ceil(nombreTotal / taillePage);

@@ -19,7 +19,6 @@ import {
 } from "@/components/table";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { fetchApi } from "@/lib/utils";
 import axios from "axios";
 interface Enseignant {
   id: number;
@@ -33,7 +32,9 @@ export default function EnseignantsPage() {
   useEffect(() => {
     async function fetchEnseignants() {
       try {
-        const reponse = await axios.get("http://localhost:8000/api/cours/enseignants/");
+        const reponse = await axios.get(
+          "http://localhost:8000/api/cours/enseignants/",
+        );
 
         setEnseignants(reponse.data.enseignants); // c'est ici que sont vraiment les enseignants
       } catch (erreur) {
@@ -46,10 +47,12 @@ export default function EnseignantsPage() {
 
   async function supprimerEnseignant(id_enseignant: number) {
     try {
-      await axios.delete(`http://localhost:8000/api/cours/enseignant/${id_enseignant}/`);
+      await axios.delete(
+        `http://localhost:8000/api/cours/enseignant/${id_enseignant}/`,
+      );
 
       setEnseignants((enseignantsPrec) =>
-        enseignantsPrec.filter((enseignant) => enseignant.id !== id_enseignant)
+        enseignantsPrec.filter((enseignant) => enseignant.id !== id_enseignant),
       );
     } catch (erreur) {
       console.error("Erreur: ", erreur);

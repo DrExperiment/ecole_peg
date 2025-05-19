@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import * as React from "react"
-import { cva, type VariantProps } from "class-variance-authority"
-import { AlertCircle, CheckCircle, Info, X, AlertTriangle } from "lucide-react"
-import { cn } from "@/lib/utils"
-import { Button } from "@/components/button"
+import * as React from "react";
+import { cva, type VariantProps } from "class-variance-authority";
+import { AlertCircle, CheckCircle, Info, X, AlertTriangle } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/button";
 
 const alertBoxVariants = cva(
   "relative w-full rounded-lg border p-4 [&>svg~*]:pl-7 [&>svg]:absolute [&>svg]:left-4 [&>svg]:top-4 [&>svg]:text-foreground",
@@ -25,50 +25,70 @@ const alertBoxVariants = cva(
       variant: "default",
     },
   },
-)
+);
 
-export interface AlertBoxProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof alertBoxVariants> {
-  title?: string
-  icon?: React.ReactNode
-  dismissible?: boolean
-  onDismiss?: () => void
+export interface AlertBoxProps
+  extends React.HTMLAttributes<HTMLDivElement>,
+    VariantProps<typeof alertBoxVariants> {
+  title?: string;
+  icon?: React.ReactNode;
+  dismissible?: boolean;
+  onDismiss?: () => void;
 }
 
 const AlertBox = React.forwardRef<HTMLDivElement, AlertBoxProps>(
-  ({ className, variant, title, icon, dismissible = false, onDismiss, children, ...props }, ref) => {
-    const [isVisible, setIsVisible] = React.useState(true)
+  (
+    {
+      className,
+      variant,
+      title,
+      icon,
+      dismissible = false,
+      onDismiss,
+      children,
+      ...props
+    },
+    ref,
+  ) => {
+    const [isVisible, setIsVisible] = React.useState(true);
 
     const handleDismiss = () => {
-      setIsVisible(false)
-      onDismiss?.()
-    }
+      setIsVisible(false);
+      onDismiss?.();
+    };
 
     if (!isVisible) {
-      return null
+      return null;
     }
 
     // Sélectionner l'icône par défaut en fonction de la variante
-    let defaultIcon = null
+    let defaultIcon = null;
     switch (variant) {
       case "success":
-        defaultIcon = <CheckCircle className="h-4 w-4" />
-        break
+        defaultIcon = <CheckCircle className="h-4 w-4" />;
+        break;
       case "warning":
-        defaultIcon = <AlertTriangle className="h-4 w-4" />
-        break
+        defaultIcon = <AlertTriangle className="h-4 w-4" />;
+        break;
       case "error":
-        defaultIcon = <AlertCircle className="h-4 w-4" />
-        break
+        defaultIcon = <AlertCircle className="h-4 w-4" />;
+        break;
       case "info":
-        defaultIcon = <Info className="h-4 w-4" />
-        break
+        defaultIcon = <Info className="h-4 w-4" />;
+        break;
     }
 
     return (
-      <div ref={ref} className={cn(alertBoxVariants({ variant }), className)} {...props}>
+      <div
+        ref={ref}
+        className={cn(alertBoxVariants({ variant }), className)}
+        {...props}
+      >
         {icon || defaultIcon}
         <div className="flex flex-col gap-1">
-          {title && <h5 className="font-medium leading-none tracking-tight">{title}</h5>}
+          {title && (
+            <h5 className="font-medium leading-none tracking-tight">{title}</h5>
+          )}
           <div className="text-sm [&_p]:leading-relaxed">{children}</div>
         </div>
         {dismissible && (
@@ -83,9 +103,9 @@ const AlertBox = React.forwardRef<HTMLDivElement, AlertBoxProps>(
           </Button>
         )}
       </div>
-    )
+    );
   },
-)
-AlertBox.displayName = "AlertBox"
+);
+AlertBox.displayName = "AlertBox";
 
-export { AlertBox }
+export { AlertBox };

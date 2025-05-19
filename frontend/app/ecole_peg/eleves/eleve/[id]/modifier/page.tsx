@@ -61,13 +61,19 @@ interface Eleve {
   pays_id: number;
 }
 
-export default function EditElevePage({ params }: { params: Promise<{ id: string }> }) {
+export default function EditElevePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const { id } = use(params);
   const router = useRouter();
 
   const [eleve, setEleve] = useState<Eleve | null>(null);
   const [sexe, setSexe] = useState<"H" | "F">("H");
-  const [dateNaissance, setDateNaissance] = useState<Date | undefined>(undefined);
+  const [dateNaissance, setDateNaissance] = useState<Date | undefined>(
+    undefined,
+  );
   const [niveau, setNiveau] = useState<"A1" | "A2" | "B1" | "B2" | "C1">("A1");
   const [typePermis, setTypePermis] = useState<"E" | "S" | "B" | "P">("P");
   const [datePermis, setDatePermis] = useState<Date | undefined>(undefined);
@@ -77,31 +83,32 @@ export default function EditElevePage({ params }: { params: Promise<{ id: string
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-  async function fetchData() {
-    const [{ data: e }, { data: pays }] = await Promise.all([
-      axios.get<Eleve>(`http://localhost:8000/api/eleves/eleve/${id}/`),
-      axios.get<Pays[]>(`http://localhost:8000/api/eleves/pays/`),
-    ]);
-    
-    setPaysList(pays); // ⬅️ mettre en premier
-    setEleve(e);
-    setSexe(e.sexe);
-    setDateNaissance(new Date(e.date_naissance));
-    setNiveau(e.niveau);
-    setTypePermis(e.type_permis ?? "P");
-    setDatePermis(e.date_permis ? new Date(e.date_permis) : undefined);
-    setIdPays(e.pays_id); // ⬅️ mettre après que paysList est défini
-    console.log("paysList:", paysList);
-      console.log("pays trouvé:", paysList.find((p) => p.id === idPays));
-      
-  }
+    async function fetchData() {
+      const [{ data: e }, { data: pays }] = await Promise.all([
+        axios.get<Eleve>(`http://localhost:8000/api/eleves/eleve/${id}/`),
+        axios.get<Pays[]>(`http://localhost:8000/api/eleves/pays/`),
+      ]);
 
-  fetchData().catch(console.error);
-}, [id]);
+      setPaysList(pays); // ⬅️ mettre en premier
+      setEleve(e);
+      setSexe(e.sexe);
+      setDateNaissance(new Date(e.date_naissance));
+      setNiveau(e.niveau);
+      setTypePermis(e.type_permis ?? "P");
+      setDatePermis(e.date_permis ? new Date(e.date_permis) : undefined);
+      setIdPays(e.pays_id); // ⬅️ mettre après que paysList est défini
+      console.log("paysList:", paysList);
+      console.log(
+        "pays trouvé:",
+        paysList.find((p) => p.id === idPays),
+      );
+    }
 
+    fetchData().catch(console.error);
+  }, [id, idPays, paysList]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setEleve((prev) => (prev ? ({ ...prev, [name]: value } as Eleve) : prev));
@@ -125,7 +132,10 @@ export default function EditElevePage({ params }: { params: Promise<{ id: string
     };
 
     try {
-      await axios.put(`http://localhost:8000/api/eleves/eleves/${id}/`, payload);
+      await axios.put(
+        `http://localhost:8000/api/eleves/eleves/${id}/`,
+        payload,
+      );
       router.push(`/ecole_peg/eleves/eleve/${id}`);
     } catch (err) {
       console.error(err);
@@ -159,17 +169,33 @@ export default function EditElevePage({ params }: { params: Promise<{ id: string
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="nom">Nom</Label>
-                <Input id="nom" name="nom" value={eleve.nom} onChange={handleChange} required />
+                <Input
+                  id="nom"
+                  name="nom"
+                  value={eleve.nom}
+                  onChange={handleChange}
+                  required
+                />
               </div>
               <div>
                 <Label htmlFor="prenom">Prénom</Label>
-                <Input id="prenom" name="prenom" value={eleve.prenom} onChange={handleChange} required />
+                <Input
+                  id="prenom"
+                  name="prenom"
+                  value={eleve.prenom}
+                  onChange={handleChange}
+                  required
+                />
               </div>
             </div>
 
             <div>
               <Label>Sexe</Label>
-              <RadioGroup value={sexe} onValueChange={(v) => setSexe(v as "H" | "F")} className="flex gap-4">
+              <RadioGroup
+                value={sexe}
+                onValueChange={(v) => setSexe(v as "H" | "F")}
+                className="flex gap-4"
+              >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="H" id="sexe-h" />
                   <Label htmlFor="sexe-h">Homme</Label>
@@ -185,50 +211,78 @@ export default function EditElevePage({ params }: { params: Promise<{ id: string
               <Label>Date de naissance</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left", !dateNaissance && "text-muted-foreground")}>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left",
+                      !dateNaissance && "text-muted-foreground",
+                    )}
+                  >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateNaissance ? format(dateNaissance, "dd-MM-yyyy", { locale: fr }) : "Sélectionner une date"}
+                    {dateNaissance
+                      ? format(dateNaissance, "dd-MM-yyyy", { locale: fr })
+                      : "Sélectionner une date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="p-0">
-                  <Calendar mode="single" selected={dateNaissance} onSelect={setDateNaissance} />
+                  <Calendar
+                    mode="single"
+                    selected={dateNaissance}
+                    onSelect={setDateNaissance}
+                  />
                 </PopoverContent>
               </Popover>
             </div>
 
             <div>
               <Label htmlFor="lieu_naissance">Lieu de naissance</Label>
-              <Input id="lieu_naissance" name="lieu_naissance" value={eleve.lieu_naissance} onChange={handleChange} />
+              <Input
+                id="lieu_naissance"
+                name="lieu_naissance"
+                value={eleve.lieu_naissance}
+                onChange={handleChange}
+              />
             </div>
 
             <div>
-                <Label htmlFor="pays">Pays</Label>
-          <Select
-               value={idPays ? String(idPays) : ""}
-               onValueChange={(v) => setIdPays(Number(v))}
-                  >
-          <SelectTrigger>
-  <SelectValue>
-    {paysList.find((p) => p.id === idPays)?.nom || "Sélectionner un pays"}
-  </SelectValue>
-</SelectTrigger>
+              <Label htmlFor="pays">Pays</Label>
+              <Select
+                value={idPays ? String(idPays) : ""}
+                onValueChange={(v) => setIdPays(Number(v))}
+              >
+                <SelectTrigger>
+                  <SelectValue>
+                    {paysList.find((p) => p.id === idPays)?.nom ||
+                      "Sélectionner un pays"}
+                  </SelectValue>
+                </SelectTrigger>
 
-           <SelectContent>
-               {paysList.map((p) => (
-           <SelectItem key={p.id} value={p.id.toString()}>
-              {p.nom}
-           </SelectItem>
-           ))}
-           </SelectContent>
-           </Select>
-           </div>
+                <SelectContent>
+                  {paysList.map((p) => (
+                    <SelectItem key={p.id} value={p.id.toString()}>
+                      {p.nom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <div>
               <Label htmlFor="langue_maternelle">Langue maternelle</Label>
-              <Input id="langue_maternelle" name="langue_maternelle" value={eleve.langue_maternelle ?? ""} onChange={handleChange} />
+              <Input
+                id="langue_maternelle"
+                name="langue_maternelle"
+                value={eleve.langue_maternelle ?? ""}
+                onChange={handleChange}
+              />
             </div>
             <div>
               <Label htmlFor="autres_langues">Autres langues</Label>
-              <Input id="autres_langues" name="autres_langues" value={eleve.autres_langues ?? ""} onChange={handleChange} />
+              <Input
+                id="autres_langues"
+                name="autres_langues"
+                value={eleve.autres_langues ?? ""}
+                onChange={handleChange}
+              />
             </div>
           </CardContent>
         </Card>
@@ -243,38 +297,78 @@ export default function EditElevePage({ params }: { params: Promise<{ id: string
           <CardContent className="space-y-4">
             <div>
               <Label htmlFor="telephone">Téléphone</Label>
-              <Input id="telephone" name="telephone" value={eleve.telephone} onChange={handleChange} required />
+              <Input
+                id="telephone"
+                name="telephone"
+                value={eleve.telephone}
+                onChange={handleChange}
+                required
+              />
             </div>
             <div>
               <Label htmlFor="email">Email</Label>
-              <Input id="email" name="email" type="email" value={eleve.email} onChange={handleChange} required />
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                value={eleve.email}
+                onChange={handleChange}
+                required
+              />
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="rue">Rue</Label>
-                <Input id="rue" name="rue" value={eleve.rue ?? ""} onChange={handleChange} />
+                <Input
+                  id="rue"
+                  name="rue"
+                  value={eleve.rue ?? ""}
+                  onChange={handleChange}
+                />
               </div>
               <div>
                 <Label htmlFor="numero">Numéro</Label>
-                <Input id="numero" name="numero" value={eleve.numero ?? ""} onChange={handleChange} />
+                <Input
+                  id="numero"
+                  name="numero"
+                  value={eleve.numero ?? ""}
+                  onChange={handleChange}
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="npa">NPA</Label>
-                <Input id="npa" name="npa" value={eleve.npa ?? ""} onChange={handleChange} />
+                <Input
+                  id="npa"
+                  name="npa"
+                  value={eleve.npa ?? ""}
+                  onChange={handleChange}
+                />
               </div>
               <div>
                 <Label htmlFor="localite">Localité</Label>
-                <Input id="localite" name="localite" value={eleve.localite ?? ""} onChange={handleChange} />
+                <Input
+                  id="localite"
+                  name="localite"
+                  value={eleve.localite ?? ""}
+                  onChange={handleChange}
+                />
               </div>
             </div>
 
             <div>
-              <Label htmlFor="adresse_facturation">Adresse de facturation</Label>
-              <Textarea id="adresse_facturation" name="adresse_facturation" value={eleve.adresse_facturation ?? ""} onChange={handleChange} />
+              <Label htmlFor="adresse_facturation">
+                Adresse de facturation
+              </Label>
+              <Textarea
+                id="adresse_facturation"
+                name="adresse_facturation"
+                value={eleve.adresse_facturation ?? ""}
+                onChange={handleChange}
+              />
             </div>
           </CardContent>
         </Card>
@@ -286,7 +380,12 @@ export default function EditElevePage({ params }: { params: Promise<{ id: string
           <CardContent className="grid grid-cols-2 gap-4">
             <div>
               <Label>Langue niveau</Label>
-              <Select value={niveau} onValueChange={(v) => setNiveau(v as any)}>
+              <Select
+                value={niveau}
+                onValueChange={(v) =>
+                  setNiveau(v as "A1" | "A2" | "B1" | "B2" | "C1")
+                }
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un niveau" />
                 </SelectTrigger>
@@ -302,7 +401,10 @@ export default function EditElevePage({ params }: { params: Promise<{ id: string
 
             <div>
               <Label>Type de permis</Label>
-              <Select value={typePermis} onValueChange={(v) => setTypePermis(v as any)}>
+              <Select
+                value={typePermis}
+                onValueChange={(v) => setTypePermis(v as "E" | "S" | "B" | "P")}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Sélectionner un type" />
                 </SelectTrigger>
@@ -319,25 +421,47 @@ export default function EditElevePage({ params }: { params: Promise<{ id: string
               <Label>Date de permis</Label>
               <Popover>
                 <PopoverTrigger asChild>
-                  <Button variant="outline" className={cn("w-full justify-start text-left", !datePermis && "text-muted-foreground")}>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left",
+                      !datePermis && "text-muted-foreground",
+                    )}
+                  >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {datePermis ? format(datePermis, "dd-MM-yyyy", { locale: fr }) : "Sélectionner une date"}
+                    {datePermis
+                      ? format(datePermis, "dd-MM-yyyy", { locale: fr })
+                      : "Sélectionner une date"}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="p-0">
-                  <Calendar mode="single" selected={datePermis} onSelect={setDatePermis} />
+                  <Calendar
+                    mode="single"
+                    selected={datePermis}
+                    onSelect={setDatePermis}
+                  />
                 </PopoverContent>
               </Popover>
             </div>
 
             <div className="col-span-2">
               <Label htmlFor="src_decouverte">Source de découverte</Label>
-              <Textarea id="src_decouverte" name="src_decouverte" value={eleve.src_decouverte ?? ""} onChange={handleChange} />
+              <Textarea
+                id="src_decouverte"
+                name="src_decouverte"
+                value={eleve.src_decouverte ?? ""}
+                onChange={handleChange}
+              />
             </div>
 
             <div className="col-span-2">
               <Label htmlFor="commentaires">Commentaires</Label>
-              <Textarea id="commentaires" name="commentaires" value={eleve.commentaires ?? ""} onChange={handleChange} />
+              <Textarea
+                id="commentaires"
+                name="commentaires"
+                value={eleve.commentaires ?? ""}
+                onChange={handleChange}
+              />
             </div>
           </CardContent>
         </Card>

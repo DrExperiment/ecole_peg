@@ -16,7 +16,6 @@ import {
 import { Input } from "@/components/input";
 import { Label } from "@/components/label";
 import { ArrowLeft } from "lucide-react";
-import { fetchApi } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import axios from "axios";
 export default function NouveauEnseignantPage() {
@@ -31,14 +30,17 @@ export default function NouveauEnseignantPage() {
   const onSoumission = useCallback(
     async (donnees: object) => {
       try {
-        await axios.post("http://localhost:8000/api/cours/enseignant/", donnees);
+        await axios.post(
+          "http://localhost:8000/api/cours/enseignant/",
+          donnees,
+        );
 
         router.push("/ecole_peg/enseignants/");
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
     },
-    [router]
+    [router],
   );
 
   return (

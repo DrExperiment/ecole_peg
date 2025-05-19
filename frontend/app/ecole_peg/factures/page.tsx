@@ -47,7 +47,9 @@ export default function FacturesPage() {
   useEffect(() => {
     async function fetchFactures() {
       try {
-        const donnees: Facture[] = (await axios.get("http://localhost:8000/api/factures/factures/")).data;
+        const donnees: Facture[] = (
+          await axios.get("http://localhost:8000/api/factures/factures/")
+        ).data;
         setFactures(donnees);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
@@ -62,8 +64,8 @@ export default function FacturesPage() {
       filtreStatut === "tous"
         ? true
         : filtreStatut === "paye"
-        ? facture.montant_restant === 0
-        : facture.montant_restant !== 0;
+          ? facture.montant_restant === 0
+          : facture.montant_restant !== 0;
 
     const rechercheOK =
       rechercheId.trim() === ""
@@ -99,7 +101,7 @@ export default function FacturesPage() {
                   placeholder="Rechercher par ID de facture..."
                   className="pl-8"
                   value={rechercheId}
-                  onChange={e => setRechercheId(e.target.value)}
+                  onChange={(e) => setRechercheId(e.target.value)}
                 />
               </div>
               <Select value={filtreStatut} onValueChange={setFiltreStatut}>
@@ -131,7 +133,10 @@ export default function FacturesPage() {
                       <TableRow key={facture.id}>
                         <TableCell>
                           {facture.date_emission
-                            ? format(new Date(facture.date_emission), "dd-MM-yyyy")
+                            ? format(
+                                new Date(facture.date_emission),
+                                "dd-MM-yyyy",
+                              )
                             : "-"}
                         </TableCell>
                         <TableCell>

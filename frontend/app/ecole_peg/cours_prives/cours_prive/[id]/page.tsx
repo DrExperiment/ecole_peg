@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/card";
 import { Button } from "@/components/button";
 import { format, parseISO, isValid } from "date-fns";
 import { fr } from "date-fns/locale";
-import Link from "next/link";
-import { ArrowLeft, Edit } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import axios from "axios";
 
 interface CoursPrive {
@@ -48,9 +53,8 @@ export default function CoursPriveDetailsPage() {
     axios
       .get<CoursPrive>(`http://localhost:8000/api/cours/cours_prive/${id}/`)
       .then((res) => setCoursPrive(res.data))
-      .catch((err) => {
+      .catch(() => {
         setCoursPrive(null);
-        // Tu peux ajouter une gestion d'erreur ici si besoin
       });
   }, [id]);
 
@@ -68,14 +72,21 @@ export default function CoursPriveDetailsPage() {
         <Button variant="ghost" size="icon" onClick={() => router.back()}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Détail du cours privé</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Détail du cours privé
+        </h1>
       </div>
 
       <Card>
         <CardHeader>
           <CardTitle>Cours privé n°{coursPrive.id}</CardTitle>
           <CardDescription>
-            {coursPrive.lieu && <>Lieu&nbsp;: <span className="font-semibold">{coursPrive.lieu}</span></>}
+            {coursPrive.lieu && (
+              <>
+                Lieu&nbsp;:{" "}
+                <span className="font-semibold">{coursPrive.lieu}</span>
+              </>
+            )}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -85,11 +96,12 @@ export default function CoursPriveDetailsPage() {
           </div>
           <div>
             <span className="font-medium">Heure&nbsp;:</span>{" "}
-            {formatTime(coursPrive.heure_debut)} – {formatTime(coursPrive.heure_fin)}
+            {formatTime(coursPrive.heure_debut)} –{" "}
+            {formatTime(coursPrive.heure_fin)}
           </div>
           <div>
-            <span className="font-medium">Tarif&nbsp;:</span>{" "}
-            {coursPrive.tarif} CHF
+            <span className="font-medium">Tarif&nbsp;:</span> {coursPrive.tarif}{" "}
+            CHF
           </div>
           <div>
             <span className="font-medium">Professeur&nbsp;:</span>{" "}

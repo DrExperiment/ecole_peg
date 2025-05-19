@@ -1,30 +1,36 @@
 "use client";
-import { useParams } from 'next/navigation'
-import { useEffect, useMemo, useState, use} from "react";
+import { useEffect, useMemo, useState, use } from "react";
 import axios from "axios";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeft,
-  FileText,
-  AlertCircle
-} from "lucide-react";
+import { ArrowLeft, FileText, AlertCircle } from "lucide-react";
 
 import { Button } from "@/components/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/card";
 import { Input } from "@/components/input";
 import { Label } from "@/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/select";
 import {
   Table,
   TableBody,
   TableCell,
   TableHead,
   TableHeader,
-  TableRow
+  TableRow,
 } from "@/components/table";
 import { useToast as importedUseToast } from "@/components/use-toast";
-
 
 interface Eleve {
   id: string;
@@ -50,10 +56,10 @@ function formatCurrency(amount: number): string {
 
 export default function NouveauPaiementPage({
   params,
-}:{
-  params:Promise<{id:string}>
+}: {
+  params: Promise<{ id: string }>;
 }) {
-  const resolvedParams= use(params);
+  const resolvedParams = use(params);
   const router = useRouter();
   const { toast } = importedUseToast();
 
@@ -68,49 +74,56 @@ export default function NouveauPaiementPage({
 
   const factureSelectionnee = useMemo(
     () => factures.find((f) => f.id === factureId) || null,
-    [factureId, factures]
+    [factureId, factures],
   );
 
-  const montantMax = factureSelectionnee ? factureSelectionnee.montant_restant : 0;
+  const montantMax = factureSelectionnee
+    ? factureSelectionnee.montant_restant
+    : 0;
 
   // Fetch étudiants au montage
-useEffect(() => {
-
-  const fetchEleve = async () => {
-    try {
-      const response = await axios.get<Eleve>(`http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`);
-      console.log("Élève récupéré :", eleve);
-      setEleve(response.data);
-      setEtudiantId(response.data.id);
-    } catch (error) {
-      console.error("Erreur lors de la récupération de l'élève :", error);
-    }
-  };
-  fetchEleve();
-}, [resolvedParams.id]);
-   
-  
+  useEffect(() => {
+    const fetchEleve = async () => {
+      try {
+        const response = await axios.get<Eleve>(
+          `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`,
+        );
+        console.log("Élève récupéré :", eleve);
+        setEleve(response.data);
+        setEtudiantId(response.data.id);
+      } catch (error) {
+        console.error("Erreur lors de la récupération de l'élève :", error);
+      }
+    };
+    fetchEleve();
+  }, [eleve, resolvedParams.id]);
 
   // Fetch factures pour l’étudiant sélectionné
   useEffect(() => {
     if (!etudiantId) return;
     const fetchFactures = async () => {
       try {
-        const response = await axios.get<Facture[]>(`http://localhost:8000/api/factures/factures/eleve/${resolvedParams.id}/`);
+        const response = await axios.get<Facture[]>(
+          `http://localhost:8000/api/factures/factures/eleve/${resolvedParams.id}/`,
+        );
         setFactures(response.data);
       } catch (error) {
         console.error("Erreur lors de la récupération des factures :", error);
       }
     };
     fetchFactures();
-  }, [etudiantId]);
+  }, [etudiantId, resolvedParams.id]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     const montantPaiement = parseFloat(montant);
 
-    if (!factureSelectionnee || isNaN(montantPaiement) || montantPaiement <= 0) {
+    if (
+      !factureSelectionnee ||
+      isNaN(montantPaiement) ||
+      montantPaiement <= 0
+    ) {
       toast({
         title: "Erreur",
         description: "Veuillez vérifier la facture et le montant.",
@@ -132,29 +145,29 @@ useEffect(() => {
         etudiant: etudiantId,
       });
     } catch (error) {
-
-        console.error("Erreur lors de l'enregistrement du paiement :", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible d'enregistrer le paiement.",
-          variant: "destructive",
-        });
-      }
+      console.error("Erreur lors de l'enregistrement du paiement :", error);
       toast({
-        title: "Paiement enregistré",
-        description: `Paiement de ${formatCurrency(montantPaiement)} pour ${factureSelectionnee.numero}`,
+        title: "Erreur",
+        description: "Impossible d'enregistrer le paiement.",
+        variant: "destructive",
       });
-  
-      router.push("/dashboard/paiements");
-    };
-  
-    const handledeselectionner = () => {
-      setFactureId("");
-      setMontant("");
-    };
+    }
+    toast({
+      title: "Paiement enregistré",
+      description: `Paiement de ${formatCurrency(montantPaiement)} pour ${
+        factureSelectionnee.numero
+      }`,
+    });
 
-    // Submit paiement (à adapter avec ton backend)
-  
+    router.push("/dashboard/paiements");
+  };
+
+  const handledeselectionner = () => {
+    setFactureId("");
+    setMontant("");
+  };
+
+  // Submit paiement (à adapter avec ton backend)
 
   return (
     <div className="flex flex-col gap-4">
@@ -173,14 +186,15 @@ useEffect(() => {
             <CardTitle>Sélection de la facture</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-              <Label htmlFor="etudiant">Étudiant {eleve ? eleve.nom : "Chargement..."}</Label>
-            <div className="space-y-2">
-            
-             
-            </div>
+            <Label htmlFor="etudiant">
+              Étudiant {eleve ? eleve.nom : "Chargement..."}
+            </Label>
+            <div className="space-y-2"></div>
 
             {resolvedParams && factures.length === 0 && (
-              <p className="text-sm text-muted-foreground">Aucune facture impayée pour cet étudiant.</p>
+              <p className="text-sm text-muted-foreground">
+                Aucune facture impayée pour cet étudiant.
+              </p>
             )}
 
             {factures.length > 0 && (
@@ -204,8 +218,12 @@ useEffect(() => {
                           <TableCell>{f.numero}</TableCell>
                           <TableCell>{f.date_emission}</TableCell>
                           <TableCell>{f.description}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(f.montant_total)}</TableCell>
-                          <TableCell className="text-right">{formatCurrency(f.montant_restant)}</TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(f.montant_total)}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            {formatCurrency(f.montant_restant)}
+                          </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
@@ -216,7 +234,12 @@ useEffect(() => {
                               >
                                 Sélectionner
                               </Button>
-                              <Button type="button" variant="ghost" size="sm" asChild>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                asChild
+                              >
                                 <Link href={`/dashboard/factures/${f.numero}`}>
                                   <FileText className="mr-2 h-4 w-4" />
                                   Voir
@@ -234,15 +257,21 @@ useEffect(() => {
 
             {factureSelectionnee && (
               <div className="mt-6 p-4 border rounded-md bg-muted/50">
-                <h3 className="text-sm font-medium mb-2">Facture sélectionnée: {factureSelectionnee.numero}</h3>
+                <h3 className="text-sm font-medium mb-2">
+                  Facture sélectionnée: {factureSelectionnee.numero}
+                </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <p className="text-sm text-muted-foreground">Description</p>
                     <p>{factureSelectionnee.description}</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground">Montant restant</p>
-                    <p className="font-bold">{formatCurrency(factureSelectionnee.montant_restant)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      Montant restant
+                    </p>
+                    <p className="font-bold">
+                      {formatCurrency(factureSelectionnee.montant_restant)}
+                    </p>
                     <Button
                       type="button"
                       variant="outline"
@@ -299,7 +328,10 @@ useEffect(() => {
               {modePaiement === "Personnel" && (
                 <div className="space-y-2">
                   <Label>Méthode de paiement</Label>
-                  <Select value={methodePaiement} onValueChange={setMethodePaiement}>
+                  <Select
+                    value={methodePaiement}
+                    onValueChange={setMethodePaiement}
+                  >
                     <SelectTrigger>
                       <SelectValue placeholder="Méthode" />
                     </SelectTrigger>
@@ -322,5 +354,3 @@ useEffect(() => {
     </div>
   );
 }
-
-

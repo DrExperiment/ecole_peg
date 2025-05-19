@@ -20,12 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/select";
-import { Calendar } from "@/components/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
-import { CalendarIcon, ArrowLeft, Save } from "lucide-react";
+import { ArrowLeft, Save } from "lucide-react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { Checkbox } from "@/components/checkbox";
@@ -80,7 +76,7 @@ export default function InscrirePage({
       try {
         await axios.post(
           `http://localhost:8000/api/cours/${resolvedParams.id}/inscription/`,
-          donneesCompletes
+          donneesCompletes,
         );
 
         router.push(`/ecole_peg/eleves/eleve/${resolvedParams?.id}/`);
@@ -88,7 +84,7 @@ export default function InscrirePage({
         console.error("Erreur: ", erreur);
       }
     },
-    [date, id_session, preinscription, resolvedParams.id, router]
+    [date, id_session, preinscription, resolvedParams.id, router],
   );
 
   useEffect(() => {
@@ -106,7 +102,7 @@ export default function InscrirePage({
     async function fetchSessions() {
       try {
         const reponse = await axios.get(
-          "http://localhost:8000/api/cours/sessions/"
+          "http://localhost:8000/api/cours/sessions/",
         );
 
         setSessions(reponse.data.sessions);
@@ -167,18 +163,23 @@ export default function InscrirePage({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date_inscription">Date de l'inscription</Label>
+              <Label htmlFor="date_inscription">
+                Date de l&apos;inscription
+              </Label>
               <Input
                 id="date_inscription"
                 type="date"
                 value={date ? format(date, "yyyy-MM-dd") : ""}
-                onChange={e =>
-                  setDate(e.target.value ? new Date(e.target.value + "T00:00:00") : undefined)
+                onChange={(e) =>
+                  setDate(
+                    e.target.value
+                      ? new Date(e.target.value + "T00:00:00")
+                      : undefined,
+                  )
                 }
                 required
               />
             </div>
-
 
             <div className="space-y-2">
               <Label htmlFor="but">But</Label>

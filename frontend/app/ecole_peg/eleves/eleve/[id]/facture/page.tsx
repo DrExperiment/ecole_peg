@@ -81,7 +81,9 @@ export default function NouvelleFacturePage({
   const [eleve, setEleve] = useState<Eleve | undefined>(undefined);
   const [inscriptions, setInscriptions] = useState<Inscription[]>([]);
   const [coursPrives, setCoursPrives] = useState<CoursPrive[]>([]);
-  const [typeFacturation, setTypeFacturation] = useState<"inscription" | "cours_prive">("inscription");
+  const [typeFacturation, setTypeFacturation] = useState<
+    "inscription" | "cours_prive"
+  >("inscription");
   const [idReference, setIdReference] = useState<number>();
 
   const ajouterDetail = () => {
@@ -106,7 +108,7 @@ export default function NouvelleFacturePage({
   const modifierDetail = (
     index: number,
     champ: keyof DetailFacture,
-    valeur: unknown
+    valeur: unknown,
   ) => {
     const nouveauxDetails = [...details_facture];
     nouveauxDetails[index] = {
@@ -125,7 +127,17 @@ export default function NouvelleFacturePage({
   };
 
   const onSoumission = useCallback(async () => {
-    const donneesCompletes: any = {
+    const donneesCompletes: {
+      date_emission: string | undefined;
+      details_facture: {
+        description: string;
+        date_debut_periode: string | undefined;
+        date_fin_periode: string | undefined;
+        montant: number;
+      }[];
+      id_inscription?: number;
+      id_cours_prive?: number;
+    } = {
       date_emission: date ? format(date, "yyyy-MM-dd") : undefined,
       details_facture: details_facture.map((detail) => ({
         description: detail.description,
@@ -138,7 +150,7 @@ export default function NouvelleFacturePage({
         montant: Number.parseFloat(detail.montant),
       })),
     };
-    
+
     // Ajoute la bonne clé selon le type de référence
     if (typeFacturation === "inscription") {
       donneesCompletes.id_inscription = idReference;
@@ -146,17 +158,29 @@ export default function NouvelleFacturePage({
       donneesCompletes.id_cours_prive = idReference;
     }
     try {
-      await axios.post(`http://localhost:8000/api/factures/facture/`, donneesCompletes);
+      await axios.post(
+        `http://localhost:8000/api/factures/facture/`,
+        donneesCompletes,
+      );
       router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
     } catch (erreur) {
       console.error("Erreur: ", erreur);
     }
-  }, [date, details_facture, idReference, typeFacturation, router]);
+  }, [
+    date,
+    details_facture,
+    typeFacturation,
+    idReference,
+    router,
+    resolvedParams.id,
+  ]);
 
   useEffect(() => {
     async function fetchEleve() {
       try {
-        const { data } = await axios.get<Eleve>(`http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`);
+        const { data } = await axios.get<Eleve>(
+          `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`,
+        );
         setEleve(data);
       } catch (e) {
         console.error("Erreur fetchEleve:", e);
@@ -165,7 +189,9 @@ export default function NouvelleFacturePage({
 
     async function fetchInscriptions() {
       try {
-        const { data } = await axios.get(`http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`);
+        const { data } = await axios.get(
+          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`,
+        );
         setInscriptions(data);
       } catch (e) {
         console.error("Erreur fetchInscriptions:", e);
@@ -174,7 +200,9 @@ export default function NouvelleFacturePage({
 
     async function fetchCoursPrives() {
       try {
-        const { data } = await axios.get(`http://localhost:8000/api/cours/eleves/${resolvedParams.id}/cours_prives/`);
+        const { data } = await axios.get(
+          `http://localhost:8000/api/cours/eleves/${resolvedParams.id}/cours_prives/`,
+        );
         setCoursPrives(data);
       } catch (e) {
         console.error("Erreur fetchCoursPrives:", e);
@@ -227,7 +255,10 @@ export default function NouvelleFacturePage({
             {typeFacturation === "inscription" ? (
               <div className="space-y-2">
                 <Label>Inscription</Label>
-                <Select required onValueChange={(val) => setIdReference(Number(val))}>
+                <Select
+                  required
+                  onValueChange={(val) => setIdReference(Number(val))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner l'inscription" />
                   </SelectTrigger>
@@ -247,7 +278,10 @@ export default function NouvelleFacturePage({
             ) : (
               <div className="space-y-2">
                 <Label>Cours Privé</Label>
-                <Select required onValueChange={(val) => setIdReference(Number(val))}>
+                <Select
+                  required
+                  onValueChange={(val) => setIdReference(Number(val))}
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un cours privé" />
                   </SelectTrigger>
@@ -255,7 +289,8 @@ export default function NouvelleFacturePage({
                     {coursPrives.map((c) => (
                       <SelectItem key={c.id} value={c.id.toString()}>
                         {format(c.date_cours_prive, "dd-MM-yyyy")} (
-                        {c.enseignant__nom} {c.enseignant__prenom} - {c.tarif} CHF)
+                        {c.enseignant__nom} {c.enseignant__prenom} - {c.tarif}{" "}
+                        CHF)
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -269,10 +304,17 @@ export default function NouvelleFacturePage({
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className={cn("w-full justify-start text-left font-normal", !date && "text-muted-foreground")}
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground",
+                    )}
                   >
                     <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? format(date, "dd-MM-yyyy", { locale: fr }) : <span>Sélectionner une date</span>}
+                    {date ? (
+                      format(date, "dd-MM-yyyy", { locale: fr })
+                    ) : (
+                      <span>Sélectionner une date</span>
+                    )}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0">
@@ -286,14 +328,22 @@ export default function NouvelleFacturePage({
         <Card className="mt-4">
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Détails de la facture</CardTitle>
-            <Button type="button" variant="outline" size="sm" onClick={ajouterDetail}>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={ajouterDetail}
+            >
               <Plus className="mr-2 h-4 w-4" />
               Ajouter un détail
             </Button>
           </CardHeader>
           <CardContent className="space-y-6">
             {details_facture.map((detail, index) => (
-              <div key={index} className="space-y-4 p-4 border rounded-md relative">
+              <div
+                key={index}
+                className="space-y-4 p-4 border rounded-md relative"
+              >
                 {details_facture.length > 1 && (
                   <Button
                     type="button"
@@ -310,7 +360,9 @@ export default function NouvelleFacturePage({
                   <Label>Description</Label>
                   <Textarea
                     value={detail.description}
-                    onChange={(e) => modifierDetail(index, "description", e.target.value)}
+                    onChange={(e) =>
+                      modifierDetail(index, "description", e.target.value)
+                    }
                     required
                   />
                 </div>
@@ -320,10 +372,19 @@ export default function NouvelleFacturePage({
                     <Label>Période du</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !detail.date_debut_periode && "text-muted-foreground")}>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !detail.date_debut_periode &&
+                              "text-muted-foreground",
+                          )}
+                        >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {detail.date_debut_periode
-                            ? format(detail.date_debut_periode, "dd-MM-yyyy", { locale: fr })
+                            ? format(detail.date_debut_periode, "dd-MM-yyyy", {
+                                locale: fr,
+                              })
                             : "Sélectionner une date"}
                         </Button>
                       </PopoverTrigger>
@@ -331,7 +392,9 @@ export default function NouvelleFacturePage({
                         <Calendar
                           mode="single"
                           selected={detail.date_debut_periode}
-                          onSelect={(date) => modifierDetail(index, "date_debut_periode", date)}
+                          onSelect={(date) =>
+                            modifierDetail(index, "date_debut_periode", date)
+                          }
                         />
                       </PopoverContent>
                     </Popover>
@@ -341,10 +404,18 @@ export default function NouvelleFacturePage({
                     <Label>au</Label>
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" className={cn("w-full justify-start text-left font-normal", !detail.date_fin_periode && "text-muted-foreground")}>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !detail.date_fin_periode && "text-muted-foreground",
+                          )}
+                        >
                           <CalendarIcon className="mr-2 h-4 w-4" />
                           {detail.date_fin_periode
-                            ? format(detail.date_fin_periode, "dd-MM-yyyy", { locale: fr })
+                            ? format(detail.date_fin_periode, "dd-MM-yyyy", {
+                                locale: fr,
+                              })
                             : "Sélectionner une date"}
                         </Button>
                       </PopoverTrigger>
@@ -352,7 +423,9 @@ export default function NouvelleFacturePage({
                         <Calendar
                           mode="single"
                           selected={detail.date_fin_periode}
-                          onSelect={(date) => modifierDetail(index, "date_fin_periode", date)}
+                          onSelect={(date) =>
+                            modifierDetail(index, "date_fin_periode", date)
+                          }
                         />
                       </PopoverContent>
                     </Popover>
@@ -366,7 +439,9 @@ export default function NouvelleFacturePage({
                     min="0"
                     step="0.01"
                     value={detail.montant}
-                    onChange={(e) => modifierDetail(index, "montant", e.target.value)}
+                    onChange={(e) =>
+                      modifierDetail(index, "montant", e.target.value)
+                    }
                     required
                   />
                 </div>

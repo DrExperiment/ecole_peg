@@ -54,10 +54,10 @@ export default function TableauBordPage() {
 
     Promise.all([
       axios.get<StatsTableauBord>(
-        "http://localhost:8000/api/eleves/statistiques/dashboard/"
+        "http://localhost:8000/api/eleves/statistiques/dashboard/",
       ),
       axios.get<Anniversaire[]>(
-        "http://localhost:8000/api/eleves/anniversaires/"
+        "http://localhost:8000/api/eleves/anniversaires/",
       ),
     ])
       .then(([resStats, resAnniv]) => {
@@ -76,7 +76,7 @@ export default function TableauBordPage() {
         setErreur(erreur instanceof Error ? erreur.message : "Erreur réseau");
 
         setErreurAnniv(
-          erreur instanceof Error ? erreur.message : "Erreur réseau"
+          erreur instanceof Error ? erreur.message : "Erreur réseau",
         );
       })
       .finally(() => {

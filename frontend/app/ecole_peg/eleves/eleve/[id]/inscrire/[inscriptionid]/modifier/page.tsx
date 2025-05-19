@@ -22,8 +22,6 @@ import {
 } from "@/components/select";
 import { ArrowLeft, Save } from "lucide-react";
 import { format, parseISO } from "date-fns";
-import { fr } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 import axios from "axios";
 import { useForm } from "react-hook-form";
 import { Checkbox } from "@/components/checkbox";
@@ -52,7 +50,12 @@ export default function EditInscriptionPage() {
   const id = params.id as string;
   const inscriptionid = params.inscriptionid as string;
 
-  const { register, setValue, handleSubmit, formState: { isSubmitting } } = useForm();
+  const {
+    register,
+    setValue,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm();
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [date, setDate] = useState<Date | undefined>();
@@ -64,8 +67,12 @@ export default function EditInscriptionPage() {
     async function fetchData() {
       try {
         const [inscRes, sessionsRes] = await Promise.all([
-          axios.get<Inscription>(`http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionid}/`),
-          axios.get<{ sessions: Session[] }>(`http://localhost:8000/api/cours/sessions/`),
+          axios.get<Inscription>(
+            `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionid}/`,
+          ),
+          axios.get<{ sessions: Session[] }>(
+            `http://localhost:8000/api/cours/sessions/`,
+          ),
         ]);
         const insc = inscRes.data;
         setSessions(sessionsRes.data.sessions);
@@ -73,7 +80,9 @@ export default function EditInscriptionPage() {
         setIdSession(insc.session);
         setValue("but", insc.but);
         setValue("frais_inscription", insc.frais_inscription);
-        setDate(insc.date_inscription ? parseISO(insc.date_inscription) : undefined);
+        setDate(
+          insc.date_inscription ? parseISO(insc.date_inscription) : undefined,
+        );
         setPreinscription(insc.preinscription ?? false);
       } catch (err) {
         console.error(err);
@@ -82,7 +91,7 @@ export default function EditInscriptionPage() {
     fetchData();
   }, [id, inscriptionid, setValue]);
 
-  const onSoumission = async (donnees: any) => {
+  const onSoumission = async (donnees: object) => {
     const donneesCompletes = {
       ...donnees,
       date: date ? format(date, "yyyy-MM-dd") : undefined,
@@ -92,7 +101,7 @@ export default function EditInscriptionPage() {
     try {
       await axios.put(
         `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionid}/`,
-        donneesCompletes
+        donneesCompletes,
       );
       router.push(`/ecole_peg/eleves/eleve/${id}/`);
     } catch (erreur) {
@@ -132,7 +141,9 @@ export default function EditInscriptionPage() {
                   {sessions.map((session) => (
                     <SelectItem key={session.id} value={String(session.id)}>
                       {session.cours__nom}{" "}
-                      {session.cours__type === "I" ? "Intensif" : "Semi-intensif"}{" "}
+                      {session.cours__type === "I"
+                        ? "Intensif"
+                        : "Semi-intensif"}{" "}
                       {session.cours__niveau} (Du{" "}
                       {format(new Date(session.date_debut), "yyyy-MM-dd")} à{" "}
                       {format(new Date(session.date_fin), "yyyy-MM-dd")})
@@ -143,12 +154,16 @@ export default function EditInscriptionPage() {
             </div>
             {/* Champ de date remplacé ici */}
             <div className="space-y-2">
-              <Label htmlFor="date_inscription">Date de l&#39;inscription</Label>
+              <Label htmlFor="date_inscription">
+                Date de l&#39;inscription
+              </Label>
               <Input
                 id="date_inscription"
                 type="date"
                 value={date ? format(date, "yyyy-MM-dd") : ""}
-                onChange={e => setDate(e.target.value ? parseISO(e.target.value) : undefined)}
+                onChange={(e) =>
+                  setDate(e.target.value ? parseISO(e.target.value) : undefined)
+                }
               />
             </div>
             <div className="space-y-2">
@@ -160,7 +175,9 @@ export default function EditInscriptionPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="frais_inscription">Frais de l&#39;inscription</Label>
+              <Label htmlFor="frais_inscription">
+                Frais de l&#39;inscription
+              </Label>
               <Input
                 id="frais_inscription"
                 type="number"
@@ -175,7 +192,9 @@ export default function EditInscriptionPage() {
                 <Checkbox
                   id="preinscription"
                   checked={preinscription}
-                  onCheckedChange={(checked) => setPreinscription(checked as boolean)}
+                  onCheckedChange={(checked) =>
+                    setPreinscription(checked as boolean)
+                  }
                 />
                 <Label htmlFor="preinscription">Préinscription</Label>
               </div>

@@ -15,7 +15,9 @@ export default function Login() {
   const { setAuthentifie } = useContext(AuthContext);
 
   useEffect(() => {
-    est_authentifie().then((ok) => ok && router.replace("/ecole_peg/tableau_bord/"));
+    est_authentifie().then(
+      (ok) => ok && router.replace("/ecole_peg/tableau_bord/"),
+    );
   }, [router]);
 
   async function handleSoumission(e: FormEvent) {
@@ -50,7 +52,9 @@ export default function Login() {
               className="appearance-none relative block w-full px-3 py-2 border rounded-md focus:outline-none focus:z-10 sm:text-sm"
             />
           </div>
-          {erreur && <p className="text-red-500 text-sm text-center">{erreur}</p>}
+          {erreur && (
+            <p className="text-red-500 text-sm text-center">{erreur}</p>
+          )}
           <div>
             <Button
               type="submit"

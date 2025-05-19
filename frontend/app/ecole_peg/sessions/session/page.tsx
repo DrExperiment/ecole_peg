@@ -57,7 +57,9 @@ export default function NouvelleSessionPage() {
   const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
   const [id_enseignant, setIdEnseignant] = useState<number>();
   const [periode_journee, setPeriodeJournee] = useState<"M" | "S">("M");
-  const [seances_mois, setSeancesMois] = useState<number | undefined>(undefined);
+  const [seances_mois, setSeancesMois] = useState<number | undefined>(
+    undefined,
+  );
 
   const onSoumission = useCallback(
     async (donnees: object) => {
@@ -72,7 +74,10 @@ export default function NouvelleSessionPage() {
       };
 
       try {
-        await axios.post("http://localhost:8000/api/cours/session/", donneesCompletes);
+        await axios.post(
+          "http://localhost:8000/api/cours/session/",
+          donneesCompletes,
+        );
         router.push("/ecole_peg/sessions/");
       } catch (erreur) {
         if (axios.isAxiosError(erreur)) {
@@ -82,13 +87,23 @@ export default function NouvelleSessionPage() {
         }
       }
     },
-    [date_debut, date_fin, id_cours, id_enseignant, seances_mois, periode_journee, router]
+    [
+      date_debut,
+      date_fin,
+      id_cours,
+      id_enseignant,
+      seances_mois,
+      periode_journee,
+      router,
+    ],
   );
 
   useEffect(() => {
     async function fetchCours() {
       try {
-        const reponse = await axios.get("http://localhost:8000/api/cours/cours/");
+        const reponse = await axios.get(
+          "http://localhost:8000/api/cours/cours/",
+        );
         setCours(reponse.data);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
@@ -97,7 +112,9 @@ export default function NouvelleSessionPage() {
 
     async function fetchEnseignants() {
       try {
-        const reponse = await axios.get("http://localhost:8000/api/cours/enseignants/");
+        const reponse = await axios.get(
+          "http://localhost:8000/api/cours/enseignants/",
+        );
         setEnseignants(reponse.data.enseignants);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
@@ -109,7 +126,10 @@ export default function NouvelleSessionPage() {
   }, []);
 
   // Pour convertir l'input type="date" en Date JS
-  function parseDateInput(e: React.ChangeEvent<HTMLInputElement>, setter: (d: Date | undefined) => void) {
+  function parseDateInput(
+    e: React.ChangeEvent<HTMLInputElement>,
+    setter: (d: Date | undefined) => void,
+  ) {
     setter(e.target.value ? new Date(e.target.value) : undefined);
   }
 
@@ -143,7 +163,9 @@ export default function NouvelleSessionPage() {
                 <SelectContent>
                   {cours.map((cours) => (
                     <SelectItem key={cours.id} value={cours.id.toString()}>
-                      {cours.nom} {cours.type === "I" ? "intensif" : "semi-intensif"} {cours.niveau}
+                      {cours.nom}{" "}
+                      {cours.type === "I" ? "intensif" : "semi-intensif"}{" "}
+                      {cours.niveau}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -168,7 +190,7 @@ export default function NouvelleSessionPage() {
                 id="date_debut"
                 type="date"
                 required
-                onChange={e => parseDateInput(e, setDateDebut)}
+                onChange={(e) => parseDateInput(e, setDateDebut)}
               />
             </div>
             <div className="space-y-2">
@@ -177,7 +199,7 @@ export default function NouvelleSessionPage() {
                 id="date_fin"
                 type="date"
                 required
-                onChange={e => parseDateInput(e, setDateFin)}
+                onChange={(e) => parseDateInput(e, setDateFin)}
               />
             </div>
             <div className="space-y-2">

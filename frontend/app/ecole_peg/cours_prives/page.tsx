@@ -14,16 +14,15 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/card";
-import { Input } from "@/components/input";
+import { Plus } from "lucide-react";
 import {
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-} from "@/components/popover";
-import { Calendar } from "@/components/calendar";
-import { Search, Calendar as CalendarIcon, Plus } from "lucide-react";
-import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/table";
-import { useToast } from "@/components/use-toast";
+  Table,
+  TableHeader,
+  TableRow,
+  TableHead,
+  TableBody,
+  TableCell,
+} from "@/components/table";
 
 // votre interface
 interface CoursPrive {
@@ -39,23 +38,21 @@ interface CoursPrive {
   enseignant__prenom: string;
 
   // simple tableau de string
-  eleves: string[]
+  eleves: string[];
 }
-  
 
 export default function CoursPrivesPage() {
-  const [coursPrives, setCoursPrives] = useState<CoursPrive[]>([]);
   const [filteredCours, setFilteredCours] = useState<CoursPrive[]>([]);
-  const [date, setDate] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
     axios
-  .get<{ cours_prives: CoursPrive[] }>("http://localhost:8000/api/cours/cours_prive/")
-  .then((res) => {
-    const cours = res.data.cours_prives;
-    setCoursPrives(cours);
-    setFilteredCours(cours);
-  })
+      .get<{ cours_prives: CoursPrive[] }>(
+        "http://localhost:8000/api/cours/cours_prive/",
+      )
+      .then((res) => {
+        const cours = res.data.cours_prives;
+        setFilteredCours(cours);
+      })
 
       .catch(console.error);
   }, []);
@@ -77,27 +74,12 @@ export default function CoursPrivesPage() {
     return format(parsed, "HH:mm");
   };
 
-  const handleSearch = () => {
-    if (!date) {
-      setFilteredCours(coursPrives);
-      return;
-    }
-    setFilteredCours(
-      coursPrives.filter((cours) => {
-        const coursDate = new Date(cours.date_cours_prive);
-        return coursDate.toDateString() === date.toDateString();
-      })
-    );
-  };
-
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Cours Privés</h1>
-          <p className="text-muted-foreground">
-            Gérez les cours privés 
-          </p>
+          <p className="text-muted-foreground">Gérez les cours privés</p>
         </div>
         <Button asChild>
           <Link href="/ecole_peg/cours_prives/cours_prive">
@@ -113,45 +95,45 @@ export default function CoursPrivesPage() {
           <CardDescription>Tous les cours planifiés et passés</CardDescription>
         </CardHeader>
         <CardContent>
-         
-             
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Horaire</TableHead>
-                    <TableHead>Étudiant</TableHead>
-                    <TableHead>Professeur</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Horaire</TableHead>
+                  <TableHead>Étudiant</TableHead>
+                  <TableHead>Professeur</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredCours.map((cours) => (
+                  <TableRow key={cours.id}>
+                    <TableCell>{formatDate(cours.date_cours_prive)}</TableCell>
+                    <TableCell>
+                      {formatTime(cours.heure_debut)} –{" "}
+                      {formatTime(cours.heure_fin)}
+                    </TableCell>
+                    <TableCell className="font-medium">
+                      {cours.eleves.join(", ")}
+                    </TableCell>
+                    <TableCell>
+                      {cours.enseignant__nom} {cours.enseignant__prenom}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link
+                          href={`/ecole_peg/cours_prives/cours_prive/${cours.id}`}
+                        >
+                          Détails
+                        </Link>
+                      </Button>
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {filteredCours.map((cours) => (
-                    <TableRow key={cours.id}>
-                      <TableCell>{formatDate(cours.date_cours_prive)}</TableCell>
-                      <TableCell>
-                        {formatTime(cours.heure_debut)} –{" "}
-                        {formatTime(cours.heure_fin)}
-                      </TableCell>
-                      <TableCell className="font-medium">
-                        {cours.eleves.join(", ")}
-                      </TableCell>
-                      <TableCell>
-                        {cours.enseignant__nom} {cours.enseignant__prenom}
-                      </TableCell>
-                      <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/ecole_peg/cours_prives/cours_prive/${cours.id}`}>
-                            Détails
-                          </Link>
-                        </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </div>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </CardContent>
       </Card>
     </div>

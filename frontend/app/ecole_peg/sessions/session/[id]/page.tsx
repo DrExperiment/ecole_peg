@@ -2,14 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/card";
+import { CardContent, CardFooter, CardTitle } from "@/components/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/tabs";
 import {
   Table,
@@ -21,7 +14,6 @@ import {
 } from "@/components/table";
 import { ArrowLeft } from "lucide-react";
 import React, { use, useEffect, useState } from "react";
-import { fetchApi } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 interface Session {
@@ -42,8 +34,6 @@ interface FichePresence {
   annee: number;
 }
 
-
-
 export default function SessionPage({
   params,
 }: {
@@ -59,9 +49,8 @@ export default function SessionPage({
   useEffect(() => {
     async function fetchFiches() {
       try {
-
-        const response = await axios.get<  FichePresence[] >(
-          `http://localhost:8000/api/cours/session/${resolvedParams.id}/fiches_presences/`
+        const response = await axios.get<FichePresence[]>(
+          `http://localhost:8000/api/cours/session/${resolvedParams.id}/fiches_presences/`,
         );
         console.log("Fiches reçues:", response.data);
         setFiches(response.data);
@@ -73,13 +62,11 @@ export default function SessionPage({
     fetchFiches();
   }, [resolvedParams.id]);
 
-
-
   useEffect(() => {
     async function fetchSession() {
       try {
         const response = await axios.get(
-          `http://localhost:8000/api/cours/sessions/${resolvedParams.id}`
+          `http://localhost:8000/api/cours/sessions/${resolvedParams.id}`,
         );
         setSession(response.data);
         console.log("Session reçue:", response.data);
@@ -89,17 +76,16 @@ export default function SessionPage({
       }
     }
 
-
-
     fetchSession();
-
   }, [resolvedParams.id]);
 
   async function supprimerSession(id_session: number | undefined) {
     if (!id_session) return;
 
     try {
-      await axios.delete(`http://localhost:8000/api/cours/sessions/${id_session}/`);
+      await axios.delete(
+        `http://localhost:8000/api/cours/sessions/${id_session}/`,
+      );
 
       router.push("/ecole_peg/sessions");
     } catch (erreur) {
@@ -111,7 +97,7 @@ export default function SessionPage({
   async function supprimerFiche(id_fiche: number) {
     try {
       await axios.delete(
-        `http://localhost:8000/api/cours/fiche_presences/${id_fiche}/`
+        `http://localhost:8000/api/cours/fiche_presences/${id_fiche}/`,
       );
       // on retire la fiche du state pour mettre à jour l’affichage
       setFiches((prev) => prev.filter((f) => f.id !== id_fiche));
@@ -120,7 +106,6 @@ export default function SessionPage({
       alert("Impossible de supprimer la fiche, réessayez.");
     }
   }
-
 
   return (
     <div className="flex flex-col gap-4">
@@ -131,8 +116,10 @@ export default function SessionPage({
           </Link>
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
-          {session?.cours__nom} {session?.type === "I" ? "Intensif" : "Semi-intensif"}{" "}
-          {session?.cours__niveau} (Du {session?.date_debut} à {session?.date_fin})
+          {session?.cours__nom}{" "}
+          {session?.type === "I" ? "Intensif" : "Semi-intensif"}{" "}
+          {session?.cours__niveau} (Du {session?.date_debut} à{" "}
+          {session?.date_fin})
         </h1>
       </div>
       <Tabs defaultValue="details" className="w-full">
@@ -141,18 +128,14 @@ export default function SessionPage({
           <TabsTrigger value="fiche">Fiche de presences</TabsTrigger>
         </TabsList>
 
-
         <TabsContent value="details">
-
           <CardContent className="space-y-4">
             <div>
               <p className="text-sm font-medium text-muted-foreground">Nom</p>
               <p>{session?.cours__nom}</p>
             </div>
             <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Type
-              </p>
+              <p className="text-sm font-medium text-muted-foreground">Type</p>
               <p>{session?.type === "I" ? "Intensif" : "Semi-intensif"}</p>
             </div>
             <div>
@@ -177,7 +160,6 @@ export default function SessionPage({
             </div>
           </CardContent>
           <CardFooter className="justify-between border-t px-6 py-4">
-          
             <Button
               variant="destructive"
               onClick={() => supprimerSession(Number(resolvedParams.id))}
@@ -185,7 +167,6 @@ export default function SessionPage({
               Supprimer
             </Button>
           </CardFooter>
-
         </TabsContent>
         <TabsContent value="fiche">
           <CardTitle>Fiche de présences</CardTitle>
@@ -197,7 +178,9 @@ export default function SessionPage({
                   <TableHead className="w-[300px]">ID</TableHead>
                   <TableHead className="text-center p-2 w-24">Mois</TableHead>
                   <TableHead className="text-center p-2 w-24">Année</TableHead>
-                  <TableHead className="text-center p-2 w-32">Actions</TableHead>
+                  <TableHead className="text-center p-2 w-32">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -208,7 +191,10 @@ export default function SessionPage({
                     <TableCell className="text-center">{fiche.annee}</TableCell>
                     <TableCell className="text-center flex justify-center gap-2">
                       <Button variant="outline">
-                        <Link href={`${resolvedParams.id}/fiche/${fiche.id}`}> Ouvrir</Link>
+                        <Link href={`${resolvedParams.id}/fiche/${fiche.id}`}>
+                          {" "}
+                          Ouvrir
+                        </Link>
                       </Button>
                       <Button
                         variant="destructive"
@@ -216,20 +202,20 @@ export default function SessionPage({
                       >
                         Supprimer
                       </Button>
-
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
             <Button variant="outline">
-              <Link href={`/ecole_peg/sessions/session/${resolvedParams.id}/fiche`}>
+              <Link
+                href={`/ecole_peg/sessions/session/${resolvedParams.id}/fiche`}
+              >
                 Ajouter une fiche
               </Link>
             </Button>
           </CardContent>
         </TabsContent>
-
       </Tabs>
     </div>
   );

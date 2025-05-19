@@ -11,18 +11,14 @@ import {
   CardDescription,
 } from "@/components/card";
 import { Input } from "@/components/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/select";
 import axios from "axios";
-
-interface Cours {
-  id: number;
-  nom: string;
-  type: string;
-  niveau: string;
-  heures_par_semaine: number;
-  duree_semaines: number;
-  tarif: number;
-}
 
 interface CoursIn {
   nom: string;
@@ -45,19 +41,31 @@ export default function ModifierCoursPage() {
     // Récupérer le cours à modifier
     async function fetchCours() {
       try {
-        const res = await axios.get(`http://localhost:8000/api/cours/cours/${id}/`);
+        const res = await axios.get(
+          `http://localhost:8000/api/cours/cours/${id}/`,
+        );
         setCours(res.data);
-      } catch (err) {
+      } catch {
         setMessage("Erreur lors du chargement du cours.");
       }
     }
     if (id) fetchCours();
   }, [id]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
+  ) => {
     if (!cours) return;
     const { name, value } = e.target;
-    setCours({ ...cours, [name]: name === "heures_par_semaine" || name === "duree_semaines" || name === "tarif" ? Number(value) : value });
+    setCours({
+      ...cours,
+      [name]:
+        name === "heures_par_semaine" ||
+        name === "duree_semaines" ||
+        name === "tarif"
+          ? Number(value)
+          : value,
+    });
   };
 
   const handleSelectChange = (name: string, value: string) => {
@@ -72,8 +80,8 @@ export default function ModifierCoursPage() {
       await axios.put(`http://localhost:8000/api/cours/cours/${id}/`, cours);
       setMessage("Cours modifié avec succès !");
       setTimeout(() => router.push("/ecole_peg/cours"), 1200);
-    } catch (err: any) {
-      if (err.response && err.response.data && err.response.data.erreurs) {
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err) && err.response?.data?.erreurs) {
         setMessage("Erreurs : " + JSON.stringify(err.response.data.erreurs));
       } else {
         setMessage("Erreur lors de la modification.");
@@ -106,11 +114,19 @@ export default function ModifierCoursPage() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div>
               <label className="font-medium">Nom</label>
-              <Input name="nom" value={cours.nom} onChange={handleChange} required />
+              <Input
+                name="nom"
+                value={cours.nom}
+                onChange={handleChange}
+                required
+              />
             </div>
             <div>
               <label className="font-medium">Type</label>
-              <Select value={cours.type} onValueChange={val => handleSelectChange("type", val)}>
+              <Select
+                value={cours.type}
+                onValueChange={(val) => handleSelectChange("type", val)}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
@@ -122,7 +138,10 @@ export default function ModifierCoursPage() {
             </div>
             <div>
               <label className="font-medium">Niveau</label>
-              <Select value={cours.niveau} onValueChange={val => handleSelectChange("niveau", val)}>
+              <Select
+                value={cours.niveau}
+                onValueChange={(val) => handleSelectChange("niveau", val)}
+              >
                 <SelectTrigger className="w-full">
                   <SelectValue placeholder="Niveau" />
                 </SelectTrigger>
@@ -169,11 +188,17 @@ export default function ModifierCoursPage() {
               />
             </div>
             {message && (
-              <div className="text-center text-sm text-red-600 mt-2">{message}</div>
+              <div className="text-center text-sm text-red-600 mt-2">
+                {message}
+              </div>
             )}
             <div className="flex justify-end gap-2 mt-2">
               <Button type="submit">Enregistrer</Button>
-              <Button type="button" variant="outline" onClick={() => router.back()}>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => router.back()}
+              >
                 Annuler
               </Button>
             </div>

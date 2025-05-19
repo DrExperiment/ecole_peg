@@ -5,9 +5,12 @@ export async function login(mot_de_passe: string) {
     await axios.post(
       "http://localhost:8000/api/auth/login/",
       { mot_de_passe },
-      { withCredentials: true, headers: { "Content-Type": "application/json" } }
+      {
+        withCredentials: true,
+        headers: { "Content-Type": "application/json" },
+      },
     );
-  } catch (erreur) {
+  } catch {
     throw new Error("La connexion a échoué");
   }
 }
@@ -16,19 +19,18 @@ export async function logout() {
   await axios.post(
     "http://localhost:8000/api/auth/logout/",
     {},
-    { withCredentials: true }
+    { withCredentials: true },
   );
 }
 
 export async function est_authentifie() {
   try {
-    await axios.get(
-      "http://localhost:8000/api/auth/est_authentifie/",
-      { withCredentials: true }
-    );
+    await axios.get("http://localhost:8000/api/auth/est_authentifie/", {
+      withCredentials: true,
+    });
 
     return true;
-  } catch (erreur) {
+  } catch {
     return false;
   }
 }

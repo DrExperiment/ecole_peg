@@ -7,16 +7,7 @@ import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/button";
 import { logout } from "@/lib/auth";
-import {
-  BookOpen,
-  CreditCard,
-  FileText,
-  Home,
-  User,
-  Users,
-  X,
-  LogOut,
-} from "lucide-react";
+import { BookOpen, FileText, Home, User, Users, X, LogOut } from "lucide-react";
 import { useContext } from "react";
 import { AuthContext } from "@/contexts/AuthContext";
 
@@ -46,7 +37,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div
         className={cn(
           "fixed inset-0 z-40 bg-background/80 backdrop-blur-sm",
-          isOpen ? "block" : "hidden"
+          isOpen ? "block" : "hidden",
         )}
         onClick={onClose}
       />
@@ -54,7 +45,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
       <div
         className={cn(
           "fixed inset-y-0 left-0 z-50 w-1/4 lg:w-1/5 border-r bg-background transition-transform duration-300 ease-in-out",
-          isOpen ? "translate-x-0" : "-translate-x-full"
+          isOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex h-16 items-center justify-between border-b px-4">

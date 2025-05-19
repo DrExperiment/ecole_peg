@@ -1,8 +1,8 @@
-'use client';
+"use client";
 
 import React, { use, useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 import { Button } from "@/components/button";
 import { Card, CardContent } from "@/components/card";
@@ -17,18 +17,18 @@ import {
 } from "@/components/select";
 
 const months = [
-  { value: '01', label: 'Janvier' },
-  { value: '02', label: 'Février' },
-  { value: '03', label: 'Mars' },
-  { value: '04', label: 'Avril' },
-  { value: '05', label: 'Mai' },
-  { value: '06', label: 'Juin' },
-  { value: '07', label: 'Juillet' },
-  { value: '08', label: 'Août' },
-  { value: '09', label: 'Septembre' },
-  { value: '10', label: 'Octobre' },
-  { value: '11', label: 'Novembre' },
-  { value: '12', label: 'Décembre' },
+  { value: "01", label: "Janvier" },
+  { value: "02", label: "Février" },
+  { value: "03", label: "Mars" },
+  { value: "04", label: "Avril" },
+  { value: "05", label: "Mai" },
+  { value: "06", label: "Juin" },
+  { value: "07", label: "Juillet" },
+  { value: "08", label: "Août" },
+  { value: "09", label: "Septembre" },
+  { value: "10", label: "Octobre" },
+  { value: "11", label: "Novembre" },
+  { value: "12", label: "Décembre" },
 ];
 
 export default function NouvelleFichePresence({
@@ -48,15 +48,20 @@ export default function NouvelleFichePresence({
     if (!mois || !annee) return;
 
     try {
-    const response = await axios.post(
-      `http://localhost:8000/api/cours/session/${id_session}/fiche_presences/`,
-      {mois, annee},
-    );
-    console.log("Réponse de l'API :", response.data);
+      const response = await axios.post(
+        `http://localhost:8000/api/cours/session/${id_session}/fiche_presences/`,
+        { mois, annee },
+      );
+      console.log("Réponse de l'API :", response.data);
       router.push(`/ecole_peg/sessions/session/${id_session}`);
-    } catch (error: any) {
-      console.error("Erreur détaillée :", error.response?.data);
-      alert("Erreur : " + JSON.stringify(error.response?.data));
+    } catch (error: unknown) {
+      if (error instanceof AxiosError) {
+        console.error("Erreur détaillée :", error.response?.data);
+        alert("Erreur : " + JSON.stringify(error.response?.data));
+      } else {
+        console.error("An unexpected error occurred:", error);
+        alert("An unexpected error occurred: " + String(error));
+      }
     }
   };
 

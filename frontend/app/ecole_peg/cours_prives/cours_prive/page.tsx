@@ -1,132 +1,137 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { useState, useEffect, useCallback, FormEvent } from "react"
-import { useRouter } from "next/navigation"
-import axios from "axios"
-import { debounce } from "lodash"
+import Link from "next/link";
+import { useState, useEffect, useCallback, FormEvent } from "react";
+import { useRouter } from "next/navigation";
+import axios from "axios";
+import { debounce } from "lodash";
 
-import { Button } from "@/components/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/card"
-import { Input } from "@/components/input"
-import { Label } from "@/components/label"
-import { RadioGroup, RadioGroupItem } from "@/components/radio-group"
+import { Button } from "@/components/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/card";
+import { Input } from "@/components/input";
+import { Label } from "@/components/label";
+import { RadioGroup, RadioGroupItem } from "@/components/radio-group";
 import {
   Select,
   SelectTrigger,
   SelectValue,
   SelectContent,
   SelectItem,
-} from "@/components/select"
-import { ArrowLeft, Save } from "lucide-react"
-import { useToast } from "@/components/use-toast"
+} from "@/components/select";
+import { ArrowLeft, Save } from "lucide-react";
+import { useToast } from "@/components/use-toast";
 
 // Types
 interface Eleve {
-  id: number
-  nom: string
-  prenom: string
+  id: number;
+  nom: string;
+  prenom: string;
 }
 interface Enseignant {
-  id: number
-  nom: string
-  prenom: string
+  id: number;
+  nom: string;
+  prenom: string;
 }
 
 interface CreateCoursPrivePayload {
-  date_cours_prive: string       // "YYYY-MM-DD"
-  heure_debut: string            // "HH:MM"
-  heure_fin: string              // "HH:MM"
-  tarif: number
-  lieu: "E" | "D"
-  eleves_ids: number[]
-  enseignant: number             // correspond à ton schema `enseignant: int`
+  date_cours_prive: string; // "YYYY-MM-DD"
+  heure_debut: string; // "HH:MM"
+  heure_fin: string; // "HH:MM"
+  tarif: number;
+  lieu: "E" | "D";
+  eleves_ids: number[];
+  enseignant: number; // correspond à ton schema `enseignant: int`
 }
 
 export default function NouveauCoursPrivePage() {
-  const router = useRouter()
-  const { toast } = useToast()
+  const router = useRouter();
+  const { toast } = useToast();
 
   // === ÉTATS ÉLÈVES ========================
-  const [searchTerm, setSearchTerm] = useState<string>("")
-  const [searchResults, setSearchResults] = useState<Eleve[]>([])
-  const [selectedEleves, setSelectedEleves] = useState<Eleve[]>([])
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [searchResults, setSearchResults] = useState<Eleve[]>([]);
+  const [selectedEleves, setSelectedEleves] = useState<Eleve[]>([]);
 
   // === ÉTATS ENSEIGNANTS ===================
-  const [enseignants, setEnseignants] = useState<Enseignant[]>([])
-  const [selectedEnseignant, setSelectedEnseignant] = useState<Enseignant | null>(null)
+  const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
+  const [selectedEnseignant, setSelectedEnseignant] =
+    useState<Enseignant | null>(null);
 
   // === ÉTATS COURS PRIVÉ ===================
-  const [dateCoursPrive, setDateCoursPrive] = useState<string>("")
-  const [heureDebut, setHeureDebut] = useState<string>("")
-  const [heureFin, setHeureFin] = useState<string>("")
-  const [tarif, setTarif] = useState<string>("")
-  const [lieu, setLieu] = useState<"ecole" | "domicile">("ecole")
+  const [dateCoursPrive, setDateCoursPrive] = useState<string>("");
+  const [heureDebut, setHeureDebut] = useState<string>("");
+  const [heureFin, setHeureFin] = useState<string>("");
+  const [tarif, setTarif] = useState<string>("");
+  const [lieu, setLieu] = useState<"ecole" | "domicile">("ecole");
 
   useEffect(() => {
-  axios
-    .get("http://localhost:8000/api/cours/enseignants/")
-    .then(({ data }) => {
-      // Ajoute ce log et regarde la console de ton navigateur
-      console.log("API enseignants:", data);
-      // Adapter ici selon la structure de la réponse
-      if (Array.isArray(data)) setEnseignants(data)
-      else if (Array.isArray(data.enseignants)) setEnseignants(data.enseignants)
-      else setEnseignants([])
-    })
-    .catch(err => console.error("Erreur chargement enseignants:", err))
-}, [])
+    axios
+      .get("http://localhost:8000/api/cours/enseignants/")
+      .then(({ data }) => {
+        // Ajoute ce log et regarde la console de ton navigateur
+        console.log("API enseignants:", data);
+        // Adapter ici selon la structure de la réponse
+        if (Array.isArray(data)) setEnseignants(data);
+        else if (Array.isArray(data.enseignants))
+          setEnseignants(data.enseignants);
+        else setEnseignants([]);
+      })
+      .catch((err) => console.error("Erreur chargement enseignants:", err));
+  }, []);
 
   // --- Recherche d'élèves débouncée ---
-  const fetchEleves = useCallback(
-    debounce(async (term: string) => {
-      if (!term) {
-        setSearchResults([])
-        return
+  const fetchEleves = useCallback((term: string) => {
+    const debouncedFetch = debounce(async (searchTerm: string) => {
+      if (!searchTerm) {
+        setSearchResults([]);
+        return;
       }
       try {
         const { data } = await axios.get<{ eleves: Eleve[] }>(
           "http://localhost:8000/api/eleves/eleves/",
-          { params: { recherche: term } }
-        )
-        setSearchResults(data.eleves)
+          { params: { recherche: searchTerm } },
+        );
+        setSearchResults(data.eleves);
       } catch (err) {
-        console.error(err)
+        console.error(err);
       }
-    }, 300),
-    []
-  )
+    }, 300);
+    debouncedFetch(term);
+  }, []);
   useEffect(() => {
-    fetchEleves(searchTerm)
-  }, [searchTerm, fetchEleves])
+    fetchEleves(searchTerm);
+  }, [searchTerm, fetchEleves]);
 
   const addEleve = (e: Eleve) => {
-    if (!selectedEleves.find(x => x.id === e.id)) {
-      setSelectedEleves(prev => [...prev, e])
+    if (!selectedEleves.find((x) => x.id === e.id)) {
+      setSelectedEleves((prev) => [...prev, e]);
     }
-    setSearchTerm("")
-    setSearchResults([])
-  }
+    setSearchTerm("");
+    setSearchResults([]);
+  };
   const removeEleve = (id: number) => {
-    setSelectedEleves(prev => prev.filter(x => x.id !== id))
-  }
+    setSelectedEleves((prev) => prev.filter((x) => x.id !== id));
+  };
 
   // === SOUMISSION DU FORMULAIRE ============
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
+    e.preventDefault();
 
     // Validation front
     if (!dateCoursPrive || !heureDebut || !heureFin || !tarif) {
-      toast({ title: "Erreur", description: "Remplissez date, heures et tarif." })
-      return
+      toast({
+        title: "Erreur",
+        description: "Remplissez date, heures et tarif.",
+      });
+      return;
     }
     if (!selectedEnseignant) {
-      toast({ title: "Erreur", description: "Sélectionnez un enseignant." })
-      return
+      toast({ title: "Erreur", description: "Sélectionnez un enseignant." });
+      return;
     }
     if (selectedEleves.length === 0) {
-      toast({ title: "Erreur", description: "Ajoutez au moins un élève." })
-      return
+      toast({ title: "Erreur", description: "Ajoutez au moins un élève." });
+      return;
     }
 
     // Construction payload
@@ -136,26 +141,31 @@ export default function NouveauCoursPrivePage() {
       heure_fin: heureFin,
       tarif: Number(tarif),
       lieu: lieu === "ecole" ? "E" : "D",
-      eleves_ids: selectedEleves.map(x => x.id),
+      eleves_ids: selectedEleves.map((x) => x.id),
       enseignant: selectedEnseignant.id,
-    }
+    };
 
     try {
-      await axios.post("http://localhost:8000/api/cours/cours_prive/", payload)
-      toast({ title: "Succès", description: "Cours privé créé." })
-      router.back()
-    } catch (err: any) {
-        console.error("Payload envoyé :", payload)
-        if (err.response) {
-          console.error("Status :", err.response.status)
-          console.error("Données retour API :", JSON.stringify(err.response.data, null, 2))
-        } else {
-          console.error("Erreur non HTTP :", err)
-        }
-        toast({ title: "Erreur", description: "Impossible de créer le cours privé." })
+      await axios.post("http://localhost:8000/api/cours/cours_prive/", payload);
+      toast({ title: "Succès", description: "Cours privé créé." });
+      router.back();
+    } catch (err: unknown) {
+      console.error("Payload envoyé :", payload);
+      if (axios.isAxiosError(err)) {
+        console.error("Status :", err.response?.status);
+        console.error(
+          "Données retour API :",
+          JSON.stringify(err.response?.data, null, 2),
+        );
+      } else {
+        console.error("Erreur non HTTP :", err);
       }
-      
-  }
+      toast({
+        title: "Erreur",
+        description: "Impossible de créer le cours privé.",
+      });
+    }
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -172,18 +182,20 @@ export default function NouveauCoursPrivePage() {
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* === Sélection des élèves === */}
         <Card>
-          <CardHeader><CardTitle>Étudiants</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Étudiants</CardTitle>
+          </CardHeader>
           <CardContent>
             <Label htmlFor="searchEleve">Rechercher un élève</Label>
             <Input
               id="searchEleve"
               placeholder="Nom..."
               value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
+              onChange={(e) => setSearchTerm(e.target.value)}
             />
             {searchResults.length > 0 && (
               <ul className="border rounded max-h-40 overflow-y-auto">
-                {searchResults.map(x => (
+                {searchResults.map((x) => (
                   <li
                     key={x.id}
                     className="p-2 hover:bg-gray-100 cursor-pointer"
@@ -195,10 +207,19 @@ export default function NouveauCoursPrivePage() {
               </ul>
             )}
             <div className="flex flex-wrap gap-2 mt-2">
-              {selectedEleves.map(x => (
-                <span key={x.id} className="px-2 py-1 bg-blue-100 rounded-full flex items-center gap-1">
+              {selectedEleves.map((x) => (
+                <span
+                  key={x.id}
+                  className="px-2 py-1 bg-blue-100 rounded-full flex items-center gap-1"
+                >
                   {x.nom} {x.prenom}
-                  <button type="button" onClick={() => removeEleve(x.id)} className="text-red-500">×</button>
+                  <button
+                    type="button"
+                    onClick={() => removeEleve(x.id)}
+                    className="text-red-500"
+                  >
+                    ×
+                  </button>
                 </span>
               ))}
             </div>
@@ -207,14 +228,16 @@ export default function NouveauCoursPrivePage() {
 
         {/* === Sélection enseignant === */}
         <Card>
-          <CardHeader><CardTitle>Enseignant</CardTitle></CardHeader>
+          <CardHeader>
+            <CardTitle>Enseignant</CardTitle>
+          </CardHeader>
           <CardContent>
             <Label htmlFor="enseignantSelect">Choisir un enseignant</Label>
             <Select
               value={selectedEnseignant?.id.toString() ?? ""}
-              onValueChange={val => {
-                const e = enseignants.find(x => x.id === Number(val)) || null
-                setSelectedEnseignant(e)
+              onValueChange={(val) => {
+                const e = enseignants.find((x) => x.id === Number(val)) || null;
+                setSelectedEnseignant(e);
               }}
               required
             >
@@ -222,7 +245,7 @@ export default function NouveauCoursPrivePage() {
                 <SelectValue placeholder="Sélectionnez…" />
               </SelectTrigger>
               <SelectContent>
-                {enseignants.map(x => (
+                {enseignants.map((x) => (
                   <SelectItem key={x.id} value={x.id.toString()}>
                     {x.nom} {x.prenom}
                   </SelectItem>
@@ -245,7 +268,7 @@ export default function NouveauCoursPrivePage() {
                   id="dateCoursPrive"
                   type="date"
                   value={dateCoursPrive}
-                  onChange={e => setDateCoursPrive(e.target.value)}
+                  onChange={(e) => setDateCoursPrive(e.target.value)}
                   required
                 />
               </div>
@@ -257,7 +280,7 @@ export default function NouveauCoursPrivePage() {
                   min={0}
                   step="0.01"
                   value={tarif}
-                  onChange={e => setTarif(e.target.value)}
+                  onChange={(e) => setTarif(e.target.value)}
                   required
                 />
               </div>
@@ -269,7 +292,7 @@ export default function NouveauCoursPrivePage() {
                   id="heureDebut"
                   type="time"
                   value={heureDebut}
-                  onChange={e => setHeureDebut(e.target.value)}
+                  onChange={(e) => setHeureDebut(e.target.value)}
                   required
                 />
               </div>
@@ -279,7 +302,7 @@ export default function NouveauCoursPrivePage() {
                   id="heureFin"
                   type="time"
                   value={heureFin}
-                  onChange={e => setHeureFin(e.target.value)}
+                  onChange={(e) => setHeureFin(e.target.value)}
                   required
                 />
               </div>
@@ -288,12 +311,12 @@ export default function NouveauCoursPrivePage() {
               <Label>Lieu</Label>
               <RadioGroup
                 value={lieu}
-                onValueChange={val => setLieu(val as "ecole" | "domicile")}
+                onValueChange={(val) => setLieu(val as "ecole" | "domicile")}
                 className="flex space-x-4"
               >
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="ecole" id="lieu-ecole" />
-                  <Label htmlFor="lieu-ecole">À l'école</Label>
+                  <Label htmlFor="lieu-ecole">À l&apos;école</Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="domicile" id="lieu-domicile" />
@@ -311,5 +334,5 @@ export default function NouveauCoursPrivePage() {
         </div>
       </form>
     </div>
-  )
+  );
 }

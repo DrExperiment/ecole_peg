@@ -62,7 +62,7 @@ export default function NouveauTestPage({
       try {
         await axios.post(
           `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/tests/`,
-          donneesCompletes
+          donneesCompletes,
         );
 
         router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
@@ -70,14 +70,14 @@ export default function NouveauTestPage({
         console.error("Erreur: ", erreur);
       }
     },
-    [date, niveau, resolvedParams, router]
+    [date, niveau, resolvedParams, router],
   );
 
   useEffect(() => {
     async function fetchEleve() {
       try {
         const { data } = await axios.get<Eleve>(
-          `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`
+          `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`,
         );
 
         setEleve(data);

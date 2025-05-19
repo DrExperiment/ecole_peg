@@ -8,7 +8,7 @@ interface TypeAuthContext {
 
 export const AuthContext = createContext<TypeAuthContext>({
   authentifie: false,
-  setAuthentifie: () => { },
+  setAuthentifie: () => {},
 });
 
 export function AuthProvider({ children }: { children: ReactNode }) {

@@ -21,7 +21,6 @@ import {
 } from "@/components/table";
 import { ArrowLeft } from "lucide-react";
 import React, { use, useEffect, useState, useCallback } from "react";
-import { fetchApi } from "@/lib/utils";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import axios from "axios";
@@ -76,7 +75,6 @@ interface Garant {
   rue: string;
   numero: string;
   npa: string;
-
 }
 interface Test {
   id: number;
@@ -105,7 +103,6 @@ export default function ElevePage({
   params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
-  const dta = use(params);
 
   const resolvedParams = use(params);
   const id = resolvedParams.id;
@@ -116,12 +113,11 @@ export default function ElevePage({
   const [documents, setDocuments] = useState<Document[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
   const [garant, setGarant] = useState<Garant | null>(null);
-  const [inscriptionToDelete, setInscriptionToDelete] = useState<number | null>(null);
 
   const fetchDocuments = useCallback(async () => {
     try {
       const reponse = await axios.get(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/`
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/`,
       );
 
       setDocuments(reponse.data);
@@ -133,7 +129,7 @@ export default function ElevePage({
   const fetchTests = useCallback(async () => {
     try {
       const reponse = await axios.get(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/tests/`
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/tests/`,
       );
 
       setTests(reponse.data);
@@ -145,9 +141,9 @@ export default function ElevePage({
   useEffect(() => {
     async function fetchEleve() {
       try {
-        const donnees: Eleve = await axios.get(
-          `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`
-        ).then((response) => response.data);
+        const donnees: Eleve = await axios
+          .get(`http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`)
+          .then((response) => response.data);
 
         setEleve(donnees);
       } catch (erreur) {
@@ -157,7 +153,7 @@ export default function ElevePage({
     async function fetchInscriptions() {
       try {
         const res = await axios.get(
-          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`
+          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`,
         );
         setInscriptions(res.data);
       } catch (error) {
@@ -170,7 +166,9 @@ export default function ElevePage({
     fetchTests();
     async function fetchGarant() {
       try {
-        const res = await axios.get(`http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/garant/`);
+        const res = await axios.get(
+          `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/garant/`,
+        );
         if (res.data?.id) {
           setGarant(res.data);
         } else {
@@ -184,12 +182,13 @@ export default function ElevePage({
 
     fetchGarant();
 
-
     async function fetchPaiements() {
       try {
-        const donnees = await axios.get(
-          `http://localhost:8000/api/factures/paiements/eleve/${resolvedParams.id}/`
-        ).then((response) => response.data);
+        const donnees = await axios
+          .get(
+            `http://localhost:8000/api/factures/paiements/eleve/${resolvedParams.id}/`,
+          )
+          .then((response) => response.data);
 
         setPaiements(donnees);
       } catch (erreur) {
@@ -197,11 +196,10 @@ export default function ElevePage({
       }
     }
 
-
     async function fetchFactures() {
       try {
         const reponse = await axios.get(
-          `http://localhost:8000/api/factures/factures/eleve/${resolvedParams.id}/`
+          `http://localhost:8000/api/factures/factures/eleve/${resolvedParams.id}/`,
         );
 
         setFactures(reponse.data);
@@ -214,25 +212,26 @@ export default function ElevePage({
     fetchFactures();
 
     console.log(factures);
-  }, [id]);
+  }, [factures, fetchDocuments, fetchTests, id, resolvedParams.id]);
 
   async function supprimerEleve(id_eleve: number | undefined) {
     if (!id_eleve) return;
 
     try {
-      await axios.delete(`http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/`)
+      await axios.delete(
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/`,
+      );
 
       router.push("/ecole_peg/eleves");
     } catch (erreur) {
       console.error("Erreur: ", erreur);
     }
-
   }
 
   async function supprimerTest(id_test: number) {
     try {
       await axios.delete(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/tests/${id_test}/`
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/tests/${id_test}/`,
       );
 
       fetchTests();
@@ -248,7 +247,7 @@ export default function ElevePage({
     try {
       await axios.post(
         `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/`,
-        formData // ✅ PAS DE headers ici
+        formData, // ✅ PAS DE headers ici
       );
       form.reset();
       fetchDocuments(); // Recharge la liste
@@ -260,7 +259,7 @@ export default function ElevePage({
   async function supprimerDocument(documentId: number) {
     try {
       await axios.delete(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/${documentId}/`
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/${documentId}/`,
       );
       fetchDocuments();
     } catch (error) {
@@ -270,14 +269,13 @@ export default function ElevePage({
   async function supprimerInscription(inscriptionId: number) {
     try {
       await axios.delete(
-        `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionId}/`
+        `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionId}/`,
       );
       setInscriptions((old) => old.filter((i) => i.id !== inscriptionId));
     } catch (erreur) {
       console.error("Erreur suppression inscription:", erreur);
     }
   }
-
 
   return (
     <div className="flex flex-col gap-4">
@@ -308,7 +306,6 @@ export default function ElevePage({
           <Card>
             <CardHeader>
               <CardTitle>Informations personnelles</CardTitle>
-
             </CardHeader>
             <CardContent className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm">
               {[
@@ -318,7 +315,12 @@ export default function ElevePage({
                 { label: "Lieu de naissance", value: eleve?.lieu_naissance },
                 {
                   label: "Sexe",
-                  value: eleve?.sexe === "H" ? "Homme" : eleve?.sexe === "F" ? "Femme" : "-",
+                  value:
+                    eleve?.sexe === "H"
+                      ? "Homme"
+                      : eleve?.sexe === "F"
+                        ? "Femme"
+                        : "-",
                 },
                 { label: "Pays", value: eleve?.pays__nom },
                 {
@@ -343,19 +345,26 @@ export default function ElevePage({
                             ? "Permis B"
                             : "-",
                 },
-                { label: "Date d'expiration de permis", value: eleve?.date_permis ?? "-" },
+                {
+                  label: "Date d'expiration de permis",
+                  value: eleve?.date_permis ?? "-",
+                },
                 { label: "Niveau", value: eleve?.niveau },
                 { label: "Langue maternelle", value: eleve?.langue_maternelle },
                 { label: "Autres langues", value: eleve?.autres_langues },
               ].map((item, index) => (
                 <div key={index} className="flex flex-col min-w-0 break-words">
-                  <p className="text-muted-foreground font-medium">{item.label}</p>
+                  <p className="text-muted-foreground font-medium">
+                    {item.label}
+                  </p>
                   <p>{item.value || "-"}</p>
                 </div>
               ))}
               <div className="col-span-2">
                 <Button variant="outline" className="w-full">
-                  <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire`}>
+                  <Link
+                    href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire`}
+                  >
                     Inscrire
                   </Link>
                 </Button>
@@ -382,52 +391,66 @@ export default function ElevePage({
           <Card>
             <CardHeader>
               <CardTitle>Inscriptions</CardTitle>
-              <CardDescription>Historique des inscriptions de l'élève</CardDescription>
+              <CardDescription>
+                Historique des inscriptions de l&apos;élève
+              </CardDescription>
             </CardHeader>
             <CardContent>
               {inscriptions.length > 0 ? (
                 <Table>
-                 <TableHeader>
-  <TableRow>
-    <TableHead>Date</TableHead>
-    <TableHead>But</TableHead>
-    <TableHead>Frais</TableHead>
-    <TableHead>Statut</TableHead>
-    <TableHead>Date sortie</TableHead>
-    <TableHead>Motif sortie</TableHead>
-    <TableHead>Type</TableHead>
-    <TableHead>Actions</TableHead>
-  </TableRow>
-</TableHeader>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Date</TableHead>
+                      <TableHead>But</TableHead>
+                      <TableHead>Frais</TableHead>
+                      <TableHead>Statut</TableHead>
+                      <TableHead>Date sortie</TableHead>
+                      <TableHead>Motif sortie</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
 
                   <TableBody>
                     {inscriptions.map((inscription) => (
-
                       <TableRow key={inscription.id}>
-                        <TableCell>{format(new Date(inscription.date_inscription), "yyyy-MM-dd")}</TableCell>
+                        <TableCell>
+                          {format(
+                            new Date(inscription.date_inscription),
+                            "yyyy-MM-dd",
+                          )}
+                        </TableCell>
                         <TableCell>{inscription.but}</TableCell>
-                        <TableCell>{inscription.frais_inscription} CHF</TableCell>
+                        <TableCell>
+                          {inscription.frais_inscription} CHF
+                        </TableCell>
                         <TableCell>{inscription.statut}</TableCell>
-                       <TableCell>
-  {inscription.date_sortie
-    ? format(new Date(inscription.date_sortie), "yyyy-MM-dd")
-    : "   -"}
-</TableCell>
+                        <TableCell>
+                          {inscription.date_sortie
+                            ? format(
+                                new Date(inscription.date_sortie),
+                                "yyyy-MM-dd",
+                              )
+                            : "   -"}
+                        </TableCell>
 
                         <TableCell>{inscription.motif_sortie}</TableCell>
                         <TableCell>
-                        {inscription.preinscription ? "Préinscription" : "Inscription"}
+                          {inscription.preinscription
+                            ? "Préinscription"
+                            : "Inscription"}
                         </TableCell>
                         <TableCell>
                           <Button variant="ghost" asChild>
-                            <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/${inscription?.id}/modifier`}>
+                            <Link
+                              href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/${inscription?.id}/modifier`}
+                            >
                               Modifier
                             </Link>
                           </Button>
                           <Button
                             variant="destructive"
                             onClick={() => {
-                              setInscriptionToDelete(inscription.id);
                               supprimerInscription(inscription.id);
                             }}
                           >
@@ -442,11 +465,9 @@ export default function ElevePage({
                 <p>Aucune inscription trouvée.</p>
               )}
             </CardContent>
-            <CardFooter className="justify-end border-t px-6 py-4">
-            </CardFooter>
+            <CardFooter className="justify-end border-t px-6 py-4"></CardFooter>
           </Card>
         </TabsContent>
-
 
         <TabsContent value="factures">
           <Card>
@@ -473,7 +494,7 @@ export default function ElevePage({
                       <TableRow key={facture.id}>
                         <TableCell>{facture.id}</TableCell>
                         <TableCell>
-                          {format((facture.date_emission), "yyyy-MM-dd")}
+                          {format(facture.date_emission, "yyyy-MM-dd")}
                         </TableCell>
                         <TableCell>{facture.montant_total} CHF</TableCell>
                         <TableCell>
@@ -511,7 +532,9 @@ export default function ElevePage({
             <CardFooter className="justify-between border-t px-6 py-4">
               <Button
                 onClick={() => {
-                  router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`);
+                  router.push(
+                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`,
+                  );
                 }}
               >
                 Nouvelle facture
@@ -519,7 +542,6 @@ export default function ElevePage({
             </CardFooter>
           </Card>
         </TabsContent>
-
 
         <TabsContent value="paiements">
           <Card>
@@ -542,13 +564,14 @@ export default function ElevePage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-
                   {paiements?.length > 0 ? (
                     paiements.map((paiement) => (
                       <TableRow key={paiement.id}>
                         <TableCell>
                           {paiement.date_paiement
-                            ? new Date(paiement.date_paiement).toLocaleDateString()
+                            ? new Date(
+                                paiement.date_paiement,
+                              ).toLocaleDateString()
                             : "-"}
                         </TableCell>
 
@@ -560,7 +583,9 @@ export default function ElevePage({
                         <TableCell>{paiement.mode_paiement}</TableCell>
                         <TableCell className="text-right">
                           <Button variant="ghost" size="sm" asChild>
-                            <Link href={`/ecole_peg/eleves/eleve/${paiement.id}`}>
+                            <Link
+                              href={`/ecole_peg/eleves/eleve/${paiement.id}`}
+                            >
                               Détails
                             </Link>
                           </Button>
@@ -574,13 +599,14 @@ export default function ElevePage({
                       </TableCell>
                     </TableRow>
                   )}
-
                 </TableBody>
               </Table>
             </CardContent>
             <CardFooter className="justify-between border-t px-6 py-4">
               <Button>
-                <Link href={`/ecole_peg/eleves/eleve/${id}/paiement`}>ajouter paiement</Link>
+                <Link href={`/ecole_peg/eleves/eleve/${id}/paiement`}>
+                  ajouter paiement
+                </Link>
               </Button>
             </CardFooter>
           </Card>
@@ -678,7 +704,6 @@ export default function ElevePage({
           </Card>
         </TabsContent>
         <TabsContent value="garants">
-
           <Card>
             <CardHeader>
               <CardTitle>Informations garant</CardTitle>
@@ -692,12 +717,19 @@ export default function ElevePage({
                   { label: "Email", value: garant.email },
                   {
                     label: "Adresse",
-                    value: [garant.rue, garant.numero, garant.npa, garant.localite].filter(Boolean).join(" ") || "-",
+                    value:
+                      [garant.rue, garant.numero, garant.npa, garant.localite]
+                        .filter(Boolean)
+                        .join(" ") || "-",
                   },
-
                 ].map((item, index) => (
-                  <div key={index} className="flex flex-col min-w-0 break-words">
-                    <p className="text-muted-foreground font-medium">{item.label}</p>
+                  <div
+                    key={index}
+                    className="flex flex-col min-w-0 break-words"
+                  >
+                    <p className="text-muted-foreground font-medium">
+                      {item.label}
+                    </p>
                     <p>{item.value || "-"}</p>
                   </div>
                 ))
@@ -722,7 +754,10 @@ export default function ElevePage({
               <ul className="space-y-2">
                 {documents.length > 0 ? (
                   documents.map((doc) => (
-                    <li key={doc.id} className="flex justify-between items-center">
+                    <li
+                      key={doc.id}
+                      className="flex justify-between items-center"
+                    >
                       <a
                         href={doc.fichier_url}
                         target="_blank"
@@ -732,7 +767,9 @@ export default function ElevePage({
                         {doc.nom}
                       </a>
 
-                      <span className="text-sm text-muted-foreground">{doc.date_ajout}</span>
+                      <span className="text-sm text-muted-foreground">
+                        {doc.date_ajout}
+                      </span>
                       <Button
                         variant="destructive"
                         size="sm"
@@ -748,7 +785,13 @@ export default function ElevePage({
               </ul>
 
               <form onSubmit={handleUpload}>
-                <input type="text" name="nom" placeholder="Nom du document" required className="border p-2 w-full my-2" />
+                <input
+                  type="text"
+                  name="nom"
+                  placeholder="Nom du document"
+                  required
+                  className="border p-2 w-full my-2"
+                />
                 <input type="file" name="fichier" required className="my-2" />
                 <Button type="submit">Ajouter un document</Button>
               </form>
@@ -805,7 +848,7 @@ export default function ElevePage({
               <Button
                 onClick={() => {
                   router.push(
-                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`
+                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`,
                   );
                 }}
               >

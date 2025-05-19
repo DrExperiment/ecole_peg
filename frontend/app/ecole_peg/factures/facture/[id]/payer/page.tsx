@@ -1,16 +1,26 @@
-
 "use client";
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
 import axios from "axios";
-import Link from "next/link";
-import { ArrowLeft, AlertCircle } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 import { Button } from "@/components/button";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/card";
 import { Input } from "@/components/input";
 import { Label } from "@/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/select";
 import { useToast } from "@/components/use-toast";
 
 interface Facture {
@@ -23,7 +33,10 @@ interface Facture {
 }
 
 function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("fr-CH", { style: "currency", currency: "CHF" }).format(amount);
+  return new Intl.NumberFormat("fr-CH", {
+    style: "currency",
+    currency: "CHF",
+  }).format(amount);
 }
 
 // File: app/ecole_peg/factures/factures/[id]/payer/page.tsx
@@ -51,7 +64,11 @@ export default function PaiementFacturePage() {
         setFacture(res.data);
       } catch (error) {
         console.error("Erreur récupération facture :", error);
-        toast({ title: "Erreur", description: "Impossible de charger la facture", variant: "destructive" });
+        toast({
+          title: "Erreur",
+          description: "Impossible de charger la facture",
+          variant: "destructive",
+        });
       }
     };
     fetchFacture();
@@ -62,11 +79,19 @@ export default function PaiementFacturePage() {
     if (!facture) return;
     const montantPaiement = parseFloat(montant);
     if (isNaN(montantPaiement) || montantPaiement <= 0) {
-      toast({ title: "Erreur", description: "Montant invalide", variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: "Montant invalide",
+        variant: "destructive",
+      });
       return;
     }
     if (montantPaiement > facture.montant_restant) {
-      toast({ title: "Erreur", description: "Le montant dépasse le montant restant", variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: "Le montant dépasse le montant restant",
+        variant: "destructive",
+      });
       return;
     }
 
@@ -77,19 +102,25 @@ export default function PaiementFacturePage() {
         mode_paiement: modePaiement,
         methode_paiement: methodePaiement,
       });
-      toast({ title: "Paiement enregistré", description: `Paiement de ${formatCurrency(montantPaiement)}` });
+      toast({
+        title: "Paiement enregistré",
+        description: `Paiement de ${formatCurrency(montantPaiement)}`,
+      });
       router.push("/ecole_peg/factures/");
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erreur enregistrement paiement :", error);
-      if (error.response?.data?.detail) {
+      if (axios.isAxiosError(error) && error.response?.data?.detail) {
         console.error(
           "Détails de la validation :",
-          JSON.stringify(error.response.data.detail, null, 2)
+          JSON.stringify(error.response.data.detail, null, 2),
         );
       }
-      toast({ title: "Erreur", description: "Impossible d'enregistrer le paiement", variant: "destructive" });
+      toast({
+        title: "Erreur",
+        description: "Impossible d'enregistrer le paiement",
+        variant: "destructive",
+      });
     }
-    
   };
 
   const handleAnnuler = () => {
@@ -111,12 +142,23 @@ export default function PaiementFacturePage() {
         <form onSubmit={handleSubmit} className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle>Facture {facture.id} - {facture.date_emission}</CardTitle>
+              <CardTitle>
+                Facture {facture.id} - {facture.date_emission}
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <p><strong>Élève :</strong> {facture.inscription__eleve__prenom} {facture.inscription__eleve__nom}</p>
-              <p><strong>Montant total :</strong> {formatCurrency(facture.montant_total)}</p>
-              <p><strong>Montant restant :</strong> {formatCurrency(facture.montant_restant)}</p>
+              <p>
+                <strong>Élève :</strong> {facture.inscription__eleve__prenom}{" "}
+                {facture.inscription__eleve__nom}
+              </p>
+              <p>
+                <strong>Montant total :</strong>{" "}
+                {formatCurrency(facture.montant_total)}
+              </p>
+              <p>
+                <strong>Montant restant :</strong>{" "}
+                {formatCurrency(facture.montant_restant)}
+              </p>
 
               <div className="space-y-2">
                 <Label htmlFor="montant">Montant du paiement (CHF)</Label>
@@ -135,7 +177,9 @@ export default function PaiementFacturePage() {
               <div className="space-y-2">
                 <Label>Mode de paiement</Label>
                 <Select value={modePaiement} onValueChange={setModePaiement}>
-                  <SelectTrigger><SelectValue placeholder="Sélectionner un mode" /></SelectTrigger>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Sélectionner un mode" />
+                  </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="Personnel">Personnel</SelectItem>
                     <SelectItem value="BPA">BPA</SelectItem>
@@ -149,8 +193,13 @@ export default function PaiementFacturePage() {
               {modePaiement === "Personnel" && (
                 <div className="space-y-2">
                   <Label>Méthode de paiement</Label>
-                  <Select value={methodePaiement} onValueChange={setMethodePaiement}>
-                    <SelectTrigger><SelectValue placeholder="Méthode" /></SelectTrigger>
+                  <Select
+                    value={methodePaiement}
+                    onValueChange={setMethodePaiement}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Méthode" />
+                    </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="Espèces">Espèces</SelectItem>
                       <SelectItem value="Virement">Virement</SelectItem>

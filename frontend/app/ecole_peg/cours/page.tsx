@@ -46,7 +46,9 @@ export default function CoursPage() {
   useEffect(() => {
     async function fetchCours() {
       try {
-        const reponse = await axios.get("http://localhost:8000/api/cours/cours/");
+        const reponse = await axios.get(
+          "http://localhost:8000/api/cours/cours/",
+        );
         setCours(reponse.data);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
@@ -59,7 +61,7 @@ export default function CoursPage() {
     try {
       await axios.delete(`http://localhost:8000/api/cours/cours/${id_cours}/`);
       setCours((coursPrec) =>
-        coursPrec.filter((cours) => cours.id !== id_cours)
+        coursPrec.filter((cours) => cours.id !== id_cours),
       );
     } catch (erreur) {
       console.error("Erreur: ", erreur);

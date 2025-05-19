@@ -53,10 +53,19 @@ export default function SessionsPage() {
     async function fetchSessions() {
       setLoading(true);
       try {
-        const params: any = { page, taille };
+        const params: {
+          page: number;
+          taille: number;
+          type?: string;
+          niveau?: string;
+        } = { page, taille };
         if (filtreType && filtreType !== "tous") params.type = filtreType;
-        if (filtreNiveau && filtreNiveau !== "tous") params.niveau = filtreNiveau;
-        const reponse = await axios.get("http://localhost:8000/api/cours/sessions/", { params });
+        if (filtreNiveau && filtreNiveau !== "tous")
+          params.niveau = filtreNiveau;
+        const reponse = await axios.get(
+          "http://localhost:8000/api/cours/sessions/",
+          { params },
+        );
         setSessions(reponse.data.sessions);
         setTotal(reponse.data.nombre_total);
       } catch (erreur) {
@@ -81,9 +90,7 @@ export default function SessionsPage() {
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Sessions
-          </h1>
+          <h1 className="text-3xl font-bold tracking-tight">Sessions</h1>
           <p className="text-muted-foreground">
             Gérez les sessions de l&apos;école
           </p>
@@ -157,7 +164,9 @@ export default function SessionsPage() {
                           {session.cours__nom}
                         </TableCell>
                         <TableCell>
-                          {session.cours__type === "I" ? "Intensif" : "Semi-intensif"}
+                          {session.cours__type === "I"
+                            ? "Intensif"
+                            : "Semi-intensif"}
                         </TableCell>
                         <TableCell>{session.cours__niveau}</TableCell>
                         <TableCell>
