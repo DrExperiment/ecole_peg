@@ -3,9 +3,10 @@
 import { HTMLAttributes } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/button";
+import { logout } from "@/lib/auth";
 import {
   BookOpen,
   CreditCard,
@@ -14,7 +15,10 @@ import {
   User,
   Users,
   X,
+  LogOut,
 } from "lucide-react";
+import { useContext } from "react";
+import { AuthContext } from "@/contexts/AuthContext";
 
 interface SidebarProps extends HTMLAttributes<HTMLDivElement> {
   isOpen: boolean;
@@ -22,7 +26,10 @@ interface SidebarProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
+  const { setAuthentifie } = useContext(AuthContext);
+
   const pathname = usePathname();
+  const router = useRouter();
 
   const routes = [
     { href: "/ecole_peg/tableau_bord/", icon: Home, title: "Tableau de bord" },
@@ -70,7 +77,9 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           {routes.map((route) => (
             <Button
               key={route.href}
-              variant={pathname.startsWith(route.href) ? "secondary" : "ghost"}
+              variant={
+                (pathname ?? "").startsWith(route.href) ? "secondary" : "ghost"
+              }
               className="justify-start"
               asChild
             >
@@ -83,9 +92,27 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         </div>
 
         <div className="mt-auto border-t p-4">
-          <div>
-            <p className="text-sm font-medium">Admin</p>
-            <p className="text-xs text-muted-foreground">admin@ecole-peg.ch</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Admin</p>
+              <p className="text-xs text-muted-foreground">
+                admin@ecole-peg.ch
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={async () => {
+                await logout();
+
+                setAuthentifie(false);
+
+                router.replace("/ecole_peg/login/");
+              }}
+              className="ml-auto hover:bg-destructive/10 hover:text-destructive"
+            >
+              <LogOut className="h-5 w-5" />
+            </Button>
           </div>
         </div>
       </div>
