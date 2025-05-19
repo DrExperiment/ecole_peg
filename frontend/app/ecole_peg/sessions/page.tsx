@@ -24,10 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/select";
-import { Plus, Calendar } from "lucide-react";
+import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { fetchApi } from "@/lib/utils";
 import axios from "axios";
+
 interface Session {
   id: number;
   cours__nom: string;
@@ -35,28 +35,47 @@ interface Session {
   date_debut: string;
   date_fin: string;
   statut: string;
-  cours__type: string; // Added cours__type property
+  cours__type: string;
 }
 
 export default function SessionsPage() {
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [page, setPage] = useState(1);
+  const [taille] = useState(10);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(false);
+
+  // Filtres
+  const [filtreType, setFiltreType] = useState("tous");
+  const [filtreNiveau, setFiltreNiveau] = useState("tous");
 
   useEffect(() => {
     async function fetchSessions() {
+      setLoading(true);
       try {
-        const reponse = await axios.get("http://localhost:8000/api/cours/sessions/");
-        console.log("Sessions récupérées :", reponse.data);
+        const params: any = { page, taille };
+        if (filtreType && filtreType !== "tous") params.type = filtreType;
+        if (filtreNiveau && filtreNiveau !== "tous") params.niveau = filtreNiveau;
+        const reponse = await axios.get("http://localhost:8000/api/cours/sessions/", { params });
         setSessions(reponse.data.sessions);
-
-
-         // c'est ici que sont vraiment les sessions
+        setTotal(reponse.data.nombre_total);
       } catch (erreur) {
+        setSessions([]);
+        setTotal(0);
         console.error("Erreur: ", erreur);
       }
+      setLoading(false);
     }
-
     fetchSessions();
-  }, []);
+    // Remise à la première page à chaque changement de filtre
+  }, [page, taille, filtreType, filtreNiveau]);
+
+  // Si on change les filtres, on repart de la page 1
+  useEffect(() => {
+    setPage(1);
+  }, [filtreType, filtreNiveau]);
+
+  const totalPages = Math.ceil(total / taille);
 
   return (
     <div className="flex flex-col gap-4">
@@ -76,7 +95,6 @@ export default function SessionsPage() {
               Nouvelle session
             </Link>
           </Button>
-
         </div>
       </div>
 
@@ -88,7 +106,7 @@ export default function SessionsPage() {
         <CardContent>
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
-              <Select defaultValue="tous">
+              <Select value={filtreNiveau} onValueChange={setFiltreNiveau}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Niveau" />
                 </SelectTrigger>
@@ -101,7 +119,7 @@ export default function SessionsPage() {
                   <SelectItem value="C1">C1</SelectItem>
                 </SelectContent>
               </Select>
-              <Select defaultValue="tous">
+              <Select value={filtreType} onValueChange={setFiltreType}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
@@ -120,13 +138,19 @@ export default function SessionsPage() {
                     <TableHead>Nom</TableHead>
                     <TableHead>Type</TableHead>
                     <TableHead>Niveau</TableHead>
-                    <TableHead>Periode</TableHead>
+                    <TableHead>Période</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {sessions.length > 0 ? (
+                  {loading ? (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center">
+                        Chargement…
+                      </TableCell>
+                    </TableRow>
+                  ) : sessions.length > 0 ? (
                     sessions.map((session) => (
                       <TableRow key={session.id}>
                         <TableCell className="font-medium">
@@ -156,12 +180,36 @@ export default function SessionsPage() {
                   ) : (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center">
-                        Aucune session trouvé.
+                        Aucune session trouvée.
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
+            </div>
+            {/* Pagination Controls */}
+            <div className="flex justify-between items-center mt-2">
+              <span>
+                Page {page} / {totalPages || 1} ({total} sessions)
+              </span>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                >
+                  Précédent
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page === totalPages || totalPages === 0}
+                >
+                  Suivant
+                </Button>
+              </div>
             </div>
           </div>
         </CardContent>

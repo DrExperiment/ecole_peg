@@ -167,29 +167,18 @@ export default function InscrirePage({
             </div>
 
             <div className="space-y-2">
-              <Label>Date de l&apos;inscription</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? (
-                      format(date, "dd-MM-yyyy", { locale: fr })
-                    ) : (
-                      <span>Séléctionner la date de l&apos;inscription</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={date} onSelect={setDate} />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="date_inscription">Date de l'inscription</Label>
+              <Input
+                id="date_inscription"
+                type="date"
+                value={date ? format(date, "yyyy-MM-dd") : ""}
+                onChange={e =>
+                  setDate(e.target.value ? new Date(e.target.value + "T00:00:00") : undefined)
+                }
+                required
+              />
             </div>
+
 
             <div className="space-y-2">
               <Label htmlFor="but">But</Label>

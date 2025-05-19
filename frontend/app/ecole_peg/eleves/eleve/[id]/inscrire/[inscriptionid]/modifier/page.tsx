@@ -1,157 +1,193 @@
 "use client";
 
-import { use ,useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import axios from "axios";
+import { useEffect, useState } from "react";
+import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
-
 import { Button } from "@/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/card";
+import {
+  Card,
+  CardContent,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/card";
 import { Input } from "@/components/input";
 import { Label } from "@/components/label";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/select";
-import { Textarea } from "@/components/textarea";
-import { Save, ArrowLeft } from "lucide-react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/select";
+import { ArrowLeft, Save } from "lucide-react";
+import { format, parseISO } from "date-fns";
+import { fr } from "date-fns/locale";
+import { cn } from "@/lib/utils";
+import axios from "axios";
+import { useForm } from "react-hook-form";
+import { Checkbox } from "@/components/checkbox";
 
 interface Session {
   id: number;
-  nom: string;
+  cours__nom: string;
+  cours__type: string;
+  cours__niveau: string;
   date_debut: string;
   date_fin: string;
-  capacite_max: number;
 }
 
 interface Inscription {
   id: number;
-  date_inscription: string;
-  statut: "ACTIF" | "INACTIF";
-  remarques?: string;
   session: number;
+  date_inscription: string;
+  but: string;
+  frais_inscription: number;
+  preinscription: boolean;
 }
 
-export default function EditInscriptionPage({ params }: { params: Promise<{ id: string; inscriptionId: string }> }) {
+export default function EditInscriptionPage() {
   const router = useRouter();
-  const { id, inscriptionId } = use(params);
+  const params = useParams();
+  const id = params.id as string;
+  const inscriptionid = params.inscriptionid as string;
 
-  const [inscription, setInscription] = useState<Inscription | null>(null);
+  const { register, setValue, handleSubmit, formState: { isSubmitting } } = useForm();
+
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [sessionId, setSessionId] = useState<number>(0);
-  const [statut, setStatut] = useState<"ACTIF" | "INACTIF">("ACTIF");
-  const [remarques, setRemarques] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [date, setDate] = useState<Date | undefined>();
+  const [idSession, setIdSession] = useState<number>();
+  const [preinscription, setPreinscription] = useState(false);
 
   useEffect(() => {
+    if (!id || !inscriptionid) return;
     async function fetchData() {
       try {
         const [inscRes, sessionsRes] = await Promise.all([
-          axios.get<Inscription>(`http://localhost:8000/api/eleves/${id}/inscriptions/${inscriptionId}/`),
-          axios.get<Session[]>(`http://localhost:8000/api/sessions/`),
+          axios.get<Inscription>(`http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionid}/`),
+          axios.get<{ sessions: Session[] }>(`http://localhost:8000/api/cours/sessions/`),
         ]);
+        const insc = inscRes.data;
+        setSessions(sessionsRes.data.sessions);
 
-        setInscription(inscRes.data);
-        setSessions(sessionsRes.data);
-        setSessionId(inscRes.data.session);
-        setStatut(inscRes.data.statut);
-        setRemarques(inscRes.data.remarques ?? "");
+        setIdSession(insc.session);
+        setValue("but", insc.but);
+        setValue("frais_inscription", insc.frais_inscription);
+        setDate(insc.date_inscription ? parseISO(insc.date_inscription) : undefined);
+        setPreinscription(insc.preinscription ?? false);
       } catch (err) {
         console.error(err);
       }
     }
-
     fetchData();
-  }, [id, inscriptionId]);
+  }, [id, inscriptionid, setValue]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inscription) return;
-
-    setIsSubmitting(true);
+  const onSoumission = async (donnees: any) => {
+    const donneesCompletes = {
+      ...donnees,
+      date: date ? format(date, "yyyy-MM-dd") : undefined,
+      id_session: idSession,
+      preinscription,
+    };
     try {
-      const payload = {
-        statut,
-        remarques,
-        id_session: sessionId,
-      };
-
       await axios.put(
-        `http://localhost:8000/api/eleves/${id}/inscriptions/${inscriptionId}/`,
-        payload
+        `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionid}/`,
+        donneesCompletes
       );
-
-      router.push(`/ecole_peg/eleves/eleve/${id}`);
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
+      router.push(`/ecole_peg/eleves/eleve/${id}/`);
+    } catch (erreur) {
+      console.error("Erreur: ", erreur);
     }
   };
 
-  if (!inscription) return <p>Chargement...</p>;
-
   return (
-    <div className="max-w-3xl mx-auto space-y-6">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild>
           <Link href={`/ecole_peg/eleves/eleve/${id}`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Modifier l’inscription</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Modifier l’inscription
+        </h1>
       </div>
-
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit(onSoumission)}>
         <Card>
           <CardHeader>
-            <CardTitle>Détails de l’inscription</CardTitle>
+            <CardTitle>Modifier l’inscription</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div>
-              <Label>Session</Label>
-              <Select value={String(sessionId)} onValueChange={(v) => setSessionId(Number(v))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner une session" />
+            <div className="space-y-2">
+              <Label htmlFor="session">Session</Label>
+              <Select
+                name="session"
+                value={idSession !== undefined ? String(idSession) : undefined}
+                onValueChange={(valeur) => setIdSession(Number(valeur))}
+              >
+                <SelectTrigger id="session">
+                  <SelectValue placeholder="Sélectionner la session" />
                 </SelectTrigger>
                 <SelectContent>
-                  {sessions.map((s) => (
-                    <SelectItem key={s.id} value={String(s.id)}>
-                      {s.nom} ({s.date_debut} → {s.date_fin})
+                  {sessions.map((session) => (
+                    <SelectItem key={session.id} value={String(session.id)}>
+                      {session.cours__nom}{" "}
+                      {session.cours__type === "I" ? "Intensif" : "Semi-intensif"}{" "}
+                      {session.cours__niveau} (Du{" "}
+                      {format(new Date(session.date_debut), "yyyy-MM-dd")} à{" "}
+                      {format(new Date(session.date_fin), "yyyy-MM-dd")})
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
-
-            <div>
-              <Label>Statut</Label>
-              <Select value={statut} onValueChange={(v) => setStatut(v as "ACTIF" | "INACTIF")}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="ACTIF">Actif</SelectItem>
-                  <SelectItem value="INACTIF">Inactif</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <Label htmlFor="remarques">Remarques</Label>
-              <Textarea
-                id="remarques"
-                name="remarques"
-                value={remarques}
-                onChange={(e) => setRemarques(e.target.value)}
+            {/* Champ de date remplacé ici */}
+            <div className="space-y-2">
+              <Label htmlFor="date_inscription">Date de l&#39;inscription</Label>
+              <Input
+                id="date_inscription"
+                type="date"
+                value={date ? format(date, "yyyy-MM-dd") : ""}
+                onChange={e => setDate(e.target.value ? parseISO(e.target.value) : undefined)}
               />
             </div>
+            <div className="space-y-2">
+              <Label htmlFor="but">But</Label>
+              <Input
+                id="but"
+                placeholder="Le but de l'inscription"
+                {...register("but")}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="frais_inscription">Frais de l&#39;inscription</Label>
+              <Input
+                id="frais_inscription"
+                type="number"
+                placeholder="Les frais de l'inscription"
+                {...register("frais_inscription", {
+                  required: "Les frais de l'inscription sont obligatoires",
+                })}
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center space-x-2">
+                <Checkbox
+                  id="preinscription"
+                  checked={preinscription}
+                  onCheckedChange={(checked) => setPreinscription(checked as boolean)}
+                />
+                <Label htmlFor="preinscription">Préinscription</Label>
+              </div>
+            </div>
           </CardContent>
+          <CardFooter>
+            <Button type="submit" disabled={isSubmitting}>
+              <Save className="mr-2 h-4 w-4" />
+              {isSubmitting ? "En cours..." : "Enregistrer"}
+            </Button>
+          </CardFooter>
         </Card>
-
-        <div className="flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
-            <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? "Enregistrement…" : "Enregistrer"}
-          </Button>
-        </div>
       </form>
     </div>
   );

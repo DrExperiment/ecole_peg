@@ -26,8 +26,8 @@ import {
 } from "@/components/select";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import { fetchApi } from "@/lib/utils";
 import axios from "axios";
+
 interface Cours {
   id: number;
   nom: string;
@@ -40,25 +40,24 @@ interface Cours {
 
 export default function CoursPage() {
   const [cours, setCours] = useState<Cours[]>([]);
+  const [filtreType, setFiltreType] = useState("tous");
+  const [filtreNiveau, setFiltreNiveau] = useState("tous");
 
   useEffect(() => {
     async function fetchCours() {
       try {
         const reponse = await axios.get("http://localhost:8000/api/cours/cours/");
-        setCours(reponse.data); // c'est ici que sont vraiment les cours
-        
+        setCours(reponse.data);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
     }
-
     fetchCours();
   }, []);
 
   async function supprimerCours(id_cours: number) {
     try {
       await axios.delete(`http://localhost:8000/api/cours/cours/${id_cours}/`);
-
       setCours((coursPrec) =>
         coursPrec.filter((cours) => cours.id !== id_cours)
       );
@@ -66,6 +65,13 @@ export default function CoursPage() {
       console.error("Erreur: ", erreur);
     }
   }
+
+  // Filtrage côté front
+  const coursFiltres = cours.filter((c) => {
+    const typeOk = filtreType === "tous" || c.type === filtreType;
+    const niveauOk = filtreNiveau === "tous" || c.niveau === filtreNiveau;
+    return typeOk && niveauOk;
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -94,7 +100,7 @@ export default function CoursPage() {
         <CardContent>
           <div className="flex flex-col gap-4">
             <div className="flex items-center gap-4">
-              <Select defaultValue="tous">
+              <Select value={filtreNiveau} onValueChange={setFiltreNiveau}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Niveau" />
                 </SelectTrigger>
@@ -107,7 +113,7 @@ export default function CoursPage() {
                   <SelectItem value="C1">C1</SelectItem>
                 </SelectContent>
               </Select>
-              <Select defaultValue="tous">
+              <Select value={filtreType} onValueChange={setFiltreType}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Type" />
                 </SelectTrigger>
@@ -132,8 +138,8 @@ export default function CoursPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {cours.length > 0 ? (
-                    cours.map((cours) => (
+                  {coursFiltres.length > 0 ? (
+                    coursFiltres.map((cours) => (
                       <TableRow key={cours.id}>
                         <TableCell className="font-medium">
                           {cours.nom}
@@ -148,6 +154,11 @@ export default function CoursPage() {
                         </TableCell>
                         <TableCell>{cours.tarif} CHF</TableCell>
                         <TableCell className="text-right">
+                          <Button variant="outline" size="sm" className="ml-2">
+                            <Link href={`/ecole_peg/cours/cours/${cours.id}`}>
+                              Modifier
+                            </Link>
+                          </Button>
                           <Button
                             variant="destructive"
                             size="sm"

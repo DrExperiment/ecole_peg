@@ -107,17 +107,6 @@ export default function SessionPage({
     }
   }
 
-  async function changerStatut() {
-    if (!session) return;
-
-    try {
-      await axios.patch(`/cours/sessions/${session.id}/`);
-
-      router.push("/ecole_peg/sessions/");
-    } catch (erreur) {
-      console.error("Erreur:", erreur);
-    }
-  }
   // Supprimer une fiche de présence
   async function supprimerFiche(id_fiche: number) {
     try {
@@ -188,9 +177,7 @@ export default function SessionPage({
             </div>
           </CardContent>
           <CardFooter className="justify-between border-t px-6 py-4">
-            <Button variant="outline" onClick={changerStatut}>
-              Changer statut
-            </Button>
+          
             <Button
               variant="destructive"
               onClick={() => supprimerSession(Number(resolvedParams.id))}

@@ -123,7 +123,6 @@ export default function CoursPrivesPage() {
                     <TableHead>Horaire</TableHead>
                     <TableHead>Étudiant</TableHead>
                     <TableHead>Professeur</TableHead>
-                    <TableHead>Statut</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -141,12 +140,9 @@ export default function CoursPrivesPage() {
                       <TableCell>
                         {cours.enseignant__nom} {cours.enseignant__prenom}
                       </TableCell>
-                      <TableCell>
-                        {/* votre badge de statut ici */}
-                      </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/dashboard/cours-prives/${cours.id}`}>
+                          <Link href={`/ecole_peg/cours_prives/cours_prive/${cours.id}`}>
                             Détails
                           </Link>
                         </Button>

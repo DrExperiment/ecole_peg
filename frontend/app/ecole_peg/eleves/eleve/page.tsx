@@ -22,18 +22,13 @@ import {
 } from "@/components/select";
 import { Checkbox } from "@/components/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/radio-group";
-import { CalendarIcon, ArrowLeft, Save } from "lucide-react";
-import { Calendar } from "@/components/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
+import { ArrowLeft, Save } from "lucide-react";
+import { Textarea } from "@/components/textarea";
 
-import { cn, fetchApi } from "@/lib/utils";
-import axios from "axios";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import { Textarea } from "@/components/textarea";
+import axios from "axios";
 
 interface Pays {
   id: number;
@@ -51,29 +46,21 @@ export default function NouveauElevePage() {
   const router = useRouter();
 
   const [sexe, setSexe] = useState<"H" | "F">("H");
-  const [date_naissance, setDateNaissance] = useState<Date | undefined>(
-    undefined
-  );
-
+  const [date_naissance, setDateNaissance] = useState<Date | undefined>(undefined);
   const [niveau, setNiveau] = useState<"A1" | "A2" | "B1" | "B2" | "C1">("A1");
-
   const [type_permis, setTypePermis] = useState<"E" | "S" | "B" | "P">("P");
   const [date_permis, setDatePermis] = useState<Date | undefined>(undefined);
-
   const [pays, setPays] = useState<Pays[]>([]);
   const [id_pays, setIdPays] = useState<number>();
-
   const [a_garant, setAGarant] = useState<boolean>(false);
 
   const onSoumission = useCallback(
     async (donnees: object) => {
       const now = new Date();
-
       if (date_naissance && date_naissance > now) {
         setError("date_naissance", {
           message: "La date de naissance ne peut être dans le futur.",
         });
-
         return;
       }
 
@@ -91,32 +78,17 @@ export default function NouveauElevePage() {
         pays_id: id_pays,
       };
 
-      console.log(donneesCompletes);
-
       try {
-        console.log("Données envoyées : ", JSON.stringify(donneesCompletes, null, 2));
-
         const reponse = await axios.post(
           "http://localhost:8000/api/eleves/eleve/",
-          donneesCompletes // Ajoutez les données ici  
+          donneesCompletes
         );
-        console.log("Réponse complète backend :", reponse.data);
-
-
         if (a_garant)
           router.push(`/ecole_peg/eleves/eleve/${reponse.data.id}/garant/`);
         else router.push(`/ecole_peg/eleves/eleve/${reponse.data.id}/`);
-
       } catch (error: any) {
-        if (axios.isAxiosError(error) && error.response) {
-          console.error("🛑 Erreurs de validation :", error.response.data.erreurs);
-          alert("Erreur de validation : vérifie tous les champs.");
-        } else {
-          console.error("🛑 Erreur inconnue :", error);
-        }
+        alert("Erreur lors de la soumission. Vérifie tous les champs obligatoires.");
       }
-
-
     },
     [
       a_garant,
@@ -135,13 +107,11 @@ export default function NouveauElevePage() {
     async function fetchPays() {
       try {
         const donnees: Pays[] = (await axios.get("http://localhost:8000/api/eleves/pays/")).data;
-
         setPays(donnees);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
     }
-
     fetchPays();
   }, []);
 
@@ -153,11 +123,12 @@ export default function NouveauElevePage() {
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Nouveau Elève</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Nouvel Élève</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSoumission)}>
-        <div className="grid gap-4 md:grid-cols-2">
+      <form onSubmit={handleSubmit(onSoumission)} noValidate>
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Détails personnels */}
           <Card>
             <CardHeader>
               <CardTitle>Détails personnels</CardTitle>
@@ -171,54 +142,48 @@ export default function NouveauElevePage() {
                   <Label htmlFor="nom">Nom</Label>
                   <Input
                     id="nom"
-                    placeholder="Nom de famille"
+                    placeholder="ex: Dupont"
+                    autoFocus
                     required
                     {...register("nom", {
-                      required: "Nom est obligatoire",
-                      pattern: {
-                        value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
-                        message:
-                          "Le nom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
-                      },
+                      required: true,
+                      pattern: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
                       setValueAs: (v) => v.trim(),
                     })}
+                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="prenom">Prénom</Label>
                   <Input
                     id="prenom"
-                    placeholder="Prénom"
+                    placeholder="ex: Jean"
                     required
                     {...register("prenom", {
-                      required: "Prénom est obligatoire",
-                      pattern: {
-                        value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
-                        message:
-                          "Le prénom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
-                      },
+                      required: true,
+                      pattern: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
                       setValueAs: (v) => v.trim(),
                     })}
+                    disabled={isSubmitting}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sexe">Sexe</Label>
+                <Label>Sexe</Label>
                 <RadioGroup
-                  defaultValue={sexe}
-                  className="flex gap-4"
+                  value={sexe}
                   onValueChange={(valeur) => setSexe(valeur as "H" | "F")}
+                  className="flex gap-6"
                   required
-                  id="sexe"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="H" />
-                    <Label htmlFor="sexe-h">Male</Label>
+                    <RadioGroupItem id="sexe-h" value="H" />
+                    <Label htmlFor="sexe-h">Homme</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="F" />
-                    <Label htmlFor="sexe-f">Femelle</Label>
+                    <RadioGroupItem id="sexe-f" value="F" />
+                    <Label htmlFor="sexe-f">Femme</Label>
                   </div>
                 </RadioGroup>
               </div>
@@ -228,7 +193,6 @@ export default function NouveauElevePage() {
                 <Input
                   type="date"
                   id="date_naissance"
-                  name="date_naissance"
                   required
                   className="w-full"
                   value={date_naissance ? format(date_naissance, "yyyy-MM-dd") : ""}
@@ -236,6 +200,7 @@ export default function NouveauElevePage() {
                     const value = e.target.value;
                     setDateNaissance(value ? new Date(value) : undefined);
                   }}
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -243,18 +208,19 @@ export default function NouveauElevePage() {
                 <Label htmlFor="lieu_naissance">Lieu de naissance</Label>
                 <Input
                   id="lieu_naissance"
-                  placeholder="Lieu de naissance"
+                  placeholder="ex: Paris"
                   {...register("lieu_naissance")}
+                  disabled={isSubmitting}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pays">Pays</Label>
+                <Label>Pays</Label>
                 <Select
-                  name="id_pays"
-                  required
+                  value={id_pays ? id_pays.toString() : ""}
                   onValueChange={(valeur) => setIdPays(Number(valeur))}
-
+                  required
+                  disabled={isSubmitting}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un pays" />
@@ -270,29 +236,32 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="langue_maternelle">Langue maternelle</Label>
+                <Label htmlFor="langue_maternelle">Langue maternelle (optionnel)</Label>
                 <Input
                   id="langue_maternelle"
-                  placeholder="Langue maternelle"
+                  placeholder="ex: Français"
                   {...register("langue_maternelle")}
+                  disabled={isSubmitting}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="autres_langues">Autres langues</Label>
+                <Label htmlFor="autres_langues">Autres langues (optionnel)</Label>
                 <Input
                   id="autres_langues"
-                  placeholder="Autres langues"
+                  placeholder="ex: Anglais, Espagnol"
                   {...register("autres_langues")}
+                  disabled={isSubmitting}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="niveau">Niveau</Label>
+                <Label>Niveau</Label>
                 <Select
-                  onValueChange={(valeur) =>
-                    setNiveau(valeur as "A1" | "A2" | "B1" | "B2" | "C1")
-                  }
+                  value={niveau}
+                  onValueChange={(valeur) => setNiveau(valeur as "A1" | "A2" | "B1" | "B2" | "C1")}
+                  required
+                  disabled={isSubmitting}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un niveau" />
@@ -308,11 +277,12 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="type_permis">Type de permis</Label>
+                <Label>Type de permis</Label>
                 <Select
-                  onValueChange={(valeur) =>
-                    setTypePermis(valeur as "E" | "S" | "B" | "P")
-                  }
+                  value={type_permis}
+                  onValueChange={(valeur) => setTypePermis(valeur as "E" | "S" | "B" | "P")}
+                  required
+                  disabled={isSubmitting}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Sélectionner un type de permis" />
@@ -327,41 +297,43 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_permis">Date d&apos;expiration de permis</Label>
+                <Label htmlFor="date_permis">Date d&apos;expiration du permis (optionnel)</Label>
                 <Input
                   type="date"
                   id="date_permis"
-                  name="date_permis"
                   className="w-full"
                   value={date_permis ? format(date_permis, "yyyy-MM-dd") : ""}
                   onChange={(e) => {
                     const value = e.target.value;
                     setDatePermis(value ? new Date(value) : undefined);
                   }}
+                  disabled={isSubmitting}
                 />
               </div>
 
-
               <div className="space-y-2">
-                <Label htmlFor="src_decouverte">Source de découverte</Label>
+                <Label htmlFor="src_decouverte">Source de découverte (optionnel)</Label>
                 <Textarea
                   id="src_decouverte"
-                  placeholder="Source de découverte"
+                  placeholder="Comment l'élève a-t-il connu l'école ?"
                   {...register("src_decouverte")}
+                  disabled={isSubmitting}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="commentaire">Commentaires</Label>
+                <Label htmlFor="commentaire">Commentaires (optionnel)</Label>
                 <Textarea
                   id="commentaires"
-                  placeholder="Commentaires"
+                  placeholder="Commentaires supplémentaires"
                   {...register("commentaires")}
+                  disabled={isSubmitting}
                 />
               </div>
             </CardContent>
           </Card>
 
+          {/* Coordonnées */}
           <Card>
             <CardHeader>
               <CardTitle>Coordonnées de contact</CardTitle>
@@ -375,17 +347,14 @@ export default function NouveauElevePage() {
                 <Input
                   id="telephone"
                   type="tel"
-                  placeholder="Numéro de téléphone"
+                  placeholder="ex: 079 123 45 67"
                   required
                   {...register("telephone", {
-                    required: "Numéro de téléphone est obligatoire",
-                    pattern: {
-                      value: /^(?:(?:\+|00)33\s?|0)[1-9](?:[\s.-]*\d{2}){4}$/,
-                      message:
-                        "Le numéro de téléphone doit être au format suisse.",
-                    },
+                    required: true,
+                    pattern: /^(?:(?:\+|00)41\s?|0)(?:\d{2}\s?){4}\d{2}$/,
                     setValueAs: (v) => v.trim(),
                   })}
+                  disabled={isSubmitting}
                 />
               </div>
 
@@ -394,67 +363,57 @@ export default function NouveauElevePage() {
                 <Input
                   id="email"
                   type="email"
-                  placeholder="Adresse email"
+                  placeholder="ex: jean.dupont@email.com"
                   required
                   {...register("email", {
-                    required: "Adresse email est obligatoire",
+                    required: true,
                     setValueAs: (v) => v.trim(),
                   })}
+                  disabled={isSubmitting}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="rue">Rue</Label>
-                  <Input id="rue" placeholder="Rue" {...register("rue")} />
+                  <Label htmlFor="rue">Rue (optionnel)</Label>
+                  <Input id="rue" placeholder="ex: Rue du Lac" {...register("rue")} disabled={isSubmitting} />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="numero">Numéro</Label>
-                  <Input
-                    id="numero"
-                    placeholder="Numéro"
-                    {...register("numero")}
-                  />
+                  <Label htmlFor="numero">Numéro (optionnel)</Label>
+                  <Input id="numero" placeholder="ex: 12B" {...register("numero")} disabled={isSubmitting} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="npa">NPA</Label>
-                  <Input id="npa" placeholder="NPA" {...register("npa")} />
+                  <Label htmlFor="npa">NPA (optionnel)</Label>
+                  <Input id="npa" placeholder="ex: 1000" {...register("npa")} disabled={isSubmitting} />
                 </div>
-
                 <div className="space-y-2">
-                  <Label htmlFor="localite">Localité</Label>
-                  <Input
-                    id="localite"
-                    placeholder="Localité"
-                    {...register("localite")}
-                  />
+                  <Label htmlFor="localite">Localité (optionnel)</Label>
+                  <Input id="localite" placeholder="ex: Lausanne" {...register("localite")} disabled={isSubmitting} />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="adresse_facturation">
-                  Adresse du facturation
-                </Label>
+                <Label htmlFor="adresse_facturation">Adresse de facturation (optionnel)</Label>
                 <Textarea
                   id="adresse_facturation"
-                  placeholder="Adresse du facturation"
+                  placeholder="Adresse de facturation"
                   {...register("adresse_facturation")}
+                  disabled={isSubmitting}
                 />
               </div>
             </CardContent>
           </Card>
 
+          {/* Garant */}
           <Card className="md:col-span-2">
             <CardHeader>
               <CardTitle>Présence d&apos;un garant</CardTitle>
               <CardDescription>
-                Veuillez confirmer si l&apos;élève dispose d&apos;un garant. Les
-                informations complémentaires vous seront demandées après la
-                validation de ce formulaire.{" "}
+                Veuillez confirmer si l&apos;élève dispose d&apos;un garant.
+                Les informations complémentaires vous seront demandées après la validation de ce formulaire.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -463,6 +422,7 @@ export default function NouveauElevePage() {
                   id="a_garant"
                   checked={a_garant}
                   onCheckedChange={() => setAGarant(!a_garant)}
+                  disabled={isSubmitting}
                 />
                 <Label htmlFor="a_garant">
                   L&apos;élève dispose d&apos;un garant
@@ -472,7 +432,7 @@ export default function NouveauElevePage() {
           </Card>
         </div>
 
-        <div className="mt-4 flex justify-end">
+        <div className="mt-6 flex justify-end">
           <Button type="submit" disabled={isSubmitting}>
             <Save className="mr-2 h-4 w-4" />
             {isSubmitting ? "En cours..." : "Enregistrer"}

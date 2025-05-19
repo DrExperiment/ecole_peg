@@ -55,10 +55,11 @@ interface inscription {
   but: string;
   frais_inscription: number;
   statut: string;
-  date_sortie: Date ;
+  date_sortie: Date;
   motif_sortie: string;
-
+  preinscription: boolean; // <-- Ajout ici
 }
+
 interface Document {
   id: number;
   nom: string;
@@ -115,6 +116,7 @@ export default function ElevePage({
   const [documents, setDocuments] = useState<Document[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
   const [garant, setGarant] = useState<Garant | null>(null);
+  const [inscriptionToDelete, setInscriptionToDelete] = useState<number | null>(null);
 
   const fetchDocuments = useCallback(async () => {
     try {
@@ -265,6 +267,16 @@ export default function ElevePage({
       console.error("Erreur de suppression", error);
     }
   }
+  async function supprimerInscription(inscriptionId: number) {
+    try {
+      await axios.delete(
+        `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionId}/`
+      );
+      setInscriptions((old) => old.filter((i) => i.id !== inscriptionId));
+    } catch (erreur) {
+      console.error("Erreur suppression inscription:", erreur);
+    }
+  }
 
 
   return (
@@ -375,29 +387,53 @@ export default function ElevePage({
             <CardContent>
               {inscriptions.length > 0 ? (
                 <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>But</TableHead>
-                      <TableHead>Frais</TableHead>
-                      <TableHead>Statut</TableHead>
-                      <TableHead>Date sortie</TableHead>
-                      <TableHead>Motif sortie</TableHead>
-                      <TableHead>Actions</TableHead>
-                    </TableRow>
-                  </TableHeader>
+                 <TableHeader>
+  <TableRow>
+    <TableHead>Date</TableHead>
+    <TableHead>But</TableHead>
+    <TableHead>Frais</TableHead>
+    <TableHead>Statut</TableHead>
+    <TableHead>Date sortie</TableHead>
+    <TableHead>Motif sortie</TableHead>
+    <TableHead>Type</TableHead>
+    <TableHead>Actions</TableHead>
+  </TableRow>
+</TableHeader>
+
                   <TableBody>
                     {inscriptions.map((inscription) => (
+
                       <TableRow key={inscription.id}>
                         <TableCell>{format(new Date(inscription.date_inscription), "yyyy-MM-dd")}</TableCell>
                         <TableCell>{inscription.but}</TableCell>
                         <TableCell>{inscription.frais_inscription} CHF</TableCell>
                         <TableCell>{inscription.statut}</TableCell>
-                        <TableCell>{format(new Date(inscription.date_sortie), "yyyy-MM-dd") }</TableCell>
-                        <TableCell>{inscription.motif_sortie}</TableCell>
-                        <TableCell><Button variant="ghost" size="icon" asChild><Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/${inscription.id}/modifier`}>
-                        Modifier</Link></Button></TableCell>
+                       <TableCell>
+  {inscription.date_sortie
+    ? format(new Date(inscription.date_sortie), "yyyy-MM-dd")
+    : "   -"}
+</TableCell>
 
+                        <TableCell>{inscription.motif_sortie}</TableCell>
+                        <TableCell>
+                        {inscription.preinscription ? "Préinscription" : "Inscription"}
+                        </TableCell>
+                        <TableCell>
+                          <Button variant="ghost" asChild>
+                            <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/${inscription?.id}/modifier`}>
+                              Modifier
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            onClick={() => {
+                              setInscriptionToDelete(inscription.id);
+                              supprimerInscription(inscription.id);
+                            }}
+                          >
+                            Supprimer
+                          </Button>
+                        </TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -778,7 +814,6 @@ export default function ElevePage({
             </CardFooter>
           </Card>
         </TabsContent>
-
       </Tabs>
     </div>
   );

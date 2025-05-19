@@ -63,13 +63,19 @@ export default function NouveauCoursPrivePage() {
   const [tarif, setTarif] = useState<string>("")
   const [lieu, setLieu] = useState<"ecole" | "domicile">("ecole")
 
-  // --- Chargement des enseignants au mount ---
   useEffect(() => {
-    axios
-      .get<Enseignant[]>("http://localhost:8000/api/cours/enseignants/")
-      .then(({ data }) => setEnseignants(data))
-      .catch(err => console.error("Erreur chargement enseignants:", err))
-  }, [])
+  axios
+    .get("http://localhost:8000/api/cours/enseignants/")
+    .then(({ data }) => {
+      // Ajoute ce log et regarde la console de ton navigateur
+      console.log("API enseignants:", data);
+      // Adapter ici selon la structure de la réponse
+      if (Array.isArray(data)) setEnseignants(data)
+      else if (Array.isArray(data.enseignants)) setEnseignants(data.enseignants)
+      else setEnseignants([])
+    })
+    .catch(err => console.error("Erreur chargement enseignants:", err))
+}, [])
 
   // --- Recherche d'élèves débouncée ---
   const fetchEleves = useCallback(
@@ -156,7 +162,7 @@ export default function NouveauCoursPrivePage() {
       {/* En-tête */}
       <div className="flex items-center gap-2">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/cours-prives">
+          <Link href="/ecole_peg/cours_prives">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>

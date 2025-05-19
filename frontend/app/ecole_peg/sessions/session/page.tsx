@@ -1,7 +1,6 @@
 "use client";
 
 import type React from "react";
-
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
@@ -22,14 +21,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/select";
-import { Calendar } from "@/components/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
-import { CalendarIcon, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { cn, fetchApi } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import axios from "axios";
+
 interface Cours {
   id: number;
   nom: string;
@@ -60,7 +56,7 @@ export default function NouvelleSessionPage() {
 
   const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
   const [id_enseignant, setIdEnseignant] = useState<number>();
-  const [periode_journee, setPeriodeJournee] = useState<"M"| "S">("M");
+  const [periode_journee, setPeriodeJournee] = useState<"M" | "S">("M");
   const [seances_mois, setSeancesMois] = useState<number | undefined>(undefined);
 
   const onSoumission = useCallback(
@@ -74,13 +70,9 @@ export default function NouvelleSessionPage() {
         id_enseignant,
         periode_journee,
       };
-      
 
       try {
-        console.log(donneesCompletes);
         await axios.post("http://localhost:8000/api/cours/session/", donneesCompletes);
-        
-
         router.push("/ecole_peg/sessions/");
       } catch (erreur) {
         if (axios.isAxiosError(erreur)) {
@@ -89,7 +81,6 @@ export default function NouvelleSessionPage() {
           console.error("Erreur inconnue :", erreur);
         }
       }
-      
     },
     [date_debut, date_fin, id_cours, id_enseignant, seances_mois, periode_journee, router]
   );
@@ -98,9 +89,7 @@ export default function NouvelleSessionPage() {
     async function fetchCours() {
       try {
         const reponse = await axios.get("http://localhost:8000/api/cours/cours/");
-        setCours(reponse.data); // c'est ici que sont vraiment les cours
-
-
+        setCours(reponse.data);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
@@ -109,9 +98,7 @@ export default function NouvelleSessionPage() {
     async function fetchEnseignants() {
       try {
         const reponse = await axios.get("http://localhost:8000/api/cours/enseignants/");
-
-        setEnseignants(reponse.data.enseignants); // ✅ on extrait le tableau
- // c'est ici que sont vraiment les enseignants
+        setEnseignants(reponse.data.enseignants);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
@@ -120,6 +107,11 @@ export default function NouvelleSessionPage() {
     fetchCours();
     fetchEnseignants();
   }, []);
+
+  // Pour convertir l'input type="date" en Date JS
+  function parseDateInput(e: React.ChangeEvent<HTMLInputElement>, setter: (d: Date | undefined) => void) {
+    setter(e.target.value ? new Date(e.target.value) : undefined);
+  }
 
   return (
     <div className="flex flex-col gap-4">
@@ -168,67 +160,26 @@ export default function NouvelleSessionPage() {
                   valueAsNumber: true,
                 })}
                 onChange={(e) => setSeancesMois(Number(e.target.value))}
-              /></div>
-
-
-            <div className="space-y-2">
-              <Label>Date de début</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date_debut && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date_debut ? (
-                      format(date_debut, "dd-MM-yyyy", { locale: fr })
-                    ) : (
-                      <span>Sélectionner une date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={date_debut}
-                    onSelect={setDateDebut}
-                  />
-                </PopoverContent>
-              </Popover>
+              />
             </div>
-
             <div className="space-y-2">
-              <Label>Date de fin</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant={"outline"}
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date_fin && "text-muted-foreground"
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date_fin ? (
-                      format(date_fin, "dd-MM-yyyy", { locale: fr })
-                    ) : (
-                      <span>Sélectionner une date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={date_fin}
-                    onSelect={setDateFin}
-                  />
-                </PopoverContent>
-              </Popover>
+              <Label htmlFor="date_debut">Date de début</Label>
+              <Input
+                id="date_debut"
+                type="date"
+                required
+                onChange={e => parseDateInput(e, setDateDebut)}
+              />
             </div>
-
+            <div className="space-y-2">
+              <Label htmlFor="date_fin">Date de fin</Label>
+              <Input
+                id="date_fin"
+                type="date"
+                required
+                onChange={e => parseDateInput(e, setDateFin)}
+              />
+            </div>
             <div className="space-y-2">
               <Label htmlFor="enseignant">Enseignant</Label>
               <Select
@@ -257,20 +208,16 @@ export default function NouvelleSessionPage() {
                 name="periode_journee"
                 required
                 onValueChange={(val) => setPeriodeJournee(val as "M" | "S")}
-
               >
                 <SelectTrigger id="periode_journee">
                   <SelectValue placeholder="Choisir une période" />
                 </SelectTrigger>
                 <SelectContent>
-  <SelectItem value="M">Matin</SelectItem>
-  <SelectItem value="S">Soir</SelectItem>
-</SelectContent>
-
+                  <SelectItem value="M">Matin</SelectItem>
+                  <SelectItem value="S">Soir</SelectItem>
+                </SelectContent>
               </Select>
             </div>
-
-
             <div className="space-y-2">
               <Label htmlFor="capacite_max">Capacité maximale</Label>
               <Input
@@ -286,9 +233,7 @@ export default function NouvelleSessionPage() {
           </CardContent>
           <CardFooter>
             <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting
-                ? "En cours..."
-                : "Enregistrer"}
+              {isSubmitting ? "En cours..." : "Enregistrer"}
             </Button>
           </CardFooter>
         </Card>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -26,36 +27,51 @@ import {
   SelectValue,
 } from "@/components/select";
 import { FileText, Search } from "lucide-react";
-import { useEffect, useState } from "react";
-import { fetchApi } from "@/lib/utils";
 import { format } from "date-fns";
 import axios from "axios";
+
 interface Facture {
   id: number;
   date_emission: Date;
   montant_total: number;
   montant_restant: number;
-  inscription__eleve__nom: string;
-  inscription__eleve__prenom: string;
+  eleve_nom: string;
+  eleve_prenom: string;
 }
 
 export default function FacturesPage() {
   const [factures, setFactures] = useState<Facture[]>([]);
+  const [filtreStatut, setFiltreStatut] = useState("tous");
+  const [rechercheId, setRechercheId] = useState("");
 
   useEffect(() => {
     async function fetchFactures() {
       try {
         const donnees: Facture[] = (await axios.get("http://localhost:8000/api/factures/factures/")).data;
-
         setFactures(donnees);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
     }
-
     fetchFactures();
-    console.log(factures);
   }, []);
+
+  // Filtrage combiné statut + recherche id
+  const facturesFiltrees = factures.filter((facture) => {
+    const statutOK =
+      filtreStatut === "tous"
+        ? true
+        : filtreStatut === "paye"
+        ? facture.montant_restant === 0
+        : facture.montant_restant !== 0;
+
+    const rechercheOK =
+      rechercheId.trim() === ""
+        ? true
+        : facture.id.toString().includes(rechercheId.trim());
+
+    return statutOK && rechercheOK;
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -80,11 +96,13 @@ export default function FacturesPage() {
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
                   type="search"
-                  placeholder="Rechercher une facture..."
+                  placeholder="Rechercher par ID de facture..."
                   className="pl-8"
+                  value={rechercheId}
+                  onChange={e => setRechercheId(e.target.value)}
                 />
               </div>
-              <Select defaultValue="tous">
+              <Select value={filtreStatut} onValueChange={setFiltreStatut}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Statut" />
                 </SelectTrigger>
@@ -108,20 +126,19 @@ export default function FacturesPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {factures.length > 0 ? (
-                    factures.map((facture) => (
+                  {facturesFiltrees.length > 0 ? (
+                    facturesFiltrees.map((facture) => (
                       <TableRow key={facture.id}>
                         <TableCell>
                           {facture.date_emission
-                            ? format(facture.date_emission, "dd-MM-yyyy")
+                            ? format(new Date(facture.date_emission), "dd-MM-yyyy")
                             : "-"}
                         </TableCell>
                         <TableCell>
-                          {`${facture.inscription__eleve__nom} ${facture.inscription__eleve__prenom}`}
+                          {`${facture.eleve_nom} ${facture.eleve_prenom}`}
                         </TableCell>
                         <TableCell>{facture.montant_total} CHF</TableCell>
                         <TableCell>
-                          {" "}
                           {facture.montant_restant === 0 ? (
                             <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
                               Payé

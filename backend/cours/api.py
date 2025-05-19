@@ -131,7 +131,7 @@ def delete_enseignant(request, enseignant_id: int):
 
 # ------------------- SESSION -------------------
 @router.get("/sessions/")
-def sessions(request, page: int = 1, taille: int = 10):
+def sessions(request, page: int = 1, taille: int = 10, type: str = None, niveau: str = None):
     sessions_qs = (
         Session.objects.select_related("cours", "enseignant")
         .annotate(
@@ -141,6 +141,10 @@ def sessions(request, page: int = 1, taille: int = 10):
         )
         .order_by("date_debut")
     )
+    if type and type != "tous":
+        sessions_qs = sessions_qs.filter(cours__type=type)
+    if niveau and niveau != "tous":
+        sessions_qs = sessions_qs.filter(cours__niveau=niveau)
     paginator = Paginator(sessions_qs, taille)
     page_obj = paginator.get_page(page)
     return {
@@ -357,6 +361,10 @@ def delete_cours_prive(request, cours_prive_id: int):
     cours_prive = get_object_or_404(CoursPrive, id=cours_prive_id)
     cours_prive.delete()
 # ------------------- INSCRIPTIONS -------------------
+@router.get("/{eleve_id}/inscriptions/{inscription_id}/")
+def get_inscription(request, eleve_id: int, inscription_id: int):
+    inscription = get_object_or_404(Inscription.objects.select_related("session", "eleve"), id=inscription_id, eleve_id=eleve_id)
+    return InscriptionOut.from_orm(inscription)
 
 
 @router.get("/{eleve_id}/inscriptions/")

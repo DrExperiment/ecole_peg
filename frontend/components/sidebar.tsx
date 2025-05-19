@@ -37,7 +37,6 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { href: "/ecole_peg/enseignants/", icon: Users, title: "Enseignants" },
     { href: "/ecole_peg/cours/", icon: BookOpen, title: "Cours" },
     { href: "/ecole_peg/sessions/", icon: BookOpen, title: "Sessions" },
-    { href: "/ecole_peg/paiements/", icon: CreditCard, title: "Paiements" },
     { href: "/ecole_peg/factures/", icon: FileText, title: "Factures" },
     { href: "/ecole_peg/cours_prives/", icon: User, title: "Cours privés" },
   ];
