@@ -47,7 +47,7 @@ export default function CoursPrivesPage() {
   useEffect(() => {
     axios
       .get<{ cours_prives: CoursPrive[] }>(
-        "http://localhost:8000/api/cours/cours_prive/"
+        "http://localhost:8000/api/cours/cours_prive/",
       )
       .then((res) => {
         const cours = res.data.cours_prives;
@@ -109,7 +109,9 @@ export default function CoursPrivesPage() {
                   <TableHead className="font-medium">Professeur</TableHead>
                   <TableHead className="font-medium">Tarif</TableHead>
                   <TableHead className="font-medium">Lieu</TableHead>
-                  <TableHead className="text-right font-medium">Actions</TableHead>
+                  <TableHead className="text-right font-medium">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -155,8 +157,8 @@ export default function CoursPrivesPage() {
                           {cours.lieu === "E"
                             ? "École"
                             : cours.lieu === "D"
-                            ? "Domicile"
-                            : cours.lieu}
+                              ? "Domicile"
+                              : cours.lieu}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
@@ -172,7 +174,10 @@ export default function CoursPrivesPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                    <TableCell
+                      colSpan={7}
+                      className="text-center py-6 text-muted-foreground"
+                    >
                       Aucun cours privé trouvé.
                     </TableCell>
                   </TableRow>

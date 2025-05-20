@@ -106,7 +106,9 @@ export default function SessionsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Liste des sessions</CardTitle>
-          <CardDescription>Vue d&apos;ensemble des sessions de cours</CardDescription>
+          <CardDescription>
+            Vue d&apos;ensemble des sessions de cours
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-wrap items-center gap-4">
@@ -144,13 +146,18 @@ export default function SessionsPage() {
                   <TableHead className="font-medium">Niveau</TableHead>
                   <TableHead className="font-medium">Période</TableHead>
                   <TableHead className="font-medium">Statut</TableHead>
-                  <TableHead className="text-right font-medium">Actions</TableHead>
+                  <TableHead className="text-right font-medium">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {loading ? (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-6 text-muted-foreground"
+                    >
                       Chargement...
                     </TableCell>
                   </TableRow>
@@ -168,21 +175,26 @@ export default function SessionsPage() {
                       <TableCell>{session.cours__niveau}</TableCell>
                       <TableCell>
                         <span className="whitespace-nowrap">
-                          Du {new Date(session.date_debut).toLocaleDateString()} au {new Date(session.date_fin).toLocaleDateString()}
+                          Du {new Date(session.date_debut).toLocaleDateString()}{" "}
+                          au {new Date(session.date_fin).toLocaleDateString()}
                         </span>
                       </TableCell>
                       <TableCell>
-                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
-                          session.statut === "O" 
-                            ? "bg-green-50 text-green-700" 
-                            : "bg-red-50 text-red-700"
-                        }`}>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                            session.statut === "O"
+                              ? "bg-green-50 text-green-700"
+                              : "bg-red-50 text-red-700"
+                          }`}
+                        >
                           {session.statut === "O" ? "Ouverte" : "Fermée"}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/ecole_peg/sessions/session/${session.id}`}>
+                          <Link
+                            href={`/ecole_peg/sessions/session/${session.id}`}
+                          >
                             Détails
                           </Link>
                         </Button>
@@ -191,7 +203,10 @@ export default function SessionsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-6 text-muted-foreground"
+                    >
                       Aucune session trouvée.
                     </TableCell>
                   </TableRow>

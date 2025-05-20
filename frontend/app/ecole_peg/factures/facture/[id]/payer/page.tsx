@@ -130,7 +130,12 @@ export default function PaiementFacturePage() {
   return (
     <div className="container mx-auto px-4 py-6 max-w-3xl">
       <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" onClick={handleAnnuler}>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">Paiement Facture</h1>
@@ -147,11 +152,10 @@ export default function PaiementFacturePage() {
         <form onSubmit={handleSubmit}>
           <Card className="shadow-lg">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl">
-                Facture #{facture.id}
-              </CardTitle>
+              <CardTitle className="text-2xl">Facture #{facture.id}</CardTitle>
               <p className="text-sm text-muted-foreground">
-                Émise le {new Date(facture.date_emission).toLocaleDateString('fr-FR')}
+                Émise le{" "}
+                {new Date(facture.date_emission).toLocaleDateString("fr-FR")}
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -159,19 +163,30 @@ export default function PaiementFacturePage() {
               <div className="rounded-lg border bg-card p-4 text-card-foreground">
                 <div className="grid gap-4">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm text-muted-foreground">Élève :</span>
+                    <span className="text-sm text-muted-foreground">
+                      Élève :
+                    </span>
                     <span className="font-medium">
-                      {facture.inscription__eleve__prenom} {facture.inscription__eleve__nom}
+                      {facture.inscription__eleve__prenom}{" "}
+                      {facture.inscription__eleve__nom}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
                     <div>
-                      <span className="text-sm text-muted-foreground">Montant total</span>
-                      <p className="font-medium">{formatCurrency(facture.montant_total)}</p>
+                      <span className="text-sm text-muted-foreground">
+                        Montant total
+                      </span>
+                      <p className="font-medium">
+                        {formatCurrency(facture.montant_total)}
+                      </p>
                     </div>
                     <div>
-                      <span className="text-sm text-muted-foreground">Montant restant</span>
-                      <p className="font-medium text-blue-600">{formatCurrency(facture.montant_restant)}</p>
+                      <span className="text-sm text-muted-foreground">
+                        Montant restant
+                      </span>
+                      <p className="font-medium text-blue-600">
+                        {formatCurrency(facture.montant_restant)}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -234,9 +249,13 @@ export default function PaiementFacturePage() {
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Espèces">Espèces</SelectItem>
-                        <SelectItem value="Virement">Virement bancaire</SelectItem>
+                        <SelectItem value="Virement">
+                          Virement bancaire
+                        </SelectItem>
                         <SelectItem value="Carte">Carte bancaire</SelectItem>
-                        <SelectItem value="Téléphone">Paiement mobile</SelectItem>
+                        <SelectItem value="Téléphone">
+                          Paiement mobile
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
@@ -244,22 +263,18 @@ export default function PaiementFacturePage() {
               </div>
             </CardContent>
             <CardFooter className="flex flex-col sm:flex-row gap-4 sm:justify-end">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 type="button"
                 onClick={handleAnnuler}
                 className="w-full sm:w-auto"
               >
                 Annuler
               </Button>
-              <Button 
-                type="submit"
-                className="w-full sm:w-auto"
-              >
-                {parseFloat(montant) > 0 
-                  ? `Enregistrer le paiement de ${formatCurrency(parseFloat(montant))}` 
-                  : 'Enregistrer le paiement'
-                }
+              <Button type="submit" className="w-full sm:w-auto">
+                {parseFloat(montant) > 0
+                  ? `Enregistrer le paiement de ${formatCurrency(parseFloat(montant))}`
+                  : "Enregistrer le paiement"}
               </Button>
             </CardFooter>
           </Card>

@@ -3,7 +3,6 @@
 import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -136,10 +135,13 @@ export default function NouvelleSessionPage() {
   return (
     <div className="container mx-auto px-4 py-6 max-w-3xl">
       <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/ecole_peg/sessions">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">Nouvelle Session</h1>
       </div>
@@ -149,14 +151,17 @@ export default function NouvelleSessionPage() {
           <CardHeader>
             <CardTitle>Détails de la session</CardTitle>
             <p className="text-sm text-muted-foreground">
-              Créez une nouvelle session en remplissant les informations ci-dessous
+              Créez une nouvelle session en remplissant les informations
+              ci-dessous
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
             {/* Cours et Enseignant */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="cours" className="text-base">Cours</Label>
+                <Label htmlFor="cours" className="text-base">
+                  Cours
+                </Label>
                 <Select
                   name="id_cours"
                   required
@@ -170,7 +175,8 @@ export default function NouvelleSessionPage() {
                       <SelectItem key={cours.id} value={cours.id.toString()}>
                         {cours.nom}{" "}
                         <span className="text-muted-foreground">
-                          ({cours.type === "I" ? "intensif" : "semi-intensif"} - {cours.niveau})
+                          ({cours.type === "I" ? "intensif" : "semi-intensif"} -{" "}
+                          {cours.niveau})
                         </span>
                       </SelectItem>
                     ))}
@@ -179,7 +185,9 @@ export default function NouvelleSessionPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="enseignant" className="text-base">Enseignant</Label>
+                <Label htmlFor="enseignant" className="text-base">
+                  Enseignant
+                </Label>
                 <Select
                   name="enseignant"
                   required
@@ -205,11 +213,13 @@ export default function NouvelleSessionPage() {
             {/* Dates et Période */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="date_debut" className="text-base">Date de début</Label>
+                <Label htmlFor="date_debut" className="text-base">
+                  Date de début
+                </Label>
                 <Input
                   id="date_debut"
                   type="date"
-                  min={format(new Date(), 'yyyy-MM-dd')}
+                  min={format(new Date(), "yyyy-MM-dd")}
                   required
                   className="font-mono"
                   onChange={(e) => parseDateInput(e, setDateDebut)}
@@ -217,11 +227,15 @@ export default function NouvelleSessionPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_fin" className="text-base">Date de fin</Label>
+                <Label htmlFor="date_fin" className="text-base">
+                  Date de fin
+                </Label>
                 <Input
                   id="date_fin"
                   type="date"
-                  min={date_debut ? format(date_debut, 'yyyy-MM-dd') : undefined}
+                  min={
+                    date_debut ? format(date_debut, "yyyy-MM-dd") : undefined
+                  }
                   required
                   className="font-mono"
                   onChange={(e) => parseDateInput(e, setDateFin)}
@@ -232,7 +246,9 @@ export default function NouvelleSessionPage() {
             {/* Configuration de la session */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="seances_mois" className="text-base">Séances par mois</Label>
+                <Label htmlFor="seances_mois" className="text-base">
+                  Séances par mois
+                </Label>
                 <Input
                   id="seances_mois"
                   type="number"
@@ -245,12 +261,12 @@ export default function NouvelleSessionPage() {
                     valueAsNumber: true,
                     min: {
                       value: 1,
-                      message: "Minimum 1 séance par mois"
+                      message: "Minimum 1 séance par mois",
                     },
                     max: {
                       value: 31,
-                      message: "Maximum 31 séances par mois"
-                    }
+                      message: "Maximum 31 séances par mois",
+                    },
                   })}
                   onChange={(e) => setSeancesMois(Number(e.target.value))}
                   onWheel={(e) => e.currentTarget.blur()}
@@ -258,7 +274,9 @@ export default function NouvelleSessionPage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="capacite_max" className="text-base">Capacité maximale</Label>
+                <Label htmlFor="capacite_max" className="text-base">
+                  Capacité maximale
+                </Label>
                 <Input
                   id="capacite_max"
                   type="number"
@@ -271,8 +289,8 @@ export default function NouvelleSessionPage() {
                     valueAsNumber: true,
                     min: {
                       value: 1,
-                      message: "La capacité doit être d'au moins 1"
-                    }
+                      message: "La capacité doit être d'au moins 1",
+                    },
                   })}
                   onWheel={(e) => e.currentTarget.blur()}
                 />
@@ -297,9 +315,13 @@ export default function NouvelleSessionPage() {
                       onChange={() => setPeriodeJournee("M")}
                       className="hidden"
                     />
-                    <div className={`w-4 h-4 rounded-full border-2 ${
-                      periode_journee === "M" ? "border-primary bg-primary" : "border-muted"
-                    }`} />
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 ${
+                        periode_journee === "M"
+                          ? "border-primary bg-primary"
+                          : "border-muted"
+                      }`}
+                    />
                     <span className="font-medium">Matin</span>
                   </div>
                   <p className="text-sm text-muted-foreground pl-6">
@@ -322,9 +344,13 @@ export default function NouvelleSessionPage() {
                       onChange={() => setPeriodeJournee("S")}
                       className="hidden"
                     />
-                    <div className={`w-4 h-4 rounded-full border-2 ${
-                      periode_journee === "S" ? "border-primary bg-primary" : "border-muted"
-                    }`} />
+                    <div
+                      className={`w-4 h-4 rounded-full border-2 ${
+                        periode_journee === "S"
+                          ? "border-primary bg-primary"
+                          : "border-muted"
+                      }`}
+                    />
                     <span className="font-medium">Soir</span>
                   </div>
                   <p className="text-sm text-muted-foreground pl-6">
@@ -333,20 +359,16 @@ export default function NouvelleSessionPage() {
                 </div>
               </div>
             </div>
-
           </CardContent>
           <CardFooter className="flex justify-end gap-4">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               type="button"
               onClick={() => router.back()}
             >
               Annuler
             </Button>
-            <Button 
-              type="submit" 
-              disabled={isSubmitting}
-            >
+            <Button type="submit" disabled={isSubmitting}>
               {isSubmitting ? (
                 <>
                   <span className="loading loading-spinner loading-sm mr-2"></span>

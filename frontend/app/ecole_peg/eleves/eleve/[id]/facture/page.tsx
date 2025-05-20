@@ -2,7 +2,6 @@
 
 import { useCallback, use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -103,7 +102,7 @@ export default function NouvelleFacturePage({
   const modifierDetail = (
     index: number,
     champ: keyof DetailFacture,
-    valeur: unknown
+    valeur: unknown,
   ) => {
     const nouveauxDetails = [...details_facture];
     nouveauxDetails[index] = {
@@ -153,19 +152,25 @@ export default function NouvelleFacturePage({
     try {
       await axios.post(
         `http://localhost:8000/api/factures/facture/`,
-        donneesCompletes
+        donneesCompletes,
       );
       router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
     } catch (erreur) {
       console.error("Erreur: ", erreur);
     }
-  }, [details_facture, typeFacturation, idReference, router, resolvedParams.id]);
+  }, [
+    details_facture,
+    typeFacturation,
+    idReference,
+    router,
+    resolvedParams.id,
+  ]);
 
   useEffect(() => {
     async function fetchEleve() {
       try {
         const { data } = await axios.get<Eleve>(
-          `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`
+          `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`,
         );
         setEleve(data);
       } catch (e) {
@@ -176,7 +181,7 @@ export default function NouvelleFacturePage({
     async function fetchInscriptions() {
       try {
         const { data } = await axios.get(
-          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`
+          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`,
         );
         setInscriptions(data);
       } catch (e) {
@@ -187,7 +192,7 @@ export default function NouvelleFacturePage({
     async function fetchCoursPrives() {
       try {
         const { data } = await axios.get(
-          `http://localhost:8000/api/cours/eleves/${resolvedParams.id}/cours_prives/`
+          `http://localhost:8000/api/cours/eleves/${resolvedParams.id}/cours_prives/`,
         );
         setCoursPrives(data);
       } catch (e) {
@@ -203,10 +208,13 @@ export default function NouvelleFacturePage({
   return (
     <div className="container mx-auto py-6 max-w-4xl">
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
           Nouvelle facture pour {eleve?.prenom} {eleve?.nom}
@@ -361,7 +369,7 @@ export default function NouvelleFacturePage({
                             modifierDetail(
                               index,
                               "date_debut_periode",
-                              value ? new Date(value) : undefined
+                              value ? new Date(value) : undefined,
                             );
                           }}
                         />
@@ -382,7 +390,7 @@ export default function NouvelleFacturePage({
                             modifierDetail(
                               index,
                               "date_fin_periode",
-                              value ? new Date(value) : undefined
+                              value ? new Date(value) : undefined,
                             );
                           }}
                         />

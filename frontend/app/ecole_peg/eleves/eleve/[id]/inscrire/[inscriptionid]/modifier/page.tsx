@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { useRouter, useParams } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -68,10 +67,10 @@ export default function EditInscriptionPage() {
       try {
         const [inscRes, sessionsRes] = await Promise.all([
           axios.get<Inscription>(
-            `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionid}/`
+            `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionid}/`,
           ),
           axios.get<{ sessions: Session[] }>(
-            `http://localhost:8000/api/cours/sessions/`
+            `http://localhost:8000/api/cours/sessions/`,
           ),
         ]);
         const insc = inscRes.data;
@@ -81,7 +80,7 @@ export default function EditInscriptionPage() {
         setValue("but", insc.but);
         setValue("frais_inscription", insc.frais_inscription);
         setDate(
-          insc.date_inscription ? parseISO(insc.date_inscription) : undefined
+          insc.date_inscription ? parseISO(insc.date_inscription) : undefined,
         );
         setPreinscription(insc.preinscription ?? false);
       } catch (err) {
@@ -101,7 +100,7 @@ export default function EditInscriptionPage() {
     try {
       await axios.put(
         `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionid}/`,
-        donneesCompletes
+        donneesCompletes,
       );
       router.push(`/ecole_peg/eleves/eleve/${id}/`);
     } catch (erreur) {
@@ -112,10 +111,13 @@ export default function EditInscriptionPage() {
   return (
     <div className="container mx-auto px-4 py-6 max-w-3xl">
       <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/ecole_peg/eleves/eleve/${id}`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">

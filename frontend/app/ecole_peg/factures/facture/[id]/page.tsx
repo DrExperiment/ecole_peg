@@ -88,16 +88,13 @@ export default function FacturePage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-            <a
-              href="#"
-              onClick={(e) => {
-                e.preventDefault();
-                router.back();
-              }}
-            >
-              <ArrowLeft className="h-4 w-4" />
-            </a>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            aria-label="Retourner à la page précédente"
+          >
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight">
@@ -162,7 +159,10 @@ export default function FacturePage() {
                       </span>{" "}
                       <span className="font-medium">
                         {facture?.date_emission
-                          ? format(new Date(facture.date_emission), "dd MMMM yyyy")
+                          ? format(
+                              new Date(facture.date_emission),
+                              "dd MMMM yyyy",
+                            )
                           : "-"}
                       </span>
                     </p>
@@ -214,7 +214,14 @@ export default function FacturePage() {
                               "dd MMMM yyyy",
                             )}
                             {detail.date_fin_periode && (
-                              <> au {format(new Date(detail.date_fin_periode), "dd MMMM yyyy")}</>
+                              <>
+                                {" "}
+                                au{" "}
+                                {format(
+                                  new Date(detail.date_fin_periode),
+                                  "dd MMMM yyyy",
+                                )}
+                              </>
                             )}
                           </>
                         )}
@@ -249,7 +256,9 @@ export default function FacturePage() {
                     <div className="text-muted-foreground">Compte</div>
                     <div className="font-medium">240-288885.00ZP</div>
                     <div className="text-muted-foreground">IBAN</div>
-                    <div className="font-medium">CH55 0024 0240 2888 8500 Z</div>
+                    <div className="font-medium">
+                      CH55 0024 0240 2888 8500 Z
+                    </div>
                     <div className="text-muted-foreground">BIC / SWIFT</div>
                     <div className="font-medium">UBS W CH ZH 80A</div>
                   </div>

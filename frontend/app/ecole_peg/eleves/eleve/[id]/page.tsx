@@ -280,10 +280,13 @@ export default function ElevePage({
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-          <Link href="/ecole_peg/eleves">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
           {eleve?.nom} {eleve?.prenom}
@@ -306,7 +309,9 @@ export default function ElevePage({
           <Card className="shadow-sm">
             <CardHeader className="border-b">
               <CardTitle>Informations personnelles</CardTitle>
-              <CardDescription>Détails et coordonnées de l&apos;élève</CardDescription>
+              <CardDescription>
+                Détails et coordonnées de l&apos;élève
+              </CardDescription>
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
               {[
@@ -413,11 +418,14 @@ export default function ElevePage({
                   </TableHeader>
                   <TableBody>
                     {inscriptions.map((inscription) => (
-                      <TableRow key={inscription.id} className="hover:bg-muted/50">
+                      <TableRow
+                        key={inscription.id}
+                        className="hover:bg-muted/50"
+                      >
                         <TableCell>
                           {format(
                             new Date(inscription.date_inscription),
-                            "dd/MM/yyyy"
+                            "dd/MM/yyyy",
                           )}
                         </TableCell>
                         <TableCell>{inscription.but}</TableCell>
@@ -425,27 +433,36 @@ export default function ElevePage({
                           {inscription.frais_inscription} CHF
                         </TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            inscription.statut === "A"
-                              ? "bg-green-100 text-green-800"
-                              : "bg-gray-100 text-gray-800"
-                          }`}>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              inscription.statut === "A"
+                                ? "bg-green-100 text-green-800"
+                                : "bg-gray-100 text-gray-800"
+                            }`}
+                          >
                             {inscription.statut === "A" ? "Active" : "Inactive"}
                           </span>
                         </TableCell>
                         <TableCell>
                           {inscription.date_sortie
-                            ? format(new Date(inscription.date_sortie), "dd/MM/yyyy")
+                            ? format(
+                                new Date(inscription.date_sortie),
+                                "dd/MM/yyyy",
+                              )
                             : "-"}
                         </TableCell>
                         <TableCell>{inscription.motif_sortie || "-"}</TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            inscription.preinscription
-                              ? "bg-blue-100 text-blue-800"
-                              : "bg-emerald-100 text-emerald-800"
-                          }`}>
-                            {inscription.preinscription ? "Préinscription" : "Inscription"}
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              inscription.preinscription
+                                ? "bg-blue-100 text-blue-800"
+                                : "bg-emerald-100 text-emerald-800"
+                            }`}
+                          >
+                            {inscription.preinscription
+                              ? "Préinscription"
+                              : "Inscription"}
                           </span>
                         </TableCell>
                         <TableCell className="text-right space-x-2">
@@ -502,11 +519,18 @@ export default function ElevePage({
                   {factures.length > 0 ? (
                     factures.map((facture) => (
                       <TableRow key={facture.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">#{facture.id}</TableCell>
-                        <TableCell>
-                          {format(new Date(facture.date_emission), "dd/MM/yyyy")}
+                        <TableCell className="font-medium">
+                          #{facture.id}
                         </TableCell>
-                        <TableCell>{facture.montant_total.toFixed(2)} CHF</TableCell>
+                        <TableCell>
+                          {format(
+                            new Date(facture.date_emission),
+                            "dd/MM/yyyy",
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {facture.montant_total.toFixed(2)} CHF
+                        </TableCell>
                         <TableCell>
                           {facture.montant_restant === 0 ? (
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
@@ -520,7 +544,9 @@ export default function ElevePage({
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" asChild>
-                            <Link href={`/ecole_peg/factures/facture/${facture.id}`}>
+                            <Link
+                              href={`/ecole_peg/factures/facture/${facture.id}`}
+                            >
                               Détails
                             </Link>
                           </Button>
@@ -529,7 +555,10 @@ export default function ElevePage({
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center text-muted-foreground h-24"
+                      >
                         Aucune facture trouvée.
                       </TableCell>
                     </TableRow>
@@ -540,7 +569,9 @@ export default function ElevePage({
             <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50">
               <Button
                 onClick={() => {
-                  router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`);
+                  router.push(
+                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`,
+                  );
                 }}
               >
                 Nouvelle facture
@@ -575,7 +606,10 @@ export default function ElevePage({
                       <TableRow key={paiement.id} className="hover:bg-muted/50">
                         <TableCell>
                           {paiement.date_paiement
-                            ? format(new Date(paiement.date_paiement), "dd/MM/yyyy")
+                            ? format(
+                                new Date(paiement.date_paiement),
+                                "dd/MM/yyyy",
+                              )
                             : "-"}
                         </TableCell>
                         <TableCell>{eleve?.nom ?? "-"}</TableCell>
@@ -596,7 +630,9 @@ export default function ElevePage({
                         </TableCell>
                         <TableCell className="text-right">
                           <Button variant="outline" size="sm" asChild>
-                            <Link href={`/ecole_peg/eleves/eleve/${paiement.id}`}>
+                            <Link
+                              href={`/ecole_peg/eleves/eleve/${paiement.id}`}
+                            >
                               Détails
                             </Link>
                           </Button>
@@ -605,7 +641,10 @@ export default function ElevePage({
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
+                      <TableCell
+                        colSpan={6}
+                        className="text-center text-muted-foreground h-24"
+                      >
                         Aucun paiement trouvé
                       </TableCell>
                     </TableRow>
@@ -725,9 +764,10 @@ export default function ElevePage({
                     { label: "Email", value: garant.email },
                     {
                       label: "Adresse complète",
-                      value: [garant.rue, garant.numero, garant.npa, garant.localite]
-                        .filter(Boolean)
-                        .join(" ") || "-",
+                      value:
+                        [garant.rue, garant.numero, garant.npa, garant.localite]
+                          .filter(Boolean)
+                          .join(" ") || "-",
                     },
                   ].map((item, index) => (
                     <div key={index} className="space-y-1.5">
@@ -744,7 +784,9 @@ export default function ElevePage({
                     Aucun garant n&apos;est associé à cet élève.
                   </p>
                   <Button className="mt-4" variant="outline" asChild>
-                    <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/ajouter`}>
+                    <Link
+                      href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/ajouter`}
+                    >
                       Ajouter un garant
                     </Link>
                   </Button>
@@ -754,7 +796,9 @@ export default function ElevePage({
             {garant && (
               <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50">
                 <Button variant="outline" asChild>
-                  <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/modifier`}>
+                  <Link
+                    href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/modifier`}
+                  >
                     Modifier le garant
                   </Link>
                 </Button>
@@ -823,12 +867,12 @@ export default function ElevePage({
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="fichier">Fichier</Label>
-                    <Input 
-                      type="file" 
-                      name="fichier" 
-                      id="fichier" 
+                    <Input
+                      type="file"
+                      name="fichier"
+                      id="fichier"
                       required
-                      className="w-full" 
+                      className="w-full"
                     />
                   </div>
                 </div>
@@ -843,7 +887,9 @@ export default function ElevePage({
           <Card className="shadow-sm">
             <CardHeader className="border-b">
               <CardTitle>Historique des tests</CardTitle>
-              <CardDescription>Résultats des tests de l&apos;élève</CardDescription>
+              <CardDescription>
+                Résultats des tests de l&apos;élève
+              </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
               <Table>
@@ -868,11 +914,13 @@ export default function ElevePage({
                           </span>
                         </TableCell>
                         <TableCell>
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            test.note >= 4 
-                              ? "bg-green-100 text-green-800"
-                              : "bg-red-100 text-red-800"
-                          }`}>
+                          <span
+                            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                              test.note >= 4
+                                ? "bg-green-100 text-green-800"
+                                : "bg-red-100 text-red-800"
+                            }`}
+                          >
                             {test.note}
                           </span>
                         </TableCell>
@@ -889,7 +937,10 @@ export default function ElevePage({
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                      <TableCell
+                        colSpan={4}
+                        className="text-center text-muted-foreground h-24"
+                      >
                         Aucun test trouvé.
                       </TableCell>
                     </TableRow>
@@ -900,7 +951,9 @@ export default function ElevePage({
             <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50">
               <Button
                 onClick={() => {
-                  router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`);
+                  router.push(
+                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`,
+                  );
                 }}
               >
                 Nouveau test

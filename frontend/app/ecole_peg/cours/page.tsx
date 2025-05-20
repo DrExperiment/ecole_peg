@@ -47,7 +47,7 @@ export default function CoursPage() {
     async function fetchCours() {
       try {
         const reponse = await axios.get(
-          "http://localhost:8000/api/cours/cours/"
+          "http://localhost:8000/api/cours/cours/",
         );
         setCours(reponse.data);
       } catch (erreur) {
@@ -61,7 +61,7 @@ export default function CoursPage() {
     try {
       await axios.delete(`http://localhost:8000/api/cours/cours/${id_cours}/`);
       setCours((coursPrec) =>
-        coursPrec.filter((cours) => cours.id !== id_cours)
+        coursPrec.filter((cours) => cours.id !== id_cours),
       );
     } catch (erreur) {
       console.error("Erreur: ", erreur);
@@ -95,7 +95,9 @@ export default function CoursPage() {
       <Card>
         <CardHeader>
           <CardTitle>Liste des cours</CardTitle>
-          <CardDescription>Vue d&apos;ensemble des cours disponibles</CardDescription>
+          <CardDescription>
+            Vue d&apos;ensemble des cours disponibles
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-wrap items-center gap-4">
@@ -133,30 +135,27 @@ export default function CoursPage() {
                   <TableHead className="font-medium">Niveau</TableHead>
                   <TableHead className="font-medium">Durée</TableHead>
                   <TableHead className="font-medium">Tarif</TableHead>
-                  <TableHead className="text-right font-medium">Actions</TableHead>
+                  <TableHead className="text-right font-medium">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {coursFiltres.length > 0 ? (
                   coursFiltres.map((cours) => (
                     <TableRow key={cours.id}>
-                      <TableCell className="font-medium">
-                        {cours.nom}
-                      </TableCell>
+                      <TableCell className="font-medium">{cours.nom}</TableCell>
                       <TableCell>
                         {cours.type === "I" ? "Intensif" : "Semi-intensif"}
                       </TableCell>
                       <TableCell>{cours.niveau}</TableCell>
                       <TableCell>
-                        {cours.heures_par_semaine}h/semaine · {cours.duree_semaines} semaines
+                        {cours.heures_par_semaine}h/semaine ·{" "}
+                        {cours.duree_semaines} semaines
                       </TableCell>
                       <TableCell>{cours.tarif} CHF</TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                        >
+                        <Button variant="ghost" size="sm" asChild>
                           <Link href={`/ecole_peg/cours/cours/${cours.id}`}>
                             Détails
                           </Link>
@@ -173,7 +172,10 @@ export default function CoursPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                    <TableCell
+                      colSpan={6}
+                      className="text-center py-6 text-muted-foreground"
+                    >
                       Aucun cours trouvé.
                     </TableCell>
                   </TableRow>

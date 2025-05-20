@@ -70,9 +70,12 @@ export default function NouvelleFichePresence({
       <Card className="shadow-lg">
         <CardContent className="pt-6 space-y-6">
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">Nouvelle fiche de présence</h1>
+            <h1 className="text-2xl font-bold tracking-tight">
+              Nouvelle fiche de présence
+            </h1>
             <p className="text-sm text-muted-foreground">
-              Sélectionnez le mois et l&apos;année pour créer une nouvelle fiche de présence
+              Sélectionnez le mois et l&apos;année pour créer une nouvelle fiche
+              de présence
             </p>
           </div>
 
@@ -81,19 +84,22 @@ export default function NouvelleFichePresence({
               <div className="space-y-4">
                 <div className="relative">
                   <div className="relative rounded-lg border bg-card p-4 transition-colors hover:bg-accent/5">
-                    <Label htmlFor="mois" className="text-base">Mois</Label>
+                    <Label htmlFor="mois" className="text-base">
+                      Mois
+                    </Label>
                     <Select value={mois} onValueChange={setMois}>
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Sélectionner un mois" />
                       </SelectTrigger>
                       <SelectContent>
                         {months.map((m) => (
-                          <SelectItem 
-                            key={m.value} 
+                          <SelectItem
+                            key={m.value}
                             value={m.value}
                             className={
-                              new Date().getMonth() + 1 === parseInt(m.value) ? 
-                              "font-medium text-primary" : ""
+                              new Date().getMonth() + 1 === parseInt(m.value)
+                                ? "font-medium text-primary"
+                                : ""
                             }
                           >
                             {m.label}
@@ -105,7 +111,9 @@ export default function NouvelleFichePresence({
                 </div>
 
                 <div className="relative rounded-lg border bg-card p-4 transition-colors hover:bg-accent/5">
-                  <Label htmlFor="annee" className="text-base">Année</Label>
+                  <Label htmlFor="annee" className="text-base">
+                    Année
+                  </Label>
                   <Input
                     id="annee"
                     type="number"
@@ -143,13 +151,13 @@ export default function NouvelleFichePresence({
                   </div>
                   <div className="space-y-1">
                     <p className="text-sm font-medium">
-                      {mois ? 
-                        `${months.find(m => m.value === mois)?.label} ${annee}` : 
-                        "Sélectionnez un mois et une année"
-                      }
+                      {mois
+                        ? `${months.find((m) => m.value === mois)?.label} ${annee}`
+                        : "Sélectionnez un mois et une année"}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      La fiche de présence sera créée pour la session sélectionnée
+                      La fiche de présence sera créée pour la session
+                      sélectionnée
                     </p>
                   </div>
                 </div>
@@ -157,24 +165,22 @@ export default function NouvelleFichePresence({
             </div>
 
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-end">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 type="button"
                 onClick={() => router.back()}
                 className="w-full sm:w-auto"
               >
                 Annuler
               </Button>
-              <Button 
-                type="submit" 
+              <Button
+                type="submit"
                 disabled={!mois || !annee}
                 className="w-full sm:w-auto"
               >
-                {!mois || !annee ? (
-                  "Complétez les champs"
-                ) : (
-                  "Créer la fiche de présence"
-                )}
+                {!mois || !annee
+                  ? "Complétez les champs"
+                  : "Créer la fiche de présence"}
               </Button>
             </div>
           </form>

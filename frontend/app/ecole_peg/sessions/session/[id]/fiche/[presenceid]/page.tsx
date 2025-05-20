@@ -1,7 +1,6 @@
 "use client";
 
 import { use, useState, useEffect } from "react";
-import Link from "next/link";
 import { Button } from "@/components/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/card";
 import {
@@ -16,6 +15,7 @@ import { ArrowLeft, Save } from "lucide-react";
 import axios from "axios";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
+import { useRouter } from "next/navigation";
 
 // Typages back-end
 interface Eleve {
@@ -52,6 +52,8 @@ export default function PresenceDetailPage({
   const [fiche, setFiche] = useState<FichePresencesOut>();
   const [presenceMap, setPresenceMap] = useState<PresenceMap>({});
   const [loading, setLoading] = useState(true);
+
+  const router = useRouter();
 
   useEffect(() => {
     async function loadAll() {
@@ -167,10 +169,13 @@ export default function PresenceDetailPage({
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-            <Link href="/dashboard/presences">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => router.back()}
+            aria-label="Retourner à la page précédente"
+          >
+            <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight">
@@ -208,7 +213,10 @@ export default function PresenceDetailPage({
                       Étudiant
                     </TableHead>
                     {joursDuMois.map((j) => (
-                      <TableHead key={j} className="text-center p-2 min-w-[40px]">
+                      <TableHead
+                        key={j}
+                        className="text-center p-2 min-w-[40px]"
+                      >
                         {j}
                       </TableHead>
                     ))}

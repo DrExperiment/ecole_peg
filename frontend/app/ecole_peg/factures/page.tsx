@@ -89,7 +89,9 @@ export default function FacturesPage() {
       <Card>
         <CardHeader>
           <CardTitle>Liste des factures</CardTitle>
-          <CardDescription>Vue d&apos;ensemble des factures émises</CardDescription>
+          <CardDescription>
+            Vue d&apos;ensemble des factures émises
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-wrap items-center gap-4">
@@ -123,7 +125,9 @@ export default function FacturesPage() {
                   <TableHead className="font-medium">Étudiant</TableHead>
                   <TableHead className="font-medium">Montant</TableHead>
                   <TableHead className="font-medium">Statut</TableHead>
-                  <TableHead className="text-right font-medium">Actions</TableHead>
+                  <TableHead className="text-right font-medium">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -132,17 +136,24 @@ export default function FacturesPage() {
                     <TableRow key={facture.id}>
                       <TableCell className="whitespace-nowrap">
                         {facture.date_emission
-                          ? format(new Date(facture.date_emission), "dd MMM yyyy")
+                          ? format(
+                              new Date(facture.date_emission),
+                              "dd MMM yyyy",
+                            )
                           : "-"}
                       </TableCell>
                       <TableCell className="font-medium">
                         {`${facture.eleve_nom} ${facture.eleve_prenom}`}
                       </TableCell>
                       <TableCell>
-                        <span className="font-medium">{facture.montant_total.toLocaleString('fr-CH')} CHF</span>
+                        <span className="font-medium">
+                          {facture.montant_total.toLocaleString("fr-CH")} CHF
+                        </span>
                         {facture.montant_restant > 0 && (
                           <div className="text-sm text-muted-foreground">
-                            Restant: {facture.montant_restant.toLocaleString('fr-CH')} CHF
+                            Restant:{" "}
+                            {facture.montant_restant.toLocaleString("fr-CH")}{" "}
+                            CHF
                           </div>
                         )}
                       </TableCell>
@@ -159,7 +170,9 @@ export default function FacturesPage() {
                       </TableCell>
                       <TableCell className="text-right">
                         <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/ecole_peg/factures/facture/${facture.id}`}>
+                          <Link
+                            href={`/ecole_peg/factures/facture/${facture.id}`}
+                          >
                             <FileText className="mr-2 h-4 w-4" />
                             Détails
                           </Link>
@@ -169,7 +182,10 @@ export default function FacturesPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                    <TableCell
+                      colSpan={5}
+                      className="text-center py-6 text-muted-foreground"
+                    >
                       Aucune facture trouvée.
                     </TableCell>
                   </TableRow>

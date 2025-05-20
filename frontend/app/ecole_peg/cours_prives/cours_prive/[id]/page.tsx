@@ -42,7 +42,7 @@ export default function CoursPriveDetailsPage() {
     if (!isValid(parsed)) return "";
     return format(parsed, "EEEE d MMMM yyyy", { locale: fr });
   };
-  
+
   const formatTime = (timeString?: string) => {
     if (!timeString) return "";
     const parsed = parseISO(`1970-01-01T${timeString}`);
@@ -75,16 +75,13 @@ export default function CoursPriveDetailsPage() {
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-          <a
-            href="#"
-            onClick={(e) => {
-              e.preventDefault();
-              router.back();
-            }}
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </a>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
           Détails du cours privé
@@ -100,33 +97,40 @@ export default function CoursPriveDetailsPage() {
                 {formatDate(coursPrive.date_cours_prive)}
               </CardDescription>
             </div>
-            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-              coursPrive.lieu === "E" 
-                ? "bg-blue-100 text-blue-800"
-                : "bg-emerald-100 text-emerald-800"
-            }`}>
+            <span
+              className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                coursPrive.lieu === "E"
+                  ? "bg-blue-100 text-blue-800"
+                  : "bg-emerald-100 text-emerald-800"
+              }`}
+            >
               {coursPrive.lieu === "E" ? "À l'école" : "À domicile"}
             </span>
           </div>
         </CardHeader>
-        
+
         <CardContent className="p-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <Clock className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Horaire</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Horaire
+                  </p>
                   <p className="text-sm">
-                    {formatTime(coursPrive.heure_debut)} – {formatTime(coursPrive.heure_fin)}
+                    {formatTime(coursPrive.heure_debut)} –{" "}
+                    {formatTime(coursPrive.heure_fin)}
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-3">
                 <CreditCard className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Tarif</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Tarif
+                  </p>
                   <p className="text-sm">{coursPrive.tarif} CHF</p>
                 </div>
               </div>
@@ -136,7 +140,9 @@ export default function CoursPriveDetailsPage() {
               <div className="flex items-center gap-3">
                 <User className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Enseignant</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Enseignant
+                  </p>
                   <p className="text-sm">
                     {coursPrive.enseignant__prenom} {coursPrive.enseignant__nom}
                   </p>
@@ -146,7 +152,9 @@ export default function CoursPriveDetailsPage() {
               <div className="flex items-center gap-3">
                 <Users className="h-4 w-4 text-muted-foreground" />
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">Élèves</p>
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Élèves
+                  </p>
                   <p className="text-sm">
                     {coursPrive.eleves.length > 0
                       ? coursPrive.eleves.join(", ")
@@ -159,10 +167,20 @@ export default function CoursPriveDetailsPage() {
         </CardContent>
 
         <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50 space-x-2">
-          <Button variant="outline" onClick={() => router.push(`/ecole_peg/cours_prives/cours_prive/${id}/modifier`)}>
+          <Button
+            variant="outline"
+            onClick={() =>
+              router.push(`/ecole_peg/cours_prives/cours_prive/${id}/modifier`)
+            }
+          >
             Modifier
           </Button>
-          <Button variant="default" onClick={() => router.push(`/ecole_peg/cours_prives/cours_prive/${id}/presence`)}>
+          <Button
+            variant="default"
+            onClick={() =>
+              router.push(`/ecole_peg/cours_prives/cours_prive/${id}/presence`)
+            }
+          >
             Gérer les présences
           </Button>
         </CardFooter>

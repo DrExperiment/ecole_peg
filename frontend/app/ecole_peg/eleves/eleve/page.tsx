@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
 
 import { Button } from "@/components/button";
 import {
@@ -47,7 +46,7 @@ export default function NouveauElevePage() {
 
   const [sexe, setSexe] = useState<"H" | "F">("H");
   const [date_naissance, setDateNaissance] = useState<Date | undefined>(
-    undefined
+    undefined,
   );
   const [niveau, setNiveau] = useState<"A1" | "A2" | "B1" | "B2" | "C1">("A1");
   const [type_permis, setTypePermis] = useState<"E" | "S" | "B" | "P">("P");
@@ -87,12 +86,12 @@ export default function NouveauElevePage() {
       try {
         console.log(
           "Données envoyées : ",
-          JSON.stringify(donneesCompletes, null, 2)
+          JSON.stringify(donneesCompletes, null, 2),
         );
 
         const reponse = await axios.post(
           "http://localhost:8000/api/eleves/eleve/",
-          donneesCompletes // Ajoutez les données ici
+          donneesCompletes, // Ajoutez les données ici
         );
         console.log("Réponse complète backend :", reponse.data);
 
@@ -103,7 +102,7 @@ export default function NouveauElevePage() {
         if (axios.isAxiosError(error) && error.response) {
           console.error(
             "🛑 Erreurs de validation :",
-            error.response.data.erreurs
+            error.response.data.erreurs,
           );
           alert("Erreur de validation : vérifie tous les champs.");
         } else {
@@ -121,7 +120,7 @@ export default function NouveauElevePage() {
       setError,
       sexe,
       type_permis,
-    ]
+    ],
   );
 
   useEffect(() => {
@@ -143,10 +142,13 @@ export default function NouveauElevePage() {
   return (
     <div className="container mx-auto py-6 max-w-5xl">
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/ecole_peg/eleves">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">Nouveau Élève</h1>
       </div>
@@ -225,7 +227,9 @@ export default function NouveauElevePage() {
                   id="date_naissance"
                   name="date_naissance"
                   required
-                  value={date_naissance ? format(date_naissance, "yyyy-MM-dd") : ""}
+                  value={
+                    date_naissance ? format(date_naissance, "yyyy-MM-dd") : ""
+                  }
                   onChange={(e) => {
                     const value = e.target.value;
                     setDateNaissance(value ? new Date(value) : undefined);
@@ -320,7 +324,9 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_permis">Date d&apos;expiration de permis</Label>
+                <Label htmlFor="date_permis">
+                  Date d&apos;expiration de permis
+                </Label>
                 <Input
                   type="date"
                   id="date_permis"
@@ -358,7 +364,9 @@ export default function NouveauElevePage() {
           <div className="space-y-6">
             <Card>
               <CardHeader className="space-y-1">
-                <CardTitle className="text-2xl">Coordonnées de contact</CardTitle>
+                <CardTitle className="text-2xl">
+                  Coordonnées de contact
+                </CardTitle>
                 <CardDescription>
                   Veuillez saisir les coordonnées de l&apos;élève.
                 </CardDescription>
@@ -438,7 +446,9 @@ export default function NouveauElevePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="adresse_facturation">Adresse de facturation</Label>
+                  <Label htmlFor="adresse_facturation">
+                    Adresse de facturation
+                  </Label>
                   <Textarea
                     id="adresse_facturation"
                     placeholder="Adresse complète pour la facturation"
@@ -454,8 +464,8 @@ export default function NouveauElevePage() {
                 <CardTitle className="text-2xl">Garant</CardTitle>
                 <CardDescription>
                   Si l&apos;élève dispose d&apos;un garant, les informations
-                  complémentaires vous seront demandées après la validation de ce
-                  formulaire.
+                  complémentaires vous seront demandées après la validation de
+                  ce formulaire.
                 </CardDescription>
               </CardHeader>
               <CardContent>

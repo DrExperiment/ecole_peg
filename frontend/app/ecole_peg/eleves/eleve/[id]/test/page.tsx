@@ -2,7 +2,6 @@
 
 import { useCallback, use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -96,10 +95,13 @@ export default function NouveauTestPage({
   return (
     <div className="container mx-auto py-6 max-w-2xl">
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
           Nouveau test de niveau pour {eleve?.prenom} {eleve?.nom}

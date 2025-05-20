@@ -172,10 +172,13 @@ export default function NouveauPaiementPage({
   return (
     <div className="container mx-auto py-6 max-w-4xl">
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
           Nouveau paiement pour {eleve?.prenom} {eleve?.nom}
@@ -211,7 +214,9 @@ export default function NouveauPaiementPage({
                     <TableBody>
                       {factures.map((f) => (
                         <TableRow key={f.id}>
-                          <TableCell className="font-medium">{f.numero}</TableCell>
+                          <TableCell className="font-medium">
+                            {f.numero}
+                          </TableCell>
                           <TableCell>{f.date_emission}</TableCell>
                           <TableCell>{f.description}</TableCell>
                           <TableCell className="text-right font-mono">
@@ -341,9 +346,13 @@ export default function NouveauPaiementPage({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="Espèces">Espèces</SelectItem>
-                        <SelectItem value="Virement">Virement bancaire</SelectItem>
+                        <SelectItem value="Virement">
+                          Virement bancaire
+                        </SelectItem>
                         <SelectItem value="Carte">Carte bancaire</SelectItem>
-                        <SelectItem value="Téléphone">Paiement mobile</SelectItem>
+                        <SelectItem value="Téléphone">
+                          Paiement mobile
+                        </SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

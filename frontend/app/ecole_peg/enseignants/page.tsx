@@ -79,7 +79,9 @@ export default function EnseignantsPage() {
       <Card>
         <CardHeader>
           <CardTitle>Liste des enseignants</CardTitle>
-          <CardDescription>Vue d&apos;ensemble du corps enseignant</CardDescription>
+          <CardDescription>
+            Vue d&apos;ensemble du corps enseignant
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="rounded-md border">
@@ -88,7 +90,9 @@ export default function EnseignantsPage() {
                 <TableRow>
                   <TableHead className="font-medium">Nom</TableHead>
                   <TableHead className="font-medium">Prénom</TableHead>
-                  <TableHead className="text-right font-medium">Actions</TableHead>
+                  <TableHead className="text-right font-medium">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -100,12 +104,10 @@ export default function EnseignantsPage() {
                       </TableCell>
                       <TableCell>{enseignant.prenom}</TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          asChild
-                        >
-                          <Link href={`/ecole_peg/enseignants/enseignant/${enseignant.id}`}>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link
+                            href={`/ecole_peg/enseignants/enseignant/${enseignant.id}`}
+                          >
                             Détails
                           </Link>
                         </Button>
@@ -121,7 +123,10 @@ export default function EnseignantsPage() {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={3} className="text-center py-6 text-muted-foreground">
+                    <TableCell
+                      colSpan={3}
+                      className="text-center py-6 text-muted-foreground"
+                    >
                       Aucun enseignant trouvé.
                     </TableCell>
                   </TableRow>

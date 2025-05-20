@@ -2,7 +2,14 @@
 
 import Link from "next/link";
 import { Button } from "@/components/button";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/card";
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from "@/components/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/tabs";
 import {
   Table,
@@ -12,7 +19,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/table";
-import { ArrowLeft, Calendar, Users, Bookmark, GraduationCap } from "lucide-react";
+import {
+  ArrowLeft,
+  Calendar,
+  Users,
+  Bookmark,
+  GraduationCap,
+} from "lucide-react";
 import React, { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
@@ -114,17 +127,21 @@ export default function SessionPage({
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-4 mb-6">
-        <Button variant="ghost" size="icon" asChild className="h-8 w-8">
-          <Link href="/ecole_peg/sessions">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">
             {session?.cours__nom}
           </h1>
           <p className="text-muted-foreground">
-            {session?.type === "I" ? "Intensif" : "Semi-intensif"} - Niveau {session?.cours__niveau}
+            {session?.type === "I" ? "Intensif" : "Semi-intensif"} - Niveau{" "}
+            {session?.cours__niveau}
           </p>
         </div>
       </div>
@@ -141,14 +158,20 @@ export default function SessionPage({
               <div className="flex items-center justify-between">
                 <div>
                   <CardTitle>Détails de la session</CardTitle>
-                  <CardDescription>Informations sur la session en cours</CardDescription>
+                  <CardDescription>
+                    Informations sur la session en cours
+                  </CardDescription>
                 </div>
-                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                  session?.statut === "O" 
-                    ? "bg-green-100 text-green-800"
-                    : "bg-amber-100 text-amber-800"
-                }`}>
-                  {session?.statut === "O" ? "Session ouverte" : "Session fermée"}
+                <span
+                  className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                    session?.statut === "O"
+                      ? "bg-green-100 text-green-800"
+                      : "bg-amber-100 text-amber-800"
+                  }`}
+                >
+                  {session?.statut === "O"
+                    ? "Session ouverte"
+                    : "Session fermée"}
                 </span>
               </div>
             </CardHeader>
@@ -159,7 +182,9 @@ export default function SessionPage({
                   <div className="flex items-center gap-3">
                     <Calendar className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Période</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Période
+                      </p>
                       <p className="text-sm">
                         {session?.date_debut && session?.date_fin ? (
                           <>
@@ -176,7 +201,9 @@ export default function SessionPage({
                   <div className="flex items-center gap-3">
                     <Users className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Capacité maximale</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Capacité maximale
+                      </p>
                       <p className="text-sm">{session?.capacite_max} élèves</p>
                     </div>
                   </div>
@@ -186,7 +213,9 @@ export default function SessionPage({
                   <div className="flex items-center gap-3">
                     <GraduationCap className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Enseignant</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Enseignant
+                      </p>
                       <p className="text-sm">
                         {session?.prenom_enseignant} {session?.nom_enseignant}
                       </p>
@@ -196,7 +225,9 @@ export default function SessionPage({
                   <div className="flex items-center gap-3">
                     <Bookmark className="h-4 w-4 text-muted-foreground" />
                     <div>
-                      <p className="text-sm font-medium text-muted-foreground">Type de session</p>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Type de session
+                      </p>
                       <p className="text-sm">
                         {session?.type === "I" ? "Intensif" : "Semi-intensif"}
                       </p>
@@ -208,7 +239,9 @@ export default function SessionPage({
 
             <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50 space-x-2">
               <Button variant="outline" asChild>
-                <Link href={`/ecole_peg/sessions/session/${resolvedParams.id}/modifier`}>
+                <Link
+                  href={`/ecole_peg/sessions/session/${resolvedParams.id}/modifier`}
+                >
                   Modifier
                 </Link>
               </Button>
@@ -244,12 +277,16 @@ export default function SessionPage({
                   {fiches.length > 0 ? (
                     fiches.map((fiche) => (
                       <TableRow key={fiche.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">#{fiche.id}</TableCell>
+                        <TableCell className="font-medium">
+                          #{fiche.id}
+                        </TableCell>
                         <TableCell>{fiche.mois}</TableCell>
                         <TableCell>{fiche.annee}</TableCell>
                         <TableCell className="text-right space-x-2">
                           <Button variant="outline" size="sm" asChild>
-                            <Link href={`${resolvedParams.id}/fiche/${fiche.id}`}>
+                            <Link
+                              href={`${resolvedParams.id}/fiche/${fiche.id}`}
+                            >
                               Consulter
                             </Link>
                           </Button>
@@ -265,7 +302,10 @@ export default function SessionPage({
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                      <TableCell
+                        colSpan={4}
+                        className="h-24 text-center text-muted-foreground"
+                      >
                         Aucune fiche de présence trouvée.
                       </TableCell>
                     </TableRow>
@@ -275,7 +315,9 @@ export default function SessionPage({
             </CardContent>
             <CardFooter className="justify-between border-t px-6 py-4 bg-muted/50">
               <Button variant="default" asChild>
-                <Link href={`/ecole_peg/sessions/session/${resolvedParams.id}/fiche`}>
+                <Link
+                  href={`/ecole_peg/sessions/session/${resolvedParams.id}/fiche`}
+                >
                   Nouvelle fiche de présence
                 </Link>
               </Button>

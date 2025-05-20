@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { useRouter, useParams } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -69,10 +68,13 @@ export default function NouveauGarantPage() {
   return (
     <div className="container mx-auto py-6 max-w-3xl">
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/ecole_peg/eleves/eleve/${eleve?.id}/`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
           Ajouter un garant pour {eleve?.prenom} {eleve?.nom}
@@ -163,11 +165,7 @@ export default function NouveauGarantPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="numero">Numéro</Label>
-                <Input
-                  id="numero"
-                  placeholder="N°"
-                  {...register("numero")}
-                />
+                <Input id="numero" placeholder="N°" {...register("numero")} />
               </div>
             </div>
 

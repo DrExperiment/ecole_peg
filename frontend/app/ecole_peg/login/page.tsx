@@ -60,16 +60,14 @@ export default function Login() {
             </div>
           </div>
           <div className="space-y-2">
-            <h1 className="text-2xl font-bold tracking-tight">
-              Bienvenue
-            </h1>
+            <h1 className="text-2xl font-bold tracking-tight">Bienvenue</h1>
             <p className="text-sm text-muted-foreground">
               Connectez-vous pour accéder au système
             </p>
           </div>
         </div>
 
-        <form 
+        <form
           onSubmit={handleSoumission}
           className="space-y-4 bg-card rounded-lg border p-6 shadow-lg"
         >
@@ -99,27 +97,28 @@ export default function Login() {
             )}
           </div>
 
-          <Button 
-            type="submit" 
-            className="w-full"
-            disabled={!mot_de_passe}
-          >
-            {mot_de_passe ? 'Se connecter' : 'Entrez votre mot de passe'}
+          <Button type="submit" className="w-full" disabled={!mot_de_passe}>
+            {mot_de_passe ? "Se connecter" : "Entrez votre mot de passe"}
           </Button>
         </form>
 
         <div className="text-center text-sm text-muted-foreground">
-          <p>
-            École PEG — Système de Gestion
-          </p>
+          <p>École PEG — Système de Gestion</p>
         </div>
       </div>
 
       <style jsx global>{`
         @keyframes shake {
-          0%, 100% { transform: translateX(0); }
-          25% { transform: translateX(-4px); }
-          75% { transform: translateX(4px); }
+          0%,
+          100% {
+            transform: translateX(0);
+          }
+          25% {
+            transform: translateX(-4px);
+          }
+          75% {
+            transform: translateX(4px);
+          }
         }
         .animate-shake {
           animation: shake 0.5s ease-in-out;

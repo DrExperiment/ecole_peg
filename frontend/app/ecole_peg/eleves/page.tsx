@@ -164,7 +164,9 @@ export default function ElevesPage() {
 
             {loading && (
               <div className="flex justify-center p-4">
-                <div className="text-sm text-muted-foreground">Chargement...</div>
+                <div className="text-sm text-muted-foreground">
+                  Chargement...
+                </div>
               </div>
             )}
 
@@ -174,18 +176,24 @@ export default function ElevesPage() {
                   <TableRow>
                     <TableHead className="font-medium">Nom</TableHead>
                     <TableHead className="font-medium">Prénom</TableHead>
-                    <TableHead className="font-medium">Date de naissance</TableHead>
+                    <TableHead className="font-medium">
+                      Date de naissance
+                    </TableHead>
                     <TableHead className="font-medium">Téléphone</TableHead>
                     <TableHead className="font-medium">Email</TableHead>
                     <TableHead className="font-medium">Pays</TableHead>
-                    <TableHead className="text-right font-medium">Actions</TableHead>
+                    <TableHead className="text-right font-medium">
+                      Actions
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {eleves.length > 0 ? (
                     eleves.map((eleve) => (
                       <TableRow key={eleve.id}>
-                        <TableCell className="font-medium">{eleve.nom ?? "-"}</TableCell>
+                        <TableCell className="font-medium">
+                          {eleve.nom ?? "-"}
+                        </TableCell>
                         <TableCell>{eleve.prenom ?? "-"}</TableCell>
                         <TableCell>{eleve.date_naissance ?? "-"}</TableCell>
                         <TableCell>{eleve.telephone ?? "-"}</TableCell>
@@ -202,7 +210,10 @@ export default function ElevesPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
+                      <TableCell
+                        colSpan={7}
+                        className="text-center py-6 text-muted-foreground"
+                      >
                         Aucun élève trouvé.
                       </TableCell>
                     </TableRow>

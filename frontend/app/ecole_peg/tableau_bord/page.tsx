@@ -96,10 +96,10 @@ export default function TableauBordPage() {
     setLoading(true);
     Promise.all([
       axios.get<Stats>(
-        "http://localhost:8000/api/eleves/statistiques/dashboard/"
+        "http://localhost:8000/api/eleves/statistiques/dashboard/",
       ),
       axios.get<Anniversaire[]>(
-        "http://localhost:8000/api/eleves/anniversaires/"
+        "http://localhost:8000/api/eleves/anniversaires/",
       ),
     ])
       .then(([s, a]) => {
@@ -108,7 +108,7 @@ export default function TableauBordPage() {
           a.data.map((x) => ({
             ...x,
             date_naissance: new Date(x.date_naissance).toISOString(),
-          }))
+          })),
         );
       })
       .catch((e) => setError(e.message || "Erreur réseau"))
@@ -187,11 +187,15 @@ export default function TableauBordPage() {
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
             <Card className="hover:bg-accent/5 transition-colors">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Élèves actifs</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Élèves actifs
+                </CardTitle>
                 <Users className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.eleves.eleves_actifs}</div>
+                <div className="text-2xl font-bold">
+                  {stats.eleves.eleves_actifs}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   sur {stats.eleves.total_eleves} élèves au total
                 </p>
@@ -200,21 +204,29 @@ export default function TableauBordPage() {
 
             <Card className="hover:bg-accent/5 transition-colors">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Enseignants</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Enseignants
+                </CardTitle>
                 <Users className="h-4 w-4 text-primary" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.cours.nombre_enseignants}</div>
+                <div className="text-2xl font-bold">
+                  {stats.cours.nombre_enseignants}
+                </div>
               </CardContent>
             </Card>
 
             <Card className="hover:bg-accent/5 transition-colors">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Total des cours</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Total des cours
+                </CardTitle>
                 <BookOpen className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.cours.total_cours}</div>
+                <div className="text-2xl font-bold">
+                  {stats.cours.total_cours}
+                </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   dont {stats.cours.sessions_actives} sessions actives
                 </p>
@@ -223,11 +235,15 @@ export default function TableauBordPage() {
 
             <Card className="hover:bg-accent/5 transition-colors">
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Cours privés ce mois</CardTitle>
+                <CardTitle className="text-sm font-medium">
+                  Cours privés ce mois
+                </CardTitle>
                 <UserPlus className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="text-2xl font-bold">{stats.cours.cours_prives_programmes_mois}</div>
+                <div className="text-2xl font-bold">
+                  {stats.cours.cours_prives_programmes_mois}
+                </div>
               </CardContent>
             </Card>
           </div>
@@ -235,19 +251,24 @@ export default function TableauBordPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-base font-medium">Répartition des niveaux</CardTitle>
+                <CardTitle className="text-base font-medium">
+                  Répartition des niveaux
+                </CardTitle>
                 <PieChart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {stats.eleves.repartition_niveaux.map((niveau) => {
-                    const pourcentage = stats.eleves.eleves_actifs > 0
-                      ? (niveau.total / stats.eleves.eleves_actifs) * 100
-                      : 0;
+                    const pourcentage =
+                      stats.eleves.eleves_actifs > 0
+                        ? (niveau.total / stats.eleves.eleves_actifs) * 100
+                        : 0;
                     return (
                       <div key={niveau.niveau} className="space-y-2">
                         <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">Niveau {niveau.niveau}</span>
+                          <span className="font-medium">
+                            Niveau {niveau.niveau}
+                          </span>
                           <span className="text-muted-foreground">
                             {niveau.total} ({pourcentage.toFixed(1)}%)
                           </span>
@@ -267,31 +288,47 @@ export default function TableauBordPage() {
 
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-base font-medium">Finances du mois</CardTitle>
+                <CardTitle className="text-base font-medium">
+                  Finances du mois
+                </CardTitle>
                 <DollarSign className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-green-700">Montant reçu</p>
+                    <p className="text-sm font-medium text-green-700">
+                      Montant reçu
+                    </p>
                     <div className="flex items-center">
                       <span className="text-2xl font-bold text-green-700">
-                        {stats.factures.montant_total_paiements_mois.toLocaleString('fr-CH')} CHF
+                        {stats.factures.montant_total_paiements_mois.toLocaleString(
+                          "fr-CH",
+                        )}{" "}
+                        CHF
                       </span>
                     </div>
                   </div>
                   <div className="space-y-2">
-                    <p className="text-sm font-medium text-red-700">Montant impayé</p>
+                    <p className="text-sm font-medium text-red-700">
+                      Montant impayé
+                    </p>
                     <div className="flex items-center">
                       <span className="text-2xl font-bold text-red-700">
-                        {stats.factures.montant_total_factures_impayees_mois.toLocaleString('fr-CH')} CHF
+                        {stats.factures.montant_total_factures_impayees_mois.toLocaleString(
+                          "fr-CH",
+                        )}{" "}
+                        CHF
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="flex items-center justify-between border-t pt-4">
-                  <span className="text-sm text-muted-foreground">Pays principal</span>
-                  <span className="font-medium">{stats.eleves.pays_plus_eleves || "Non défini"}</span>
+                  <span className="text-sm text-muted-foreground">
+                    Pays principal
+                  </span>
+                  <span className="font-medium">
+                    {stats.eleves.pays_plus_eleves || "Non défini"}
+                  </span>
                 </div>
               </CardContent>
             </Card>
@@ -300,17 +337,20 @@ export default function TableauBordPage() {
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-base font-medium">Sessions ouvertes</CardTitle>
+                <CardTitle className="text-base font-medium">
+                  Sessions ouvertes
+                </CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
                 {stats.cours.sessions_ouvertes.length > 0 ? (
                   <div className="space-y-4">
                     {stats.cours.sessions_ouvertes.map((s, idx) => (
-                      <div key={idx} className="flex items-center justify-between">
-                        <span className="text-sm">
-                          {dateFmt(s.date_debut)}
-                        </span>
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between"
+                      >
+                        <span className="text-sm">{dateFmt(s.date_debut)}</span>
                         <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700">
                           {s.eleves_restants} places
                         </span>
@@ -318,7 +358,9 @@ export default function TableauBordPage() {
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-muted-foreground">Aucune session ouverte.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Aucune session ouverte.
+                  </p>
                 )}
               </CardContent>
             </Card>
@@ -327,17 +369,26 @@ export default function TableauBordPage() {
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <div className="flex items-center space-x-2">
                   <Cake className="h-4 w-4 text-primary" />
-                  <CardTitle className="text-base font-medium">Anniversaires du mois</CardTitle>
+                  <CardTitle className="text-base font-medium">
+                    Anniversaires du mois
+                  </CardTitle>
                 </div>
-                <span className="text-sm text-muted-foreground capitalize">{aujourdHui}</span>
+                <span className="text-sm text-muted-foreground capitalize">
+                  {aujourdHui}
+                </span>
               </CardHeader>
               <CardContent>
                 {anniversaires.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">Aucun anniversaire ce mois-ci.</p>
+                  <p className="text-sm text-muted-foreground">
+                    Aucun anniversaire ce mois-ci.
+                  </p>
                 ) : (
                   <div className="space-y-4">
                     {anniversaires.map((anniv) => (
-                      <div key={anniv.id} className="flex items-center justify-between">
+                      <div
+                        key={anniv.id}
+                        className="flex items-center justify-between"
+                      >
                         <div className="space-y-1">
                           <Link
                             href={`/ecole_peg/eleves/eleve/${anniv.id}/`}
@@ -346,11 +397,17 @@ export default function TableauBordPage() {
                             {anniv.nom} {anniv.prenom}
                           </Link>
                           <p className="text-xs text-muted-foreground">
-                            {format(new Date(anniv.date_naissance), "dd-MM-yyyy")} ({anniv.age} ans)
+                            {format(
+                              new Date(anniv.date_naissance),
+                              "dd-MM-yyyy",
+                            )}{" "}
+                            ({anniv.age} ans)
                           </p>
                         </div>
                         <span className="text-sm font-medium">
-                          {format(new Date(anniv.date_naissance), "dd MMMM", { locale: fr })}
+                          {format(new Date(anniv.date_naissance), "dd MMMM", {
+                            locale: fr,
+                          })}
                         </span>
                       </div>
                     ))}
@@ -378,10 +435,17 @@ export default function TableauBordPage() {
                 >
                   <div className="flex items-center justify-between">
                     <p className="text-sm">
-                      {factures_impayees} facture{factures_impayees > 1 ? "s" : ""} en attente 
-                      pour un montant de {stats.factures.montant_total_factures_impayees_mois.toLocaleString('fr-CH')} CHF
+                      {factures_impayees} facture
+                      {factures_impayees > 1 ? "s" : ""} en attente pour un
+                      montant de{" "}
+                      {stats.factures.montant_total_factures_impayees_mois.toLocaleString(
+                        "fr-CH",
+                      )}{" "}
+                      CHF
                     </p>
-                    <span className="text-2xl font-bold">{factures_impayees}</span>
+                    <span className="text-2xl font-bold">
+                      {factures_impayees}
+                    </span>
                   </div>
                 </AlertBox>
               )}
@@ -395,40 +459,62 @@ export default function TableauBordPage() {
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-sm">
-                        {eleves_absence} élève{eleves_absence > 1 ? "s" : ""} avec présence &lt; 80%
+                        {eleves_absence} élève{eleves_absence > 1 ? "s" : ""}{" "}
+                        avec présence &lt; 80%
                       </p>
-                      <span className="text-2xl font-bold">{eleves_absence}</span>
+                      <span className="text-2xl font-bold">
+                        {eleves_absence}
+                      </span>
                     </div>
                   </AlertBox>
 
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">Détails des présences</CardTitle>
+                      <CardTitle className="text-sm font-medium">
+                        Détails des présences
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="rounded-lg border">
                         <table className="min-w-full divide-y divide-border">
                           <thead>
                             <tr className="bg-muted/50">
-                              <th className="px-4 py-2 text-left text-sm font-medium">Nom</th>
-                              <th className="px-4 py-2 text-left text-sm font-medium">Prénom</th>
-                              <th className="px-4 py-2 text-left text-sm font-medium">Naissance</th>
-                              <th className="px-4 py-2 text-right text-sm font-medium">Présence</th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Nom
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Prénom
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Naissance
+                              </th>
+                              <th className="px-4 py-2 text-right text-sm font-medium">
+                                Présence
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border">
-                            {stats.eleves.eleves_presence_inferieur_80.map((eleve, i) => (
-                              <tr key={i}>
-                                <td className="px-4 py-2 text-sm">{eleve.nom}</td>
-                                <td className="px-4 py-2 text-sm">{eleve.prenom}</td>
-                                <td className="px-4 py-2 text-sm whitespace-nowrap">
-                                  {dateFmt(eleve.date_naissance, "dd/MM/yyyy")}
-                                </td>
-                                <td className="px-4 py-2 text-sm text-right font-medium text-red-600">
-                                  {eleve.taux_presence}%
-                                </td>
-                              </tr>
-                            ))}
+                            {stats.eleves.eleves_presence_inferieur_80.map(
+                              (eleve, i) => (
+                                <tr key={i}>
+                                  <td className="px-4 py-2 text-sm">
+                                    {eleve.nom}
+                                  </td>
+                                  <td className="px-4 py-2 text-sm">
+                                    {eleve.prenom}
+                                  </td>
+                                  <td className="px-4 py-2 text-sm whitespace-nowrap">
+                                    {dateFmt(
+                                      eleve.date_naissance,
+                                      "dd/MM/yyyy",
+                                    )}
+                                  </td>
+                                  <td className="px-4 py-2 text-sm text-right font-medium text-red-600">
+                                    {eleve.taux_presence}%
+                                  </td>
+                                </tr>
+                              ),
+                            )}
                           </tbody>
                         </table>
                       </div>
@@ -446,36 +532,57 @@ export default function TableauBordPage() {
                   >
                     <div className="flex items-center justify-between">
                       <p className="text-sm">
-                        {eleves_preinscription} préinscription{eleves_preinscription > 1 ? "s" : ""} de plus de 3 jours
+                        {eleves_preinscription} préinscription
+                        {eleves_preinscription > 1 ? "s" : ""} de plus de 3
+                        jours
                       </p>
-                      <span className="text-2xl font-bold">{eleves_preinscription}</span>
+                      <span className="text-2xl font-bold">
+                        {eleves_preinscription}
+                      </span>
                     </div>
                   </AlertBox>
 
                   <Card>
                     <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">Liste des préinscriptions</CardTitle>
+                      <CardTitle className="text-sm font-medium">
+                        Liste des préinscriptions
+                      </CardTitle>
                     </CardHeader>
                     <CardContent>
                       <div className="rounded-lg border">
                         <table className="min-w-full divide-y divide-border">
                           <thead>
                             <tr className="bg-muted/50">
-                              <th className="px-4 py-2 text-left text-sm font-medium">Nom</th>
-                              <th className="px-4 py-2 text-left text-sm font-medium">Prénom</th>
-                              <th className="px-4 py-2 text-left text-sm font-medium">Naissance</th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Nom
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Prénom
+                              </th>
+                              <th className="px-4 py-2 text-left text-sm font-medium">
+                                Naissance
+                              </th>
                             </tr>
                           </thead>
                           <tbody className="divide-y divide-border">
-                            {stats.eleves.eleves_preinscription_plus_3j.map((eleve, i) => (
-                              <tr key={i}>
-                                <td className="px-4 py-2 text-sm">{eleve.nom}</td>
-                                <td className="px-4 py-2 text-sm">{eleve.prenom}</td>
-                                <td className="px-4 py-2 text-sm whitespace-nowrap">
-                                  {dateFmt(eleve.date_naissance, "dd/MM/yyyy")}
-                                </td>
-                              </tr>
-                            ))}
+                            {stats.eleves.eleves_preinscription_plus_3j.map(
+                              (eleve, i) => (
+                                <tr key={i}>
+                                  <td className="px-4 py-2 text-sm">
+                                    {eleve.nom}
+                                  </td>
+                                  <td className="px-4 py-2 text-sm">
+                                    {eleve.prenom}
+                                  </td>
+                                  <td className="px-4 py-2 text-sm whitespace-nowrap">
+                                    {dateFmt(
+                                      eleve.date_naissance,
+                                      "dd/MM/yyyy",
+                                    )}
+                                  </td>
+                                </tr>
+                              ),
+                            )}
                           </tbody>
                         </table>
                       </div>

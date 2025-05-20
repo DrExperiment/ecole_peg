@@ -1,13 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect, useCallback, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
 import { debounce } from "lodash";
 
 import { Button } from "@/components/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardFooter,
+} from "@/components/card";
 import { Input } from "@/components/input";
 import { Label } from "@/components/label";
 import { RadioGroup, RadioGroupItem } from "@/components/radio-group";
@@ -170,12 +176,17 @@ export default function NouveauCoursPrivePage() {
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
       <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/ecole_peg/cours_prives">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Nouveau Cours Privé</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Nouveau Cours Privé
+        </h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
@@ -183,19 +194,23 @@ export default function NouveauCoursPrivePage() {
           <CardHeader>
             <CardTitle>Détails du cours privé</CardTitle>
             <CardDescription>
-              Sélectionnez les élèves, l&apos;enseignant et définissez les détails du cours.
+              Sélectionnez les élèves, l&apos;enseignant et définissez les
+              détails du cours.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
             {/* === Sélection des élèves === */}
             <div className="space-y-4">
               <div>
-                <Label htmlFor="searchEleve" className="text-base">Élèves</Label>
+                <Label htmlFor="searchEleve" className="text-base">
+                  Élèves
+                </Label>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Recherchez et ajoutez un ou plusieurs élèves pour ce cours privé
+                  Recherchez et ajoutez un ou plusieurs élèves pour ce cours
+                  privé
                 </p>
               </div>
-              
+
               <div className="relative">
                 <Input
                   id="searchEleve"
@@ -247,16 +262,19 @@ export default function NouveauCoursPrivePage() {
             {/* === Sélection enseignant === */}
             <div className="space-y-4">
               <div>
-                <Label htmlFor="enseignantSelect" className="text-base">Enseignant</Label>
+                <Label htmlFor="enseignantSelect" className="text-base">
+                  Enseignant
+                </Label>
                 <p className="text-sm text-muted-foreground mb-2">
                   Sélectionnez l&apos;enseignant qui donnera ce cours privé
                 </p>
               </div>
-              
+
               <Select
                 value={selectedEnseignant?.id.toString() ?? ""}
                 onValueChange={(val) => {
-                  const e = enseignants.find((x) => x.id === Number(val)) || null;
+                  const e =
+                    enseignants.find((x) => x.id === Number(val)) || null;
                   setSelectedEnseignant(e);
                 }}
                 required
@@ -278,7 +296,9 @@ export default function NouveauCoursPrivePage() {
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="dateCoursPrive" className="text-base">Date du cours</Label>
+                  <Label htmlFor="dateCoursPrive" className="text-base">
+                    Date du cours
+                  </Label>
                   <Input
                     id="dateCoursPrive"
                     type="date"
@@ -290,7 +310,9 @@ export default function NouveauCoursPrivePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="tarif" className="text-base">Tarif (€)</Label>
+                  <Label htmlFor="tarif" className="text-base">
+                    Tarif (€)
+                  </Label>
                   <Input
                     id="tarif"
                     type="number"
@@ -306,7 +328,9 @@ export default function NouveauCoursPrivePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="heureDebut" className="text-base">Heure de début</Label>
+                  <Label htmlFor="heureDebut" className="text-base">
+                    Heure de début
+                  </Label>
                   <Input
                     id="heureDebut"
                     type="time"
@@ -318,7 +342,9 @@ export default function NouveauCoursPrivePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="heureFin" className="text-base">Heure de fin</Label>
+                  <Label htmlFor="heureFin" className="text-base">
+                    Heure de fin
+                  </Label>
                   <Input
                     id="heureFin"
                     type="time"
@@ -337,7 +363,7 @@ export default function NouveauCoursPrivePage() {
                     Indiquez où le cours privé aura lieu
                   </p>
                 </div>
-                
+
                 <RadioGroup
                   value={lieu}
                   onValueChange={(val) => setLieu(val as "ecole" | "domicile")}
@@ -346,7 +372,9 @@ export default function NouveauCoursPrivePage() {
                   <div className="flex flex-col space-y-1 rounded-lg border p-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="ecole" id="lieu-ecole" />
-                      <Label htmlFor="lieu-ecole" className="font-medium">À l&apos;école</Label>
+                      <Label htmlFor="lieu-ecole" className="font-medium">
+                        À l&apos;école
+                      </Label>
                     </div>
                     <p className="text-sm text-muted-foreground pl-6">
                       Le cours aura lieu dans les locaux de l&apos;école
@@ -356,7 +384,9 @@ export default function NouveauCoursPrivePage() {
                   <div className="flex flex-col space-y-1 rounded-lg border p-4">
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="domicile" id="lieu-domicile" />
-                      <Label htmlFor="lieu-domicile" className="font-medium">À domicile</Label>
+                      <Label htmlFor="lieu-domicile" className="font-medium">
+                        À domicile
+                      </Label>
                     </div>
                     <p className="text-sm text-muted-foreground pl-6">
                       Le cours aura lieu au domicile de l&apos;élève
@@ -369,10 +399,9 @@ export default function NouveauCoursPrivePage() {
           <CardFooter>
             <Button type="submit" className="w-full md:w-auto">
               <Save className="mr-2 h-4 w-4" />
-              {selectedEleves.length > 0 ? 
-                `Créer le cours privé pour ${selectedEleves.length} élève${selectedEleves.length > 1 ? 's' : ''}` : 
-                'Créer le cours privé'
-              }
+              {selectedEleves.length > 0
+                ? `Créer le cours privé pour ${selectedEleves.length} élève${selectedEleves.length > 1 ? "s" : ""}`
+                : "Créer le cours privé"}
             </Button>
           </CardFooter>
         </Card>

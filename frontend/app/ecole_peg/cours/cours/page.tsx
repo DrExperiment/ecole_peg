@@ -4,7 +4,6 @@ import type React from "react";
 
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -63,10 +62,13 @@ export default function NouveauCoursPage() {
   return (
     <div className="container mx-auto px-4 py-6 max-w-3xl">
       <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/ecole_peg/cours">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">Nouveau Cours</h1>
       </div>
@@ -78,7 +80,9 @@ export default function NouveauCoursPage() {
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-2">
-              <Label htmlFor="nom" className="text-base">Nom du cours</Label>
+              <Label htmlFor="nom" className="text-base">
+                Nom du cours
+              </Label>
               <Input
                 id="nom"
                 placeholder="ex: Français débutant"
@@ -108,7 +112,9 @@ export default function NouveauCoursPage() {
                 <div className="flex flex-col space-y-1 rounded-lg border p-4">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="I" id="type-i" />
-                    <Label htmlFor="type-i" className="font-medium">Intensif</Label>
+                    <Label htmlFor="type-i" className="font-medium">
+                      Intensif
+                    </Label>
                   </div>
                   <p className="text-sm text-muted-foreground pl-6">
                     Cours à rythme soutenu, progression rapide
@@ -117,7 +123,9 @@ export default function NouveauCoursPage() {
                 <div className="flex flex-col space-y-1 rounded-lg border p-4">
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem value="S" id="type-s" />
-                    <Label htmlFor="type-s" className="font-medium">Semi-intensif</Label>
+                    <Label htmlFor="type-s" className="font-medium">
+                      Semi-intensif
+                    </Label>
                   </div>
                   <p className="text-sm text-muted-foreground pl-6">
                     Cours à rythme modéré, plus flexible
@@ -127,7 +135,9 @@ export default function NouveauCoursPage() {
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="niveau" className="text-base">Niveau</Label>
+              <Label htmlFor="niveau" className="text-base">
+                Niveau
+              </Label>
               <Select
                 name="niveau"
                 required
@@ -150,7 +160,9 @@ export default function NouveauCoursPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
-                <Label htmlFor="duree_semaines" className="text-base">Durée (semaines)</Label>
+                <Label htmlFor="duree_semaines" className="text-base">
+                  Durée (semaines)
+                </Label>
                 <Input
                   id="duree_semaines"
                   type="number"
@@ -163,18 +175,20 @@ export default function NouveauCoursPage() {
                     required: "La durée est obligatoire",
                     min: {
                       value: 1,
-                      message: "La durée minimum est d'une semaine"
+                      message: "La durée minimum est d'une semaine",
                     },
                     max: {
                       value: 52,
-                      message: "La durée maximum est de 52 semaines"
-                    }
+                      message: "La durée maximum est de 52 semaines",
+                    },
                   })}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="heures_par_semaine" className="text-base">Heures par semaine</Label>
+                <Label htmlFor="heures_par_semaine" className="text-base">
+                  Heures par semaine
+                </Label>
                 <Input
                   id="heures_par_semaine"
                   type="number"
@@ -187,19 +201,21 @@ export default function NouveauCoursPage() {
                     required: "Le nombre d'heures est obligatoire",
                     min: {
                       value: 1,
-                      message: "Minimum 1 heure par semaine"
+                      message: "Minimum 1 heure par semaine",
                     },
                     max: {
                       value: 40,
-                      message: "Maximum 40 heures par semaine"
-                    }
+                      message: "Maximum 40 heures par semaine",
+                    },
                   })}
                 />
               </div>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="tarif" className="text-base">Tarif (€)</Label>
+              <Label htmlFor="tarif" className="text-base">
+                Tarif (€)
+              </Label>
               <Input
                 id="tarif"
                 type="number"
@@ -213,14 +229,18 @@ export default function NouveauCoursPage() {
                   required: "Le tarif est obligatoire",
                   min: {
                     value: 0,
-                    message: "Le tarif ne peut pas être négatif"
-                  }
+                    message: "Le tarif ne peut pas être négatif",
+                  },
                 })}
               />
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" disabled={isSubmitting} className="w-full md:w-auto">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full md:w-auto"
+            >
               {isSubmitting ? (
                 <>
                   <span className="loading loading-spinner loading-sm mr-2"></span>

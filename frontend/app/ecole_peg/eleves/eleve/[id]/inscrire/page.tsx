@@ -2,7 +2,6 @@
 
 import { useCallback, use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -115,10 +114,13 @@ export default function InscrirePage({
   return (
     <div className="container mx-auto py-6 max-w-3xl">
       <div className="flex items-center gap-2 mb-6">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/ecole_peg/eleves/eleve/${eleve?.id}`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
           Inscription aux cours pour {eleve?.prenom} {eleve?.nom}
@@ -148,9 +150,14 @@ export default function InscrirePage({
                 <SelectContent>
                   {sessions.map((session) => (
                     <SelectItem key={session.id} value={session.id.toString()}>
-                      <span className="font-medium">{session.cours__nom}</span> -{" "}
-                      {session.cours__type === "I" ? "Intensif" : "Semi-intensif"}{" "}
-                      <span className="font-medium">{session.cours__niveau}</span>
+                      <span className="font-medium">{session.cours__nom}</span>{" "}
+                      -{" "}
+                      {session.cours__type === "I"
+                        ? "Intensif"
+                        : "Semi-intensif"}{" "}
+                      <span className="font-medium">
+                        {session.cours__niveau}
+                      </span>
                       <br />
                       <span className="text-sm text-muted-foreground">
                         Du {format(session.date_debut, "dd.MM.yyyy")} au{" "}
@@ -173,7 +180,9 @@ export default function InscrirePage({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="frais_inscription">Frais d&apos;inscription (CHF)</Label>
+              <Label htmlFor="frais_inscription">
+                Frais d&apos;inscription (CHF)
+              </Label>
               <Input
                 id="frais_inscription"
                 type="number"

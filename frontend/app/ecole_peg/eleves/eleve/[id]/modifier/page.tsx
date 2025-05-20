@@ -3,7 +3,6 @@
 import { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
-import Link from "next/link";
 
 import { Button } from "@/components/button";
 import {
@@ -69,7 +68,7 @@ export default function EditElevePage({
   const [eleve, setEleve] = useState<Eleve | null>(null);
   const [sexe, setSexe] = useState<"H" | "F">("H");
   const [dateNaissance, setDateNaissance] = useState<Date | undefined>(
-    undefined
+    undefined,
   );
   const [niveau, setNiveau] = useState<"A1" | "A2" | "B1" | "B2" | "C1">("A1");
   const [typePermis, setTypePermis] = useState<"E" | "S" | "B" | "P">("P");
@@ -100,7 +99,7 @@ export default function EditElevePage({
   }, [id]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
   ) => {
     const { name, value } = e.target;
     setEleve((prev) => (prev ? ({ ...prev, [name]: value } as Eleve) : prev));
@@ -126,7 +125,7 @@ export default function EditElevePage({
     try {
       await axios.put(
         `http://localhost:8000/api/eleves/eleves/${id}/`,
-        payload
+        payload,
       );
       router.push(`/ecole_peg/eleves/eleve/${id}`);
     } catch (err) {
@@ -150,10 +149,13 @@ export default function EditElevePage({
   return (
     <div className="container mx-auto px-4 py-6 max-w-5xl">
       <div className="flex items-center gap-4 mb-8">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href={`/ecole_peg/eleves/eleve/${eleve.id}`}>
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => router.back()}
+          aria-label="Retourner à la page précédente"
+        >
+          <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
           <h1 className="text-3xl font-bold tracking-tight">
@@ -218,7 +220,10 @@ export default function EditElevePage({
                     }`}
                   >
                     <RadioGroupItem value="H" id="sexe-h" />
-                    <Label htmlFor="sexe-h" className="font-medium cursor-pointer">
+                    <Label
+                      htmlFor="sexe-h"
+                      className="font-medium cursor-pointer"
+                    >
                       Homme
                     </Label>
                   </div>
@@ -228,7 +233,10 @@ export default function EditElevePage({
                     }`}
                   >
                     <RadioGroupItem value="F" id="sexe-f" />
-                    <Label htmlFor="sexe-f" className="font-medium cursor-pointer">
+                    <Label
+                      htmlFor="sexe-f"
+                      className="font-medium cursor-pointer"
+                    >
                       Femme
                     </Label>
                   </div>
@@ -243,7 +251,9 @@ export default function EditElevePage({
                   name="date_naissance"
                   required
                   className="font-mono"
-                  value={dateNaissance ? format(dateNaissance, "yyyy-MM-dd") : ""}
+                  value={
+                    dateNaissance ? format(dateNaissance, "yyyy-MM-dd") : ""
+                  }
                   onChange={(e) => {
                     const value = e.target.value;
                     setDateNaissance(value ? new Date(value) : undefined);
@@ -252,7 +262,9 @@ export default function EditElevePage({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="lieu_naissance" className="text-base">Lieu de naissance</Label>
+                <Label htmlFor="lieu_naissance" className="text-base">
+                  Lieu de naissance
+                </Label>
                 <Input
                   id="lieu_naissance"
                   name="lieu_naissance"
@@ -263,7 +275,9 @@ export default function EditElevePage({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pays" className="text-base">Pays d&apos;origine</Label>
+                <Label htmlFor="pays" className="text-base">
+                  Pays d&apos;origine
+                </Label>
                 <Select
                   value={idPays ? String(idPays) : ""}
                   onValueChange={(v) => setIdPays(Number(v))}
@@ -285,7 +299,9 @@ export default function EditElevePage({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="langue_maternelle" className="text-base">Langue maternelle</Label>
+                <Label htmlFor="langue_maternelle" className="text-base">
+                  Langue maternelle
+                </Label>
                 <Input
                   id="langue_maternelle"
                   name="langue_maternelle"
@@ -296,7 +312,9 @@ export default function EditElevePage({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="autres_langues" className="text-base">Autres langues</Label>
+                <Label htmlFor="autres_langues" className="text-base">
+                  Autres langues
+                </Label>
                 <Input
                   id="autres_langues"
                   name="autres_langues"
@@ -319,7 +337,9 @@ export default function EditElevePage({
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="space-y-2">
-                <Label htmlFor="telephone" className="text-base">Téléphone</Label>
+                <Label htmlFor="telephone" className="text-base">
+                  Téléphone
+                </Label>
                 <Input
                   id="telephone"
                   name="telephone"
@@ -331,7 +351,9 @@ export default function EditElevePage({
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-base">Email</Label>
+                <Label htmlFor="email" className="text-base">
+                  Email
+                </Label>
                 <Input
                   id="email"
                   name="email"
@@ -347,7 +369,9 @@ export default function EditElevePage({
                 <h3 className="font-medium">Adresse</h3>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="rue" className="text-sm">Rue</Label>
+                    <Label htmlFor="rue" className="text-sm">
+                      Rue
+                    </Label>
                     <Input
                       id="rue"
                       name="rue"
@@ -356,7 +380,9 @@ export default function EditElevePage({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="numero" className="text-sm">Numéro</Label>
+                    <Label htmlFor="numero" className="text-sm">
+                      Numéro
+                    </Label>
                     <Input
                       id="numero"
                       name="numero"
@@ -368,7 +394,9 @@ export default function EditElevePage({
 
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-2">
-                    <Label htmlFor="npa" className="text-sm">NPA</Label>
+                    <Label htmlFor="npa" className="text-sm">
+                      NPA
+                    </Label>
                     <Input
                       id="npa"
                       name="npa"
@@ -378,7 +406,9 @@ export default function EditElevePage({
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="localite" className="text-sm">Localité</Label>
+                    <Label htmlFor="localite" className="text-sm">
+                      Localité
+                    </Label>
                     <Input
                       id="localite"
                       name="localite"
@@ -423,7 +453,9 @@ export default function EditElevePage({
                 <Label className="text-base">Niveau de langue</Label>
                 <RadioGroup
                   value={niveau}
-                  onValueChange={(value) => setNiveau(value as "A1" | "A2" | "B1" | "B2" | "C1")}
+                  onValueChange={(value) =>
+                    setNiveau(value as "A1" | "A2" | "B1" | "B2" | "C1")
+                  }
                   className="grid grid-cols-5 gap-2"
                 >
                   {["A1", "A2", "B1", "B2", "C1"].map((n) => (
@@ -433,8 +465,15 @@ export default function EditElevePage({
                         niveau === n ? "border-primary bg-primary/5" : ""
                       }`}
                     >
-                      <RadioGroupItem value={n} id={`niveau-${n}`} className="absolute inset-0 opacity-0" />
-                      <Label htmlFor={`niveau-${n}`} className="font-medium cursor-pointer">
+                      <RadioGroupItem
+                        value={n}
+                        id={`niveau-${n}`}
+                        className="absolute inset-0 opacity-0"
+                      />
+                      <Label
+                        htmlFor={`niveau-${n}`}
+                        className="font-medium cursor-pointer"
+                      >
                         {n}
                       </Label>
                     </div>
@@ -446,29 +485,58 @@ export default function EditElevePage({
                 <Label className="text-base">Type de permis</Label>
                 <RadioGroup
                   value={typePermis}
-                  onValueChange={(value) => setTypePermis(value as "E" | "S" | "B" | "P")}
+                  onValueChange={(value) =>
+                    setTypePermis(value as "E" | "S" | "B" | "P")
+                  }
                   className="grid grid-cols-2 gap-4"
                 >
                   {[
-                    { value: "E", label: "Permis étudiant", desc: "Pour les étudiants" },
-                    { value: "S", label: "Permis S", desc: "Protection temporaire" },
+                    {
+                      value: "E",
+                      label: "Permis étudiant",
+                      desc: "Pour les étudiants",
+                    },
+                    {
+                      value: "S",
+                      label: "Permis S",
+                      desc: "Protection temporaire",
+                    },
                     { value: "B", label: "Permis B", desc: "Séjour annuel" },
-                    { value: "P", label: "Pas de permis", desc: "Aucun permis requis" }
+                    {
+                      value: "P",
+                      label: "Pas de permis",
+                      desc: "Aucun permis requis",
+                    },
                   ].map(({ value, label, desc }) => (
                     <div
                       key={value}
                       className={`flex flex-col space-y-1 rounded-lg border p-4 cursor-pointer transition-colors ${
-                        typePermis === value ? "border-primary bg-primary/5" : ""
+                        typePermis === value
+                          ? "border-primary bg-primary/5"
+                          : ""
                       }`}
                     >
                       <div className="flex items-center space-x-2">
-                        <RadioGroupItem value={value} id={`permis-${value}`} className="sr-only" />
-                        <div className={`w-2 h-2 rounded-full ${
-                          typePermis === value ? "bg-primary" : "bg-muted"
-                        }`} />
-                        <Label htmlFor={`permis-${value}`} className="font-medium cursor-pointer">{label}</Label>
+                        <RadioGroupItem
+                          value={value}
+                          id={`permis-${value}`}
+                          className="sr-only"
+                        />
+                        <div
+                          className={`w-2 h-2 rounded-full ${
+                            typePermis === value ? "bg-primary" : "bg-muted"
+                          }`}
+                        />
+                        <Label
+                          htmlFor={`permis-${value}`}
+                          className="font-medium cursor-pointer"
+                        >
+                          {label}
+                        </Label>
                       </div>
-                      <p className="text-sm text-muted-foreground pl-4">{desc}</p>
+                      <p className="text-sm text-muted-foreground pl-4">
+                        {desc}
+                      </p>
                     </div>
                   ))}
                 </RadioGroup>
@@ -541,7 +609,9 @@ export default function EditElevePage({
             className="w-full sm:w-auto"
           >
             <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? "Enregistrement..." : "Enregistrer les modifications"}
+            {isSubmitting
+              ? "Enregistrement..."
+              : "Enregistrer les modifications"}
           </Button>
         </div>
       </form>
