@@ -164,81 +164,93 @@ export default function PresenceDetailPage({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* Header */}
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/presences">
-            <ArrowLeft className="h-4 w-4" />
-          </Link>
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+            <Link href="/dashboard/presences">
+              <ArrowLeft className="h-4 w-4" />
+            </Link>
+          </Button>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Fiche de présence
+            </h1>
+            <p className="text-muted-foreground">
+              {format(new Date(fiche.annee, monthIndex), "MMMM yyyy", {
+                locale: fr,
+              })}
+            </p>
+          </div>
+        </div>
+        <Button onClick={handleSave} className="shadow-sm">
+          <Save className="mr-2 h-4 w-4" /> Enregistrer
         </Button>
-        <h1 className="text-3xl font-bold">
-          Fiche –{" "}
-          {format(new Date(fiche.annee, monthIndex), "MMMM yyyy", {
-            locale: fr,
-          })}
-        </h1>
       </div>
 
-      <Card>
-        <CardHeader className="p-6">
-          <CardTitle>Présences détaillées</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="overflow-auto">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[200px]">Étudiant</TableHead>
-                  {joursDuMois.map((j) => (
-                    <TableHead key={j} className="text-center p-2 w-10">
-                      {j}
+      {loading ? (
+        <Card className="w-full max-w-md mx-auto shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-center">Chargement...</CardTitle>
+          </CardHeader>
+        </Card>
+      ) : (
+        <Card className="shadow-sm">
+          <CardHeader className="border-b">
+            <CardTitle>Suivi des présences</CardTitle>
+          </CardHeader>
+          <CardContent className="p-0">
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-muted/50">
+                    <TableHead className="w-[200px] bg-muted/50 left-0 sticky z-10">
+                      Étudiant
                     </TableHead>
-                  ))}
-                  <TableHead className="text-right w-20">Total</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {eleves.map((etu) => (
-                  <TableRow key={etu.id}>
-                    <TableCell className="font-medium">
-                      {etu.nom} {etu.prenom}
-                    </TableCell>
-                    {joursDuMois.map((j) => {
-                      const p = presenceMap[etu.id]?.[j];
-                      return (
-                        <TableCell key={j} className="text-center p-0">
-                          <button
-                            className={`w-full h-full p-1 transition
-                              ${
-                                p?.statut === "P"
-                                  ? "font-bold text-primary"
-                                  : ""
-                              }
-                            `}
-                            onClick={() => togglePresence(etu.id, j)}
-                          >
-                            {p?.statut === "P" ? "✔︎" : "—"}
-                          </button>
-                        </TableCell>
-                      );
-                    })}
-                    <TableCell className="text-right font-medium">
-                      {totalPresences(etu.id)}
-                    </TableCell>
+                    {joursDuMois.map((j) => (
+                      <TableHead key={j} className="text-center p-2 min-w-[40px]">
+                        {j}
+                      </TableHead>
+                    ))}
+                    <TableHead className="text-right bg-muted/50 right-0 sticky z-10 min-w-[80px]">
+                      Total
+                    </TableHead>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-
-          <div className="mt-4 flex justify-end">
-            <Button onClick={handleSave}>
-              <Save className="mr-2 h-4 w-4" /> Enregistrer
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {eleves.map((etu) => (
+                    <TableRow key={etu.id} className="hover:bg-muted/50">
+                      <TableCell className="font-medium bg-white/80 left-0 sticky z-10">
+                        {etu.prenom} {etu.nom}
+                      </TableCell>
+                      {joursDuMois.map((j) => {
+                        const p = presenceMap[etu.id]?.[j];
+                        return (
+                          <TableCell key={j} className="text-center p-0">
+                            <button
+                              className={`w-full h-10 transition duration-150 ${
+                                p?.statut === "P"
+                                  ? "bg-primary/10 hover:bg-primary/20 text-primary font-medium"
+                                  : "hover:bg-muted"
+                              }`}
+                              onClick={() => togglePresence(etu.id, j)}
+                            >
+                              {p?.statut === "P" ? "✓" : "–"}
+                            </button>
+                          </TableCell>
+                        );
+                      })}
+                      <TableCell className="text-right font-medium bg-white/80 right-0 sticky z-10">
+                        {totalPresences(etu.id)}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 }

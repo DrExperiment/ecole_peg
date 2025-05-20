@@ -94,75 +94,125 @@ export default function NouveauTestPage({
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+    <div className="container mx-auto py-6 max-w-2xl">
+      <div className="flex items-center gap-2 mb-6">
         <Button variant="ghost" size="icon" asChild>
           <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
-          Créer un nouveau test pour {eleve?.nom} {eleve?.prenom}
+          Nouveau test de niveau pour {eleve?.prenom} {eleve?.nom}
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSoumission)}>
+      <form onSubmit={handleSubmit(onSoumission)} className="space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Nouveau test</CardTitle>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl">Détails du test</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="grid gap-6">
             <div className="space-y-2">
               <Label>Date du test</Label>
-              <div className="flex gap-2">
-                <Input
-                  id="date"
-                  type="date"
-                  onChange={handleDate}
-                  placeholder="JJ-MM-AAAA"
-                />
-              </div>
+              <Input
+                type="date"
+                value={date ? format(date, "yyyy-MM-dd") : ""}
+                onChange={handleDate}
+                className="w-full"
+                required
+              />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="niveau">Niveau du test</Label>
+              <Label htmlFor="niveau">Niveau évalué</Label>
               <Select
                 value={niveau}
                 onValueChange={(value) =>
                   setNiveau(value as "A1" | "A2" | "B1" | "B2" | "C1")
                 }
               >
-                <SelectTrigger>
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Sélectionner un niveau" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="A1">A1</SelectItem>
-                  <SelectItem value="A2">A2</SelectItem>
-                  <SelectItem value="B1">B1</SelectItem>
-                  <SelectItem value="B2">B2</SelectItem>
-                  <SelectItem value="C1">C1</SelectItem>
+                  <SelectItem value="A1">
+                    <div className="font-medium">A1</div>
+                    <div className="text-xs text-muted-foreground">
+                      Niveau débutant
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="A2">
+                    <div className="font-medium">A2</div>
+                    <div className="text-xs text-muted-foreground">
+                      Niveau élémentaire
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="B1">
+                    <div className="font-medium">B1</div>
+                    <div className="text-xs text-muted-foreground">
+                      Niveau intermédiaire
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="B2">
+                    <div className="font-medium">B2</div>
+                    <div className="text-xs text-muted-foreground">
+                      Niveau intermédiaire supérieur
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="C1">
+                    <div className="font-medium">C1</div>
+                    <div className="text-xs text-muted-foreground">
+                      Niveau avancé
+                    </div>
+                  </SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="note">Note du test</Label>
+              <Label htmlFor="note">Note obtenue</Label>
               <Input
                 id="note"
                 type="number"
-                placeholder="La note du test"
+                min="0"
+                max="100"
+                step="0.5"
+                onWheel={(e) => e.currentTarget.blur()}
+                placeholder="Ex: 85.5"
+                className="font-mono"
                 {...register("note", {
                   required: "La note du test est obligatoire",
                   valueAsNumber: true,
+                  min: {
+                    value: 0,
+                    message: "La note ne peut pas être négative",
+                  },
+                  max: {
+                    value: 100,
+                    message: "La note ne peut pas dépasser 100",
+                  },
                 })}
               />
+              <p className="text-sm text-muted-foreground">
+                Entrez une note entre 0 et 100 points
+              </p>
             </div>
           </CardContent>
 
-          <CardFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "En cours..." : "Enregistrer"}
+          <CardFooter className="flex justify-end">
+            <Button
+              type="submit"
+              className="min-w-[150px]"
+              disabled={isSubmitting || !date}
+            >
+              {isSubmitting ? (
+                <>Sauvegarde en cours...</>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Enregistrer
+                </>
+              )}
             </Button>
           </CardFooter>
         </Card>

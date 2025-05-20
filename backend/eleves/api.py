@@ -24,7 +24,7 @@ from django.core.paginator import Paginator
 from ninja import File, Form
 from ninja.files import UploadedFile  # ⬅️ celui-ci est bon
 from django.utils import timezone
-
+from datetime import timedelta
 
 router = Router()
 
@@ -283,6 +283,9 @@ def pays(request):
 
 @router.get("/statistiques/dashboard/")
 def statistiques_dashboard(request):
+    today = timezone.now().date()
+    first_day_month = today.replace(day=1)
+
     # Statistiques des factures
     factures_impayees = (
         Facture.objects.annotate(
@@ -293,10 +296,38 @@ def statistiques_dashboard(request):
         .count()
     )
 
+    # Montant total des paiements effectués ce mois
+    montant_total_paiements_mois = (
+        Facture.objects.filter(paiements__date_paiement__gte=first_day_month).aggregate(
+            total=Sum("paiements__montant")
+        )["total"]
+        or 0
+    )
+
+    # Montant total des factures impayées de ce mois
+    factures_impayees_mois = (
+        Facture.objects.annotate(
+            montant_total=Sum("details__montant"),
+            total_paye=Sum("paiements__montant"),
+        )
+        .filter(total_paye__lt=F("montant_total"), date_emission__gte=first_day_month)
+        .aggregate(
+            total=Sum(
+                ExpressionWrapper(
+                    F("montant_total") - F("total_paye"), output_field=IntegerField()
+                )
+            )
+        )["total"]
+        or 0
+    )
+
     # Statistiques des cours
     total_cours = Cours.objects.count()
     sessions_actives = Session.objects.filter(statut="O").count()
-    cours_prives_programmes = CoursPrive.objects.count()
+    # Cours privés programmés ce mois
+    cours_prives_programmes = CoursPrive.objects.filter(
+        date_cours_prive__gte=first_day_month
+    ).count()
     sessions_ouvertes = (
         Session.objects.filter(statut="O")
         .annotate(
@@ -310,6 +341,11 @@ def statistiques_dashboard(request):
         .order_by("date_debut")
     )
 
+    # Nombre d'enseignants
+    from cours.models import Enseignant
+
+    nombre_enseignants = Enseignant.objects.count()
+
     # Statistiques des élèves
     total_eleves = Eleve.objects.count()
     eleves_actifs = Eleve.objects.filter(inscriptions__statut="A").distinct().count()
@@ -321,21 +357,64 @@ def statistiques_dashboard(request):
         .order_by("niveau")
     )
 
-    # Retourner toutes les statistiques dans une seule réponse
+    # Pays avec le plus d'élèves
+    pays_max = (
+        Eleve.objects.values("pays__nom")
+        .annotate(total=Count("id"))
+        .order_by("-total")
+        .first()
+    )
+    pays_plus_eleves = pays_max["pays__nom"] if pays_max else None
+
+    # Élèves actifs avec taux de présence < 80%
+    # Pour chaque élève actif, calculer le taux de présence sur toutes ses présences
+    eleves_actifs_qs = Eleve.objects.filter(inscriptions__statut="A").distinct()
+    eleves_presence_inferieur_80 = []
+    for eleve in eleves_actifs_qs:
+        total_presences = eleve.presences.count()
+        total_present = eleve.presences.filter(statut="P").count()
+        taux = (total_present / total_presences) * 100 if total_presences > 0 else 0
+        if taux < 80:
+            eleves_presence_inferieur_80.append(
+                {
+                    "nom": eleve.nom,
+                    "prenom": eleve.prenom,
+                    "date_naissance": eleve.date_naissance,
+                    "taux_presence": round(taux, 2),
+                }
+            )
+
+    # Élèves en préinscription depuis plus de 3 jours
+    trois_jours_avant = today - timedelta(days=3)
+    eleves_preinscription = (
+        Eleve.objects.filter(
+            inscriptions__preinscription=True,
+            inscriptions__date_inscription__lte=trois_jours_avant,
+        )
+        .distinct()
+        .values("nom", "prenom", "date_naissance")
+    )
+
     return {
         "factures": {
             "nombre_factures_impayees": factures_impayees,
+            "montant_total_paiements_mois": float(montant_total_paiements_mois),
+            "montant_total_factures_impayees_mois": float(factures_impayees_mois),
         },
         "cours": {
             "total_cours": total_cours,
             "sessions_actives": sessions_actives,
-            "cours_prives_programmes": cours_prives_programmes,
+            "cours_prives_programmes_mois": cours_prives_programmes,
             "sessions_ouvertes": list(sessions_ouvertes),
+            "nombre_enseignants": nombre_enseignants,
         },
         "eleves": {
             "total_eleves": total_eleves,
             "eleves_actifs": eleves_actifs,
             "repartition_niveaux": list(repartition_niveaux),
+            "pays_plus_eleves": pays_plus_eleves,
+            "eleves_presence_inferieur_80": eleves_presence_inferieur_80,
+            "eleves_preinscription_plus_3j": list(eleves_preinscription),
         },
     }
 

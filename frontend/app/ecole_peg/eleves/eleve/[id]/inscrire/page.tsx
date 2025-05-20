@@ -56,8 +56,6 @@ export default function InscrirePage({
 
   const resolvedParams = use(params);
 
-  const [date, setDate] = useState<Date | undefined>(undefined);
-
   const [eleve, setEleve] = useState<Eleve | undefined>(undefined);
 
   const [sessions, setSessions] = useState<Session[]>([]);
@@ -68,7 +66,6 @@ export default function InscrirePage({
     async (donnees: object) => {
       const donneesCompletes = {
         ...donnees,
-        date: date ? format(date, "yyyy-MM-dd") : undefined,
         id_session,
         preinscription,
       };
@@ -84,7 +81,7 @@ export default function InscrirePage({
         console.error("Erreur: ", erreur);
       }
     },
-    [date, id_session, preinscription, resolvedParams.id, router],
+    [id_session, preinscription, resolvedParams.id, router],
   );
 
   useEffect(() => {
@@ -116,24 +113,26 @@ export default function InscrirePage({
   }, [resolvedParams.id]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+    <div className="container mx-auto py-6 max-w-3xl">
+      <div className="flex items-center gap-2 mb-6">
         <Button variant="ghost" size="icon" asChild>
           <Link href={`/ecole_peg/eleves/eleve/${eleve?.id}`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
-          Inscrire {eleve?.nom} {eleve?.prenom} à une session
+          Inscription aux cours pour {eleve?.prenom} {eleve?.nom}
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSoumission)}>
+      <form onSubmit={handleSubmit(onSoumission)} className="space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Inscrire</CardTitle>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl">
+              Détails de l&apos;inscription
+            </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="grid gap-6">
             <div className="space-y-2">
               <Label htmlFor="session">Session</Label>
               <Select
@@ -143,19 +142,20 @@ export default function InscrirePage({
                   setIdSession(Number(valeur));
                 }}
               >
-                <SelectTrigger id="session">
+                <SelectTrigger className="w-full" id="session">
                   <SelectValue placeholder="Sélectionner la session" />
                 </SelectTrigger>
                 <SelectContent>
                   {sessions.map((session) => (
                     <SelectItem key={session.id} value={session.id.toString()}>
-                      {session.cours__nom}{" "}
-                      {session.cours__type === "I"
-                        ? "Intensif"
-                        : "Semi-intensif"}{" "}
-                      {session.cours__niveau} (Du{" "}
-                      {format(session.date_debut, "yyyy-MM-dd")} à{" "}
-                      {format(session.date_fin, "yyyy-MM-dd")})
+                      <span className="font-medium">{session.cours__nom}</span> -{" "}
+                      {session.cours__type === "I" ? "Intensif" : "Semi-intensif"}{" "}
+                      <span className="font-medium">{session.cours__niveau}</span>
+                      <br />
+                      <span className="text-sm text-muted-foreground">
+                        Du {format(session.date_debut, "dd.MM.yyyy")} au{" "}
+                        {format(session.date_fin, "dd.MM.yyyy")}
+                      </span>
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -163,47 +163,37 @@ export default function InscrirePage({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="date_inscription">
-                Date de l&apos;inscription
-              </Label>
-              <Input
-                id="date_inscription"
-                type="date"
-                value={date ? format(date, "yyyy-MM-dd") : ""}
-                onChange={(e) =>
-                  setDate(
-                    e.target.value
-                      ? new Date(e.target.value + "T00:00:00")
-                      : undefined,
-                  )
-                }
-                required
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="but">But</Label>
+              <Label htmlFor="but">But de l&apos;inscription</Label>
               <Input
                 id="but"
-                placeholder="Le but de l'inscription"
+                placeholder="Ex: Perfectionnement du français, Préparation aux études..."
                 {...register("but")}
+                className="w-full"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="heure-fin">Frais de l&apos;inscription</Label>
+              <Label htmlFor="frais_inscription">Frais d&apos;inscription (CHF)</Label>
               <Input
                 id="frais_inscription"
                 type="number"
-                placeholder="Les frais de l'inscription"
+                min="0"
+                step="0.01"
+                onWheel={(e) => e.currentTarget.blur()}
+                placeholder="0.00"
+                className="font-mono w-full"
                 required
                 {...register("frais_inscription", {
-                  required: "Les frais de l'inscription sont obligatoires",
+                  required: "Les frais d&apos;inscription sont obligatoires",
+                  min: {
+                    value: 0,
+                    message: "Les frais ne peuvent pas être négatifs",
+                  },
                 })}
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="border-t pt-4">
               <div className="flex items-center space-x-2">
                 <Checkbox
                   id="preinscription"
@@ -212,14 +202,35 @@ export default function InscrirePage({
                     setPreinscription(checked as boolean)
                   }
                 />
-                <Label htmlFor="preinscription">Préinscription</Label>
+                <Label
+                  htmlFor="preinscription"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Préinscription uniquement
+                </Label>
               </div>
+              {preinscription && (
+                <p className="mt-2 text-sm text-muted-foreground">
+                  La préinscription permet de réserver une place dans la session
+                  sans confirmation définitive.
+                </p>
+              )}
             </div>
           </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "En cours..." : "Enregistrer"}
+          <CardFooter className="flex justify-end">
+            <Button
+              type="submit"
+              className="min-w-[150px]"
+              disabled={isSubmitting || !id_session}
+            >
+              {isSubmitting ? (
+                <>Sauvegarde en cours...</>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Enregistrer
+                </>
+              )}
             </Button>
           </CardFooter>
         </Card>

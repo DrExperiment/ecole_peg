@@ -31,10 +31,7 @@ export default function NouveauGarantPage() {
   } = useForm();
   const router = useRouter();
   const params = useParams();
-  console.log("params :", params);
-
   const eleveId = Array.isArray(params?.id) ? params.id[0] : params?.id;
-
   const [eleve, setEleve] = useState<Eleve | null>(null);
 
   const onSoumission = useCallback(
@@ -55,13 +52,10 @@ export default function NouveauGarantPage() {
   useEffect(() => {
     async function fetchEleve() {
       try {
-        console.log("eleveId récupéré:", eleveId);
-
         const response = await axios.get(
           `http://localhost:8000/api/eleves/eleve/${eleveId}/`,
         );
         setEleve(response.data);
-        console.log("Réponse reçue:", response.data);
       } catch (erreur) {
         console.error("Erreur lors du chargement de l'élève :", erreur);
       }
@@ -73,31 +67,32 @@ export default function NouveauGarantPage() {
   }, [eleveId]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+    <div className="container mx-auto py-6 max-w-3xl">
+      <div className="flex items-center gap-2 mb-6">
         <Button variant="ghost" size="icon" asChild>
           <Link href={`/ecole_peg/eleves/eleve/${eleve?.id}/`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
-          Ajouter le garant de {eleve?.nom} {eleve?.prenom}
+          Ajouter un garant pour {eleve?.prenom} {eleve?.nom}
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSoumission)}>
+      <form onSubmit={handleSubmit(onSoumission)} className="space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Garant</CardTitle>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl">Informations du garant</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+          <CardContent className="grid gap-6">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="nom">Nom du garant</Label>
+                <Label htmlFor="nom">Nom</Label>
                 <Input
                   id="nom"
                   placeholder="Nom du garant"
                   {...register("nom", {
+                    required: "Le nom est obligatoire",
                     pattern: {
                       value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
                       message:
@@ -108,11 +103,12 @@ export default function NouveauGarantPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="prenom">Prénom du garant</Label>
+                <Label htmlFor="prenom">Prénom</Label>
                 <Input
                   id="prenom"
                   placeholder="Prénom du garant"
                   {...register("prenom", {
+                    required: "Le prénom est obligatoire",
                     pattern: {
                       value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
                       message:
@@ -122,70 +118,92 @@ export default function NouveauGarantPage() {
                   })}
                 />
               </div>
+            </div>
+
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label htmlFor="telephone">Téléphone du garant</Label>
+                <Label htmlFor="telephone">Téléphone</Label>
                 <Input
                   id="telephone"
                   type="tel"
-                  placeholder="Numéro de téléphone"
+                  placeholder="+41 XX XXX XX XX"
                   {...register("telephone", {
+                    required: "Le numéro de téléphone est obligatoire",
                     pattern: {
                       value: /^(?:(?:\+|00)33\s?|0)[1-9](?:[\s.-]*\d{2}){4}$/,
                       message:
-                        "Le numéro de téléphone doit être au format français.",
+                        "Le numéro de téléphone doit être au format suisse.",
                     },
+                    setValueAs: (v) => v.trim(),
+                  })}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="email@exemple.ch"
+                  {...register("email", {
+                    required: "L'email est obligatoire",
                     setValueAs: (v) => v.trim(),
                   })}
                 />
               </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="email">Email du garant</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Adresse email"
-                {...register("email", {
-                  setValueAs: (v) => v.trim(),
-                })}
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="rue">Rue</Label>
-                <Input id="rue" placeholder="Rue" {...register("rue")} />
+                <Input
+                  id="rue"
+                  placeholder="Nom de la rue"
+                  {...register("rue")}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="numero">Numéro</Label>
                 <Input
                   id="numero"
-                  placeholder="Numéro"
+                  placeholder="N°"
                   {...register("numero")}
                 />
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="npa">NPA</Label>
-                <Input id="npa" placeholder="NPA" {...register("npa")} />
+                <Input
+                  id="npa"
+                  placeholder="Code postal"
+                  {...register("npa")}
+                />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="localite">Localité</Label>
                 <Input
                   id="localite"
-                  placeholder="Localité"
+                  placeholder="Ville"
                   {...register("localite")}
                 />
               </div>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "En cours..." : "Enregistrer"}
+          <CardFooter className="flex justify-end">
+            <Button
+              type="submit"
+              className="min-w-[150px]"
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? (
+                <>Sauvegarde en cours...</>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Enregistrer
+                </>
+              )}
             </Button>
           </CardFooter>
         </Card>

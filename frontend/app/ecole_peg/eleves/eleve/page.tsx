@@ -23,12 +23,12 @@ import {
 import { Checkbox } from "@/components/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/radio-group";
 import { ArrowLeft, Save } from "lucide-react";
-import { Textarea } from "@/components/textarea";
-
+import axios from "axios";
 import { format } from "date-fns";
+
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { Textarea } from "@/components/textarea";
 
 interface Pays {
   id: number;
@@ -47,7 +47,7 @@ export default function NouveauElevePage() {
 
   const [sexe, setSexe] = useState<"H" | "F">("H");
   const [date_naissance, setDateNaissance] = useState<Date | undefined>(
-    undefined,
+    undefined
   );
   const [niveau, setNiveau] = useState<"A1" | "A2" | "B1" | "B2" | "C1">("A1");
   const [type_permis, setTypePermis] = useState<"E" | "S" | "B" | "P">("P");
@@ -59,10 +59,12 @@ export default function NouveauElevePage() {
   const onSoumission = useCallback(
     async (donnees: object) => {
       const now = new Date();
+
       if (date_naissance && date_naissance > now) {
         setError("date_naissance", {
           message: "La date de naissance ne peut être dans le futur.",
         });
+
         return;
       }
 
@@ -80,18 +82,33 @@ export default function NouveauElevePage() {
         pays_id: id_pays,
       };
 
+      console.log(donneesCompletes);
+
       try {
+        console.log(
+          "Données envoyées : ",
+          JSON.stringify(donneesCompletes, null, 2)
+        );
+
         const reponse = await axios.post(
           "http://localhost:8000/api/eleves/eleve/",
-          donneesCompletes,
+          donneesCompletes // Ajoutez les données ici
         );
+        console.log("Réponse complète backend :", reponse.data);
+
         if (a_garant)
           router.push(`/ecole_peg/eleves/eleve/${reponse.data.id}/garant/`);
         else router.push(`/ecole_peg/eleves/eleve/${reponse.data.id}/`);
-      } catch {
-        alert(
-          "Erreur lors de la soumission. Vérifie tous les champs obligatoires.",
-        );
+      } catch (error: Error | unknown) {
+        if (axios.isAxiosError(error) && error.response) {
+          console.error(
+            "🛑 Erreurs de validation :",
+            error.response.data.erreurs
+          );
+          alert("Erreur de validation : vérifie tous les champs.");
+        } else {
+          console.error("🛑 Erreur inconnue :", error);
+        }
       }
     },
     [
@@ -104,7 +121,7 @@ export default function NouveauElevePage() {
       setError,
       sexe,
       type_permis,
-    ],
+    ]
   );
 
   useEffect(() => {
@@ -113,82 +130,89 @@ export default function NouveauElevePage() {
         const donnees: Pays[] = (
           await axios.get("http://localhost:8000/api/eleves/pays/")
         ).data;
+
         setPays(donnees);
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
     }
+
     fetchPays();
   }, []);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+    <div className="container mx-auto py-6 max-w-5xl">
+      <div className="flex items-center gap-2 mb-6">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/ecole_peg/eleves">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Nouvel Élève</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Nouveau Élève</h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSoumission)} noValidate>
+      <form onSubmit={handleSubmit(onSoumission)} className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Détails personnels */}
           <Card>
-            <CardHeader>
-              <CardTitle>Détails personnels</CardTitle>
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl">Détails personnels</CardTitle>
               <CardDescription>
                 Veuillez saisir les informations personnelles de l&apos;élève.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
+            <CardContent className="grid gap-4">
+              <div className="grid gap-4 grid-cols-2">
                 <div className="space-y-2">
                   <Label htmlFor="nom">Nom</Label>
                   <Input
                     id="nom"
-                    placeholder="ex: Dupont"
-                    autoFocus
+                    placeholder="Nom de famille"
                     required
                     {...register("nom", {
-                      required: true,
-                      pattern: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
+                      required: "Nom est obligatoire",
+                      pattern: {
+                        value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
+                        message:
+                          "Le nom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
+                      },
                       setValueAs: (v) => v.trim(),
                     })}
-                    disabled={isSubmitting}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="prenom">Prénom</Label>
                   <Input
                     id="prenom"
-                    placeholder="ex: Jean"
+                    placeholder="Prénom"
                     required
                     {...register("prenom", {
-                      required: true,
-                      pattern: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
+                      required: "Prénom est obligatoire",
+                      pattern: {
+                        value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
+                        message:
+                          "Le prénom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
+                      },
                       setValueAs: (v) => v.trim(),
                     })}
-                    disabled={isSubmitting}
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>Sexe</Label>
+                <Label htmlFor="sexe">Sexe</Label>
                 <RadioGroup
-                  value={sexe}
+                  defaultValue={sexe}
                   onValueChange={(valeur) => setSexe(valeur as "H" | "F")}
-                  className="flex gap-6"
                   required
+                  id="sexe"
+                  className="flex gap-4"
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem id="sexe-h" value="H" />
+                    <RadioGroupItem value="H" id="sexe-h" />
                     <Label htmlFor="sexe-h">Homme</Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem id="sexe-f" value="F" />
+                    <RadioGroupItem value="F" id="sexe-f" />
                     <Label htmlFor="sexe-f">Femme</Label>
                   </div>
                 </RadioGroup>
@@ -199,16 +223,13 @@ export default function NouveauElevePage() {
                 <Input
                   type="date"
                   id="date_naissance"
+                  name="date_naissance"
                   required
-                  className="w-full"
-                  value={
-                    date_naissance ? format(date_naissance, "yyyy-MM-dd") : ""
-                  }
+                  value={date_naissance ? format(date_naissance, "yyyy-MM-dd") : ""}
                   onChange={(e) => {
                     const value = e.target.value;
                     setDateNaissance(value ? new Date(value) : undefined);
                   }}
-                  disabled={isSubmitting}
                 />
               </div>
 
@@ -216,21 +237,19 @@ export default function NouveauElevePage() {
                 <Label htmlFor="lieu_naissance">Lieu de naissance</Label>
                 <Input
                   id="lieu_naissance"
-                  placeholder="ex: Paris"
+                  placeholder="Lieu de naissance"
                   {...register("lieu_naissance")}
-                  disabled={isSubmitting}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Pays</Label>
+                <Label htmlFor="pays">Pays</Label>
                 <Select
-                  value={id_pays ? id_pays.toString() : ""}
-                  onValueChange={(valeur) => setIdPays(Number(valeur))}
+                  name="id_pays"
                   required
-                  disabled={isSubmitting}
+                  onValueChange={(valeur) => setIdPays(Number(valeur))}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Sélectionner un pays" />
                   </SelectTrigger>
                   <SelectContent>
@@ -244,40 +263,31 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="langue_maternelle">
-                  Langue maternelle (optionnel)
-                </Label>
+                <Label htmlFor="langue_maternelle">Langue maternelle</Label>
                 <Input
                   id="langue_maternelle"
-                  placeholder="ex: Français"
+                  placeholder="Langue maternelle"
                   {...register("langue_maternelle")}
-                  disabled={isSubmitting}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="autres_langues">
-                  Autres langues (optionnel)
-                </Label>
+                <Label htmlFor="autres_langues">Autres langues</Label>
                 <Input
                   id="autres_langues"
-                  placeholder="ex: Anglais, Espagnol"
+                  placeholder="Autres langues parlées"
                   {...register("autres_langues")}
-                  disabled={isSubmitting}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label>Niveau</Label>
+                <Label htmlFor="niveau">Niveau de langue</Label>
                 <Select
-                  value={niveau}
                   onValueChange={(valeur) =>
                     setNiveau(valeur as "A1" | "A2" | "B1" | "B2" | "C1")
                   }
-                  required
-                  disabled={isSubmitting}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Sélectionner un niveau" />
                   </SelectTrigger>
                   <SelectContent>
@@ -291,16 +301,13 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label>Type de permis</Label>
+                <Label htmlFor="type_permis">Type de permis</Label>
                 <Select
-                  value={type_permis}
                   onValueChange={(valeur) =>
                     setTypePermis(valeur as "E" | "S" | "B" | "P")
                   }
-                  required
-                  disabled={isSubmitting}
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <SelectValue placeholder="Sélectionner un type de permis" />
                   </SelectTrigger>
                   <SelectContent>
@@ -313,172 +320,174 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_permis">
-                  Date d&apos;expiration du permis (optionnel)
-                </Label>
+                <Label htmlFor="date_permis">Date d&apos;expiration de permis</Label>
                 <Input
                   type="date"
                   id="date_permis"
-                  className="w-full"
+                  name="date_permis"
                   value={date_permis ? format(date_permis, "yyyy-MM-dd") : ""}
                   onChange={(e) => {
                     const value = e.target.value;
                     setDatePermis(value ? new Date(value) : undefined);
                   }}
-                  disabled={isSubmitting}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="src_decouverte">
-                  Source de découverte (optionnel)
-                </Label>
+                <Label htmlFor="src_decouverte">Source de découverte</Label>
                 <Textarea
                   id="src_decouverte"
-                  placeholder="Comment l'élève a-t-il connu l'école ?"
+                  placeholder="Comment avez-vous découvert l'école ?"
+                  className="min-h-[80px]"
                   {...register("src_decouverte")}
-                  disabled={isSubmitting}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="commentaire">Commentaires (optionnel)</Label>
+                <Label htmlFor="commentaire">Commentaires</Label>
                 <Textarea
                   id="commentaires"
-                  placeholder="Commentaires supplémentaires"
+                  placeholder="Commentaires additionnels"
+                  className="min-h-[80px]"
                   {...register("commentaires")}
-                  disabled={isSubmitting}
                 />
               </div>
             </CardContent>
           </Card>
 
-          {/* Coordonnées */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Coordonnées de contact</CardTitle>
-              <CardDescription>
-                Veuillez saisir les coordonnées de l&apos;élève.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="telephone">Téléphone</Label>
-                <Input
-                  id="telephone"
-                  type="tel"
-                  placeholder="ex: 079 123 45 67"
-                  required
-                  {...register("telephone", {
-                    required: true,
-                    pattern: /^(?:(?:\+|00)41\s?|0)(?:\d{2}\s?){4}\d{2}$/,
-                    setValueAs: (v) => v.trim(),
-                  })}
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="ex: jean.dupont@email.com"
-                  required
-                  {...register("email", {
-                    required: true,
-                    setValueAs: (v) => v.trim(),
-                  })}
-                  disabled={isSubmitting}
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-2xl">Coordonnées de contact</CardTitle>
+                <CardDescription>
+                  Veuillez saisir les coordonnées de l&apos;élève.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="rue">Rue (optionnel)</Label>
+                  <Label htmlFor="telephone">Téléphone</Label>
                   <Input
-                    id="rue"
-                    placeholder="ex: Rue du Lac"
-                    {...register("rue")}
-                    disabled={isSubmitting}
+                    id="telephone"
+                    type="tel"
+                    placeholder="+41 XX XXX XX XX"
+                    required
+                    {...register("telephone", {
+                      required: "Numéro de téléphone est obligatoire",
+                      pattern: {
+                        value: /^(?:(?:\+|00)33\s?|0)[1-9](?:[\s.-]*\d{2}){4}$/,
+                        message:
+                          "Le numéro de téléphone doit être au format suisse.",
+                      },
+                      setValueAs: (v) => v.trim(),
+                    })}
                   />
                 </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="numero">Numéro (optionnel)</Label>
+                  <Label htmlFor="email">Email</Label>
                   <Input
-                    id="numero"
-                    placeholder="ex: 12B"
-                    {...register("numero")}
-                    disabled={isSubmitting}
+                    id="email"
+                    type="email"
+                    placeholder="email@exemple.ch"
+                    required
+                    {...register("email", {
+                      required: "Adresse email est obligatoire",
+                      setValueAs: (v) => v.trim(),
+                    })}
                   />
                 </div>
-              </div>
 
-              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-4 grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="rue">Rue</Label>
+                    <Input
+                      id="rue"
+                      placeholder="Nom de la rue"
+                      {...register("rue")}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="numero">Numéro</Label>
+                    <Input
+                      id="numero"
+                      placeholder="N°"
+                      {...register("numero")}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-4 grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="npa">NPA</Label>
+                    <Input
+                      id="npa"
+                      placeholder="Code postal"
+                      {...register("npa")}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="localite">Localité</Label>
+                    <Input
+                      id="localite"
+                      placeholder="Ville"
+                      {...register("localite")}
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-2">
-                  <Label htmlFor="npa">NPA (optionnel)</Label>
-                  <Input
-                    id="npa"
-                    placeholder="ex: 1000"
-                    {...register("npa")}
-                    disabled={isSubmitting}
+                  <Label htmlFor="adresse_facturation">Adresse de facturation</Label>
+                  <Textarea
+                    id="adresse_facturation"
+                    placeholder="Adresse complète pour la facturation"
+                    className="min-h-[80px]"
+                    {...register("adresse_facturation")}
                   />
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="localite">Localité (optionnel)</Label>
-                  <Input
-                    id="localite"
-                    placeholder="ex: Lausanne"
-                    {...register("localite")}
-                    disabled={isSubmitting}
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="space-y-1">
+                <CardTitle className="text-2xl">Garant</CardTitle>
+                <CardDescription>
+                  Si l&apos;élève dispose d&apos;un garant, les informations
+                  complémentaires vous seront demandées après la validation de ce
+                  formulaire.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="flex items-center space-x-2">
+                  <Checkbox
+                    id="a_garant"
+                    checked={a_garant}
+                    onCheckedChange={() => setAGarant(!a_garant)}
                   />
+                  <Label htmlFor="a_garant">
+                    L&apos;élève dispose d&apos;un garant
+                  </Label>
                 </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="adresse_facturation">
-                  Adresse de facturation (optionnel)
-                </Label>
-                <Textarea
-                  id="adresse_facturation"
-                  placeholder="Adresse de facturation"
-                  {...register("adresse_facturation")}
-                  disabled={isSubmitting}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Garant */}
-          <Card className="md:col-span-2">
-            <CardHeader>
-              <CardTitle>Présence d&apos;un garant</CardTitle>
-              <CardDescription>
-                Veuillez confirmer si l&apos;élève dispose d&apos;un garant. Les
-                informations complémentaires vous seront demandées après la
-                validation de ce formulaire.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center space-x-2 pb-4">
-                <Checkbox
-                  id="a_garant"
-                  checked={a_garant}
-                  onCheckedChange={() => setAGarant(!a_garant)}
-                  disabled={isSubmitting}
-                />
-                <Label htmlFor="a_garant">
-                  L&apos;élève dispose d&apos;un garant
-                </Label>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
-        <div className="mt-6 flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
-            <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? "En cours..." : "Enregistrer"}
+        <div className="flex justify-end">
+          <Button
+            type="submit"
+            className="min-w-[150px]"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? (
+              <>Sauvegarde en cours...</>
+            ) : (
+              <>
+                <Save className="h-4 w-4" />
+                Enregistrer
+              </>
+            )}
           </Button>
         </div>
       </form>

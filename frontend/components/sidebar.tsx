@@ -36,7 +36,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     <>
       <div
         className={cn(
-          "fixed inset-0 z-40 bg-background/80 backdrop-blur-sm",
+          "fixed inset-0 z-40 bg-background/80 backdrop-blur",
           isOpen ? "block" : "hidden",
         )}
         onClick={onClose}
@@ -44,12 +44,12 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
       <div
         className={cn(
-          "fixed inset-y-0 left-0 z-50 w-1/4 lg:w-1/5 border-r bg-background transition-transform duration-300 ease-in-out",
+          "fixed inset-y-0 left-0 z-50 w-1/4 lg:w-1/5 border-r bg-background transition duration-300",
           isOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
         <div className="flex h-16 items-center justify-between border-b px-4">
-          <div className="flex items-center px-4 h-16">
+          <div className="flex items-center h-16 px-2">
             <Image
               src="/logo/ecole_peg.png"
               alt="École PEG"

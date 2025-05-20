@@ -170,37 +170,33 @@ export default function NouveauPaiementPage({
   // Submit paiement (à adapter avec ton backend)
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+    <div className="container mx-auto py-6 max-w-4xl">
+      <div className="flex items-center gap-2 mb-6">
         <Button variant="ghost" size="icon" asChild>
-          <Link href="/dashboard/paiements">
+          <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Nouveau Paiement</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Nouveau paiement pour {eleve?.prenom} {eleve?.nom}
+        </h1>
       </div>
 
-      <form onSubmit={handleSubmit}>
+      <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Sélection de la facture</CardTitle>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl">Sélection de la facture</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <Label htmlFor="etudiant">
-              Étudiant {eleve ? eleve.nom : "Chargement..."}
-            </Label>
-            <div className="space-y-2"></div>
-
-            {resolvedParams && factures.length === 0 && (
-              <p className="text-sm text-muted-foreground">
-                Aucune facture impayée pour cet étudiant.
-              </p>
-            )}
-
-            {factures.length > 0 && (
+          <CardContent className="space-y-6">
+            {resolvedParams && factures.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-8 text-center">
+                <p className="text-sm text-muted-foreground">
+                  Aucune facture impayée pour cet élève.
+                </p>
+              </div>
+            ) : (
               <div className="space-y-4">
-                <h3 className="text-sm font-medium">Factures non payées</h3>
-                <div className="rounded-md border">
+                <div className="rounded-lg border">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -215,24 +211,28 @@ export default function NouveauPaiementPage({
                     <TableBody>
                       {factures.map((f) => (
                         <TableRow key={f.id}>
-                          <TableCell>{f.numero}</TableCell>
+                          <TableCell className="font-medium">{f.numero}</TableCell>
                           <TableCell>{f.date_emission}</TableCell>
                           <TableCell>{f.description}</TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right font-mono">
                             {formatCurrency(f.montant_total)}
                           </TableCell>
-                          <TableCell className="text-right">
+                          <TableCell className="text-right font-mono">
                             {formatCurrency(f.montant_restant)}
                           </TableCell>
                           <TableCell className="text-right">
                             <div className="flex justify-end gap-2">
                               <Button
                                 type="button"
-                                variant="outline"
+                                variant={
+                                  factureId === f.id ? "secondary" : "outline"
+                                }
                                 size="sm"
                                 onClick={() => setFactureId(f.id)}
                               >
-                                Sélectionner
+                                {factureId === f.id
+                                  ? "Sélectionnée"
+                                  : "Sélectionner"}
                               </Button>
                               <Button
                                 type="button"
@@ -252,49 +252,49 @@ export default function NouveauPaiementPage({
                     </TableBody>
                   </Table>
                 </div>
-              </div>
-            )}
 
-            {factureSelectionnee && (
-              <div className="mt-6 p-4 border rounded-md bg-muted/50">
-                <h3 className="text-sm font-medium mb-2">
-                  Facture sélectionnée: {factureSelectionnee.numero}
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Description</p>
-                    <p>{factureSelectionnee.description}</p>
+                {factureSelectionnee && (
+                  <div className="rounded-lg border bg-card p-4 shadow-sm transition-colors">
+                    <div className="flex items-center justify-between mb-4">
+                      <div className="space-y-1">
+                        <h3 className="font-semibold">
+                          Facture n° {factureSelectionnee.numero}
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {factureSelectionnee.description}
+                        </p>
+                      </div>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={handledeselectionner}
+                      >
+                        <AlertCircle className="mr-2 h-4 w-4" />
+                        Annuler la sélection
+                      </Button>
+                    </div>
+                    <div className="flex items-center justify-between px-4 py-3 bg-muted/50 rounded-md">
+                      <span className="text-sm font-medium">
+                        Montant restant à payer
+                      </span>
+                      <span className="text-xl font-bold font-mono">
+                        {formatCurrency(factureSelectionnee.montant_restant)}
+                      </span>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
-                      Montant restant
-                    </p>
-                    <p className="font-bold">
-                      {formatCurrency(factureSelectionnee.montant_restant)}
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={handledeselectionner}
-                      className="mt-2"
-                    >
-                      <AlertCircle className="mr-2 h-4 w-4" />
-                      Annuler
-                    </Button>
-                  </div>
-                </div>
+                )}
               </div>
             )}
           </CardContent>
         </Card>
 
         {factureSelectionnee && (
-          <Card className="mt-4">
-            <CardHeader>
-              <CardTitle>Détails du paiement</CardTitle>
+          <Card>
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl">Détails du paiement</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="grid gap-6">
               <div className="space-y-2">
                 <Label htmlFor="montant">Montant du paiement (CHF)</Label>
                 <Input
@@ -305,48 +305,63 @@ export default function NouveauPaiementPage({
                   max={montantMax}
                   value={montant}
                   onChange={(e) => setMontant(e.target.value)}
+                  onWheel={(e) => e.currentTarget.blur()}
+                  placeholder="0.00"
+                  className="font-mono"
                   required
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label>Mode de paiement</Label>
-                <Select value={modePaiement} onValueChange={setModePaiement}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un mode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Personnel">Personnel</SelectItem>
-                    <SelectItem value="BPA">BPA</SelectItem>
-                    <SelectItem value="CAF">CAF</SelectItem>
-                    <SelectItem value="Hospice">Hospice</SelectItem>
-                    <SelectItem value="Autre">Autre</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {modePaiement === "Personnel" && (
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label>Méthode de paiement</Label>
-                  <Select
-                    value={methodePaiement}
-                    onValueChange={setMethodePaiement}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Méthode" />
+                  <Label>Mode de paiement</Label>
+                  <Select value={modePaiement} onValueChange={setModePaiement}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Sélectionner un mode" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Espèces">Espèces</SelectItem>
-                      <SelectItem value="Virement">Virement</SelectItem>
-                      <SelectItem value="Carte">Carte</SelectItem>
-                      <SelectItem value="Téléphone">Téléphone</SelectItem>
+                      <SelectItem value="Personnel">Personnel</SelectItem>
+                      <SelectItem value="BPA">BPA</SelectItem>
+                      <SelectItem value="CAF">CAF</SelectItem>
+                      <SelectItem value="Hospice">Hospice</SelectItem>
+                      <SelectItem value="Autre">Autre</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              )}
+
+                {modePaiement === "Personnel" && (
+                  <div className="space-y-2">
+                    <Label>Méthode de paiement</Label>
+                    <Select
+                      value={methodePaiement}
+                      onValueChange={setMethodePaiement}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Sélectionner une méthode" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Espèces">Espèces</SelectItem>
+                        <SelectItem value="Virement">Virement bancaire</SelectItem>
+                        <SelectItem value="Carte">Carte bancaire</SelectItem>
+                        <SelectItem value="Téléphone">Paiement mobile</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             </CardContent>
-            <CardFooter>
-              <Button type="submit">Enregistrer le paiement</Button>
+            <CardFooter className="flex justify-end">
+              <Button
+                type="submit"
+                className="min-w-[200px]"
+                disabled={
+                  !montant ||
+                  parseFloat(montant) <= 0 ||
+                  parseFloat(montant) > montantMax
+                }
+              >
+                Enregistrer le paiement
+              </Button>
             </CardFooter>
           </Card>
         )}

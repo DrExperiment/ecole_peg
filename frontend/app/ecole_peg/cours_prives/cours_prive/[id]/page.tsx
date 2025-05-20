@@ -8,11 +8,12 @@ import {
   CardHeader,
   CardTitle,
   CardDescription,
+  CardFooter,
 } from "@/components/card";
 import { Button } from "@/components/button";
 import { format, parseISO, isValid } from "date-fns";
 import { fr } from "date-fns/locale";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Clock, Users, User, CreditCard } from "lucide-react";
 import axios from "axios";
 
 interface CoursPrive {
@@ -39,8 +40,9 @@ export default function CoursPriveDetailsPage() {
     if (!dateString) return "";
     const parsed = parseISO(dateString);
     if (!isValid(parsed)) return "";
-    return format(parsed, "dd/MM/yyyy", { locale: fr });
+    return format(parsed, "EEEE d MMMM yyyy", { locale: fr });
   };
+  
   const formatTime = (timeString?: string) => {
     if (!timeString) return "";
     const parsed = parseISO(`1970-01-01T${timeString}`);
@@ -60,60 +62,110 @@ export default function CoursPriveDetailsPage() {
 
   if (!coursPrive) {
     return (
-      <div className="flex flex-col items-center mt-8">
-        <p>Chargement...</p>
+      <div className="container mx-auto py-6">
+        <Card className="w-full max-w-md mx-auto shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-center">Chargement...</CardTitle>
+          </CardHeader>
+        </Card>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-4 max-w-2xl mx-auto">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-4 w-4" />
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+          <a
+            href="#"
+            onClick={(e) => {
+              e.preventDefault();
+              router.back();
+            }}
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </a>
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
-          Détail du cours privé
+          Détails du cours privé
         </h1>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Cours privé n°{coursPrive.id}</CardTitle>
-          <CardDescription>
-            {coursPrive.lieu && (
-              <>
-                Lieu&nbsp;:{" "}
-                <span className="font-semibold">{coursPrive.lieu}</span>
-              </>
-            )}
-          </CardDescription>
+      <Card className="shadow-sm">
+        <CardHeader className="border-b">
+          <div className="flex items-center justify-between">
+            <div>
+              <CardTitle>Cours privé #{coursPrive.id}</CardTitle>
+              <CardDescription className="mt-1.5">
+                {formatDate(coursPrive.date_cours_prive)}
+              </CardDescription>
+            </div>
+            <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+              coursPrive.lieu === "E" 
+                ? "bg-blue-100 text-blue-800"
+                : "bg-emerald-100 text-emerald-800"
+            }`}>
+              {coursPrive.lieu === "E" ? "À l'école" : "À domicile"}
+            </span>
+          </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div>
-            <span className="font-medium">Date&nbsp;:</span>{" "}
-            {formatDate(coursPrive.date_cours_prive)}
-          </div>
-          <div>
-            <span className="font-medium">Heure&nbsp;:</span>{" "}
-            {formatTime(coursPrive.heure_debut)} –{" "}
-            {formatTime(coursPrive.heure_fin)}
-          </div>
-          <div>
-            <span className="font-medium">Tarif&nbsp;:</span> {coursPrive.tarif}{" "}
-            CHF
-          </div>
-          <div>
-            <span className="font-medium">Professeur&nbsp;:</span>{" "}
-            {coursPrive.enseignant__nom} {coursPrive.enseignant__prenom}
-          </div>
-          <div>
-            <span className="font-medium">Élève(s)&nbsp;:</span>{" "}
-            {coursPrive.eleves.length > 0
-              ? coursPrive.eleves.join(", ")
-              : "Aucun élève"}
+        
+        <CardContent className="p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Horaire</p>
+                  <p className="text-sm">
+                    {formatTime(coursPrive.heure_debut)} – {formatTime(coursPrive.heure_fin)}
+                  </p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3">
+                <CreditCard className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Tarif</p>
+                  <p className="text-sm">{coursPrive.tarif} CHF</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                <User className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Enseignant</p>
+                  <p className="text-sm">
+                    {coursPrive.enseignant__prenom} {coursPrive.enseignant__nom}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Élèves</p>
+                  <p className="text-sm">
+                    {coursPrive.eleves.length > 0
+                      ? coursPrive.eleves.join(", ")
+                      : "Aucun élève inscrit"}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </CardContent>
+
+        <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50 space-x-2">
+          <Button variant="outline" onClick={() => router.push(`/ecole_peg/cours_prives/cours_prive/${id}/modifier`)}>
+            Modifier
+          </Button>
+          <Button variant="default" onClick={() => router.push(`/ecole_peg/cours_prives/cours_prive/${id}/presence`)}>
+            Gérer les présences
+          </Button>
+        </CardFooter>
       </Card>
     </div>
   );

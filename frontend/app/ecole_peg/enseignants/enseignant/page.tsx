@@ -44,8 +44,8 @@ export default function NouveauEnseignantPage() {
   );
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+    <div className="container mx-auto px-4 py-6 max-w-3xl">
+      <div className="flex items-center gap-4 mb-8">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/ecole_peg/enseignants">
             <ArrowLeft className="h-4 w-4" />
@@ -57,50 +57,72 @@ export default function NouveauEnseignantPage() {
       </div>
 
       <form onSubmit={handleSubmit(onSoumission)}>
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Détails personnels de l&apos;enseignant</CardTitle>
+            <CardTitle>Détails de l&apos;enseignant</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Entrez les informations personnelles de l&apos;enseignant
+            </p>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="nom">Nom</Label>
-              <Input
-                id="nom"
-                placeholder="Nom"
-                required
-                {...register("nom", {
-                  required: "Nom est obligatoire",
-                  pattern: {
-                    value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
-                    message:
-                      "Le nom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
-                  },
-                  setValueAs: (v) => v.trim(),
-                })}
-              />
-            </div>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-2">
+                <Label htmlFor="nom" className="text-base">
+                  Nom
+                </Label>
+                <Input
+                  id="nom"
+                  placeholder="ex: Dubois"
+                  className="w-full font-medium"
+                  required
+                  {...register("nom", {
+                    required: "Le nom est obligatoire",
+                    pattern: {
+                      value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
+                      message:
+                        "Le nom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
+                    },
+                    setValueAs: (v) => v.trim(),
+                  })}
+                />
+              </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="prenom">Prénom</Label>
-              <Input
-                id="prenom"
-                placeholder="Prénom"
-                required
-                {...register("prenom", {
-                  required: "Prénom est obligatoire",
-                  pattern: {
-                    value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
-                    message:
-                      "Le prénom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
-                  },
-                  setValueAs: (v) => v.trim(),
-                })}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="prenom" className="text-base">
+                  Prénom
+                </Label>
+                <Input
+                  id="prenom"
+                  placeholder="ex: Marie"
+                  className="w-full font-medium"
+                  required
+                  {...register("prenom", {
+                    required: "Le prénom est obligatoire",
+                    pattern: {
+                      value: /^[A-Za-zÀ-ÖØ-öø-ÿ' -]+$/,
+                      message:
+                        "Le prénom ne doit contenir que des lettres, espaces, apostrophes ou tirets.",
+                    },
+                    setValueAs: (v) => v.trim(),
+                  })}
+                />
+              </div>
             </div>
           </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting ? "En cours..." : "Enregistrer"}
+          <CardFooter className="flex justify-end">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full md:w-auto"
+            >
+              {isSubmitting ? (
+                <>
+                  <span className="loading loading-spinner loading-sm mr-2"></span>
+                  Enregistrement...
+                </>
+              ) : (
+                "Enregistrer l&apos;enseignant"
+              )}
             </Button>
           </CardFooter>
         </Card>

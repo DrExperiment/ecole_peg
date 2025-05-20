@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Button } from "@/components/button";
-import { CardContent, CardFooter, CardTitle } from "@/components/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/tabs";
 import {
   Table,
@@ -12,10 +12,13 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/table";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Calendar, Users, Bookmark, GraduationCap } from "lucide-react";
 import React, { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
 import axios from "axios";
+
 interface Session {
   id: number;
   cours__nom: string;
@@ -28,6 +31,7 @@ interface Session {
   capacite_max: number;
   statut: string;
 }
+
 interface FichePresence {
   id: number;
   mois: string;
@@ -40,9 +44,7 @@ export default function SessionPage({
   params: Promise<{ id: string }>;
 }) {
   const router = useRouter();
-
   const resolvedParams = use(params);
-
   const [session, setSession] = useState<Session>();
   const [fiches, setFiches] = useState<FichePresence[]>([]);
 
@@ -52,13 +54,11 @@ export default function SessionPage({
         const response = await axios.get<FichePresence[]>(
           `http://localhost:8000/api/cours/session/${resolvedParams.id}/fiches_presences/`,
         );
-        console.log("Fiches reçues:", response.data);
         setFiches(response.data);
       } catch (erreur) {
         console.error("Erreur lors du chargement des fiches :", erreur);
       }
     }
-
     fetchFiches();
   }, [resolvedParams.id]);
 
@@ -69,37 +69,30 @@ export default function SessionPage({
           `http://localhost:8000/api/cours/sessions/${resolvedParams.id}`,
         );
         setSession(response.data);
-        console.log("Session reçue:", response.data);
-        // ✅ ici on prend juste les données utiles
       } catch (erreur) {
         console.error("Erreur: ", erreur);
       }
     }
-
     fetchSession();
   }, [resolvedParams.id]);
 
   async function supprimerSession(id_session: number | undefined) {
     if (!id_session) return;
-
     try {
       await axios.delete(
         `http://localhost:8000/api/cours/sessions/${id_session}/`,
       );
-
       router.push("/ecole_peg/sessions");
     } catch (erreur) {
       console.error("Erreur: ", erreur);
     }
   }
 
-  // Supprimer une fiche de présence
   async function supprimerFiche(id_fiche: number) {
     try {
       await axios.delete(
         `http://localhost:8000/api/cours/fiche_presences/${id_fiche}/`,
       );
-      // on retire la fiche du state pour mettre à jour l’affichage
       setFiches((prev) => prev.filter((f) => f.id !== id_fiche));
     } catch (erreur) {
       console.error("Erreur suppression fiche :", erreur);
@@ -107,114 +100,187 @@ export default function SessionPage({
     }
   }
 
+  const formatDate = (dateString?: string) => {
+    if (!dateString) return "-";
+    try {
+      const date = new Date(dateString);
+      if (isNaN(date.getTime())) return "-";
+      return format(date, "d MMMM yyyy", { locale: fr });
+    } catch {
+      return "-";
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" asChild>
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" size="icon" asChild className="h-8 w-8">
           <Link href="/ecole_peg/sessions">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">
-          {session?.cours__nom}{" "}
-          {session?.type === "I" ? "Intensif" : "Semi-intensif"}{" "}
-          {session?.cours__niveau} (Du {session?.date_debut} à{" "}
-          {session?.date_fin})
-        </h1>
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">
+            {session?.cours__nom}
+          </h1>
+          <p className="text-muted-foreground">
+            {session?.type === "I" ? "Intensif" : "Semi-intensif"} - Niveau {session?.cours__niveau}
+          </p>
+        </div>
       </div>
-      <Tabs defaultValue="details" className="w-full">
-        <TabsList>
+
+      <Tabs defaultValue="details" className="space-y-6">
+        <TabsList className="bg-card">
           <TabsTrigger value="details">Détails</TabsTrigger>
-          <TabsTrigger value="fiche">Fiche de presences</TabsTrigger>
+          <TabsTrigger value="fiche">Fiche de présences</TabsTrigger>
         </TabsList>
 
         <TabsContent value="details">
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Nom</p>
-              <p>{session?.cours__nom}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Type</p>
-              <p>{session?.type === "I" ? "Intensif" : "Semi-intensif"}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Niveau
-              </p>
-              <p>{session?.cours__niveau}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Période
-              </p>
-              <p>
-                Du {session?.date_debut} à {session?.date_fin}
-              </p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">
-                Statut
-              </p>
-              <p>{session?.statut === "O" ? "Ouverte" : "Fermée"}</p>
-            </div>
-          </CardContent>
-          <CardFooter className="justify-between border-t px-6 py-4">
-            <Button
-              variant="destructive"
-              onClick={() => supprimerSession(Number(resolvedParams.id))}
-            >
-              Supprimer
-            </Button>
-          </CardFooter>
-        </TabsContent>
-        <TabsContent value="fiche">
-          <CardTitle>Fiche de présences</CardTitle>
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle>Détails de la session</CardTitle>
+                  <CardDescription>Informations sur la session en cours</CardDescription>
+                </div>
+                <span className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  session?.statut === "O" 
+                    ? "bg-green-100 text-green-800"
+                    : "bg-amber-100 text-amber-800"
+                }`}>
+                  {session?.statut === "O" ? "Session ouverte" : "Session fermée"}
+                </span>
+              </div>
+            </CardHeader>
 
-          <CardContent className="space-y-4">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-[300px]">ID</TableHead>
-                  <TableHead className="text-center p-2 w-24">Mois</TableHead>
-                  <TableHead className="text-center p-2 w-24">Année</TableHead>
-                  <TableHead className="text-center p-2 w-32">
-                    Actions
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {fiches.map((fiche) => (
-                  <TableRow key={fiche.id}>
-                    <TableCell className="font-medium">{fiche.id}</TableCell>
-                    <TableCell className="text-center">{fiche.mois}</TableCell>
-                    <TableCell className="text-center">{fiche.annee}</TableCell>
-                    <TableCell className="text-center flex justify-center gap-2">
-                      <Button variant="outline">
-                        <Link href={`${resolvedParams.id}/fiche/${fiche.id}`}>
-                          {" "}
-                          Ouvrir
-                        </Link>
-                      </Button>
-                      <Button
-                        variant="destructive"
-                        onClick={() => supprimerFiche(fiche.id)}
-                      >
-                        Supprimer
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            <Button variant="outline">
-              <Link
-                href={`/ecole_peg/sessions/session/${resolvedParams.id}/fiche`}
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Période</p>
+                      <p className="text-sm">
+                        {session?.date_debut && session?.date_fin ? (
+                          <>
+                            Du {formatDate(session.date_debut)} au{" "}
+                            {formatDate(session.date_fin)}
+                          </>
+                        ) : (
+                          "Dates non définies"
+                        )}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Capacité maximale</p>
+                      <p className="text-sm">{session?.capacite_max} élèves</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <GraduationCap className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Enseignant</p>
+                      <p className="text-sm">
+                        {session?.prenom_enseignant} {session?.nom_enseignant}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Bookmark className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Type de session</p>
+                      <p className="text-sm">
+                        {session?.type === "I" ? "Intensif" : "Semi-intensif"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+
+            <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50 space-x-2">
+              <Button variant="outline" asChild>
+                <Link href={`/ecole_peg/sessions/session/${resolvedParams.id}/modifier`}>
+                  Modifier
+                </Link>
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => supprimerSession(Number(resolvedParams.id))}
               >
-                Ajouter une fiche
-              </Link>
-            </Button>
-          </CardContent>
+                Supprimer
+              </Button>
+            </CardFooter>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="fiche">
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
+              <CardTitle>Fiche de présences</CardTitle>
+              <CardDescription>
+                Gestion des fiches de présences pour cette session
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              <Table>
+                <TableHeader>
+                  <TableRow className="hover:bg-muted/50">
+                    <TableHead>ID</TableHead>
+                    <TableHead>Mois</TableHead>
+                    <TableHead>Année</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {fiches.length > 0 ? (
+                    fiches.map((fiche) => (
+                      <TableRow key={fiche.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">#{fiche.id}</TableCell>
+                        <TableCell>{fiche.mois}</TableCell>
+                        <TableCell>{fiche.annee}</TableCell>
+                        <TableCell className="text-right space-x-2">
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`${resolvedParams.id}/fiche/${fiche.id}`}>
+                              Consulter
+                            </Link>
+                          </Button>
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => supprimerFiche(fiche.id)}
+                          >
+                            Supprimer
+                          </Button>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                  ) : (
+                    <TableRow>
+                      <TableCell colSpan={4} className="h-24 text-center text-muted-foreground">
+                        Aucune fiche de présence trouvée.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+            <CardFooter className="justify-between border-t px-6 py-4 bg-muted/50">
+              <Button variant="default" asChild>
+                <Link href={`/ecole_peg/sessions/session/${resolvedParams.id}/fiche`}>
+                  Nouvelle fiche de présence
+                </Link>
+              </Button>
+            </CardFooter>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>

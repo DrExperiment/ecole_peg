@@ -87,138 +87,140 @@ export default function SessionsPage() {
   const totalPages = Math.ceil(total / taille);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">Sessions</h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Gérez les sessions de l&apos;école
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button asChild>
-            <Link href="/ecole_peg/sessions/session">
-              <Plus className="mr-2 h-4 w-4" />
-              Nouvelle session
-            </Link>
-          </Button>
-        </div>
+        <Button asChild>
+          <Link href="/ecole_peg/sessions/session">
+            <Plus className="mr-2 h-4 w-4" />
+            Nouvelle session
+          </Link>
+        </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Sessions</CardTitle>
-          <CardDescription>Toutes les sessions</CardDescription>
+          <CardTitle>Liste des sessions</CardTitle>
+          <CardDescription>Vue d&apos;ensemble des sessions de cours</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4">
-              <Select value={filtreNiveau} onValueChange={setFiltreNiveau}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Niveau" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tous">Tous les niveaux</SelectItem>
-                  <SelectItem value="A1">A1</SelectItem>
-                  <SelectItem value="A2">A2</SelectItem>
-                  <SelectItem value="B1">B1</SelectItem>
-                  <SelectItem value="B2">B2</SelectItem>
-                  <SelectItem value="C1">C1</SelectItem>
-                </SelectContent>
-              </Select>
-              <Select value={filtreType} onValueChange={setFiltreType}>
-                <SelectTrigger className="w-[180px]">
-                  <SelectValue placeholder="Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="tous">Tous les types</SelectItem>
-                  <SelectItem value="I">Intensif</SelectItem>
-                  <SelectItem value="S">Semi-intensif</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+        <CardContent className="space-y-6">
+          <div className="flex flex-wrap items-center gap-4">
+            <Select value={filtreNiveau} onValueChange={setFiltreNiveau}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Niveau" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tous">Tous les niveaux</SelectItem>
+                <SelectItem value="A1">A1</SelectItem>
+                <SelectItem value="A2">A2</SelectItem>
+                <SelectItem value="B1">B1</SelectItem>
+                <SelectItem value="B2">B2</SelectItem>
+                <SelectItem value="C1">C1</SelectItem>
+              </SelectContent>
+            </Select>
+            <Select value={filtreType} onValueChange={setFiltreType}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder="Type" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="tous">Tous les types</SelectItem>
+                <SelectItem value="I">Intensif</SelectItem>
+                <SelectItem value="S">Semi-intensif</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
 
-            <div className="rounded-md border">
-              <Table>
-                <TableHeader>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-medium">Nom</TableHead>
+                  <TableHead className="font-medium">Type</TableHead>
+                  <TableHead className="font-medium">Niveau</TableHead>
+                  <TableHead className="font-medium">Période</TableHead>
+                  <TableHead className="font-medium">Statut</TableHead>
+                  <TableHead className="text-right font-medium">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {loading ? (
                   <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Type</TableHead>
-                    <TableHead>Niveau</TableHead>
-                    <TableHead>Période</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                      Chargement...
+                    </TableCell>
                   </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {loading ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center">
-                        Chargement…
+                ) : sessions.length > 0 ? (
+                  sessions.map((session) => (
+                    <TableRow key={session.id}>
+                      <TableCell className="font-medium">
+                        {session.cours__nom}
                       </TableCell>
-                    </TableRow>
-                  ) : sessions.length > 0 ? (
-                    sessions.map((session) => (
-                      <TableRow key={session.id}>
-                        <TableCell className="font-medium">
-                          {session.cours__nom}
-                        </TableCell>
-                        <TableCell>
-                          {session.cours__type === "I"
-                            ? "Intensif"
-                            : "Semi-intensif"}
-                        </TableCell>
-                        <TableCell>{session.cours__niveau}</TableCell>
-                        <TableCell>
-                          Du {session.date_debut} à {session.date_fin}
-                        </TableCell>
-                        <TableCell>
+                      <TableCell>
+                        {session.cours__type === "I"
+                          ? "Intensif"
+                          : "Semi-intensif"}
+                      </TableCell>
+                      <TableCell>{session.cours__niveau}</TableCell>
+                      <TableCell>
+                        <span className="whitespace-nowrap">
+                          Du {new Date(session.date_debut).toLocaleDateString()} au {new Date(session.date_fin).toLocaleDateString()}
+                        </span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`inline-flex items-center rounded-full px-2 py-1 text-xs font-medium ${
+                          session.statut === "O" 
+                            ? "bg-green-50 text-green-700" 
+                            : "bg-red-50 text-red-700"
+                        }`}>
                           {session.statut === "O" ? "Ouverte" : "Fermée"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link
-                              href={`/ecole_peg/sessions/session/${session.id}`}
-                            >
-                              Détails
-                            </Link>
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell colSpan={7} className="text-center">
-                        Aucune session trouvée.
+                        </span>
+                      </TableCell>
+                      <TableCell className="text-right">
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/ecole_peg/sessions/session/${session.id}`}>
+                            Détails
+                          </Link>
+                        </Button>
                       </TableCell>
                     </TableRow>
-                  )}
-                </TableBody>
-              </Table>
-            </div>
-            {/* Pagination Controls */}
-            <div className="flex justify-between items-center mt-2">
-              <span>
-                Page {page} / {totalPages || 1} ({total} sessions)
-              </span>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  disabled={page === 1}
-                >
-                  Précédent
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                  disabled={page === totalPages || totalPages === 0}
-                >
-                  Suivant
-                </Button>
-              </div>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center py-6 text-muted-foreground">
+                      Aucune session trouvée.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <span className="text-sm text-muted-foreground">
+              Page {page} sur {totalPages || 1} · {total} sessions
+            </span>
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page === 1}
+              >
+                Précédent
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page === totalPages || totalPages === 0}
+              >
+                Suivant
+              </Button>
             </div>
           </div>
         </CardContent>

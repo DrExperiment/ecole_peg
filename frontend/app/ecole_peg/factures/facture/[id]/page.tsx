@@ -84,180 +84,207 @@ export default function FacturePage() {
   }, [factureId]);
 
   return (
-    <div className="flex flex-col gap-4 max-w-3xl mx-auto pb-8">
+    <div className="container mx-auto py-6 space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-3 mt-4">
-        <Button variant="ghost" size="icon" onClick={() => router.back()}>
-          <ArrowLeft className="h-5 w-5" />
-        </Button>
-        <h1 className="text-3xl font-bold tracking-tight">
-          Détail de la facture
-        </h1>
-      </div>
-
-      {/* Actions */}
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" onClick={handleDownloadPdf}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-4">
+          <Button variant="ghost" size="icon" asChild className="h-8 w-8">
+            <a
+              href="#"
+              onClick={(e) => {
+                e.preventDefault();
+                router.back();
+              }}
+            >
+              <ArrowLeft className="h-4 w-4" />
+            </a>
+          </Button>
+          <div className="space-y-1">
+            <h1 className="text-3xl font-bold tracking-tight">
+              Facture #{facture?.id}
+            </h1>
+            <p className="text-muted-foreground">
+              {facture?.date_emission
+                ? format(new Date(facture.date_emission), "dd MMMM yyyy")
+                : "-"}
+            </p>
+          </div>
+        </div>
+        <Button
+          variant="outline"
+          onClick={handleDownloadPdf}
+          className="shadow-sm"
+        >
           <Download className="mr-2 h-4 w-4" />
           Télécharger PDF
         </Button>
-        {/* <Button>
-          <Send className="mr-2 h-4 w-4" />
-          Envoyer par email
-        </Button> */}
       </div>
 
-      {/* Partie PDF */}
+      {/* Invoice Content */}
       <div
         ref={factureRef}
-        className="bg-white rounded-2xl shadow-lg p-0 print:p-0 border"
+        className="bg-white rounded-xl shadow-md print:shadow-none"
       >
-        <Card className="border-none shadow-none">
-          <CardContent className="p-8">
-            {/* En-tête établissement */}
-            <div className="flex flex-col md:flex-row md:justify-between gap-4">
-              <div>
-                <div className="text-2xl font-extrabold text-primary mb-1">
-                  Le Français de A à Z
+        <Card className="border-none">
+          <CardContent className="p-8 space-y-8">
+            {/* School Header */}
+            <div className="flex flex-col md:flex-row md:justify-between gap-6">
+              <div className="space-y-4">
+                <div>
+                  <h2 className="text-2xl font-bold text-primary">
+                    Le Français de A à Z
+                  </h2>
+                  <p className="text-lg text-muted-foreground">École PEG</p>
                 </div>
-                <div className="text-sm text-muted-foreground">
-                  <p>École PEG</p>
+                <div className="space-y-1 text-sm text-muted-foreground">
                   <p>Rue du Nant 34</p>
                   <p>1207 Genève</p>
                   <p>Téléphone : 022 700 45 35</p>
-                  <p>
-                    <span className="font-medium">Email:</span>{" "}
-                    info@ecole-peg.ch
-                  </p>
+                  <p>Email : info@ecole-peg.ch</p>
                   <p>www.ecole-peg.ch</p>
                 </div>
               </div>
-              <div className="text-right flex flex-col justify-between">
-                <h2 className="text-3xl font-bold mb-2 text-blue-800">
-                  Facture n° {facture?.id}
-                </h2>
-                <div className="text-sm">
-                  <p>
-                    Date&nbsp;:&nbsp;
-                    <span className="font-semibold">
-                      {facture?.date_emission
-                        ? format(facture.date_emission, "dd-MM-yyyy")
-                        : "-"}
-                    </span>
-                  </p>
-                  <p>
-                    Paiement&nbsp;:&nbsp;
-                    <span className="font-semibold">à réception</span>
-                  </p>
+              <div className="flex flex-col items-end gap-4">
+                <div className="text-right">
+                  <h2 className="text-3xl font-bold text-primary mb-2">
+                    Facture
+                  </h2>
+                  <div className="space-y-1 text-sm">
+                    <p>
+                      <span className="text-muted-foreground">
+                        N° de facture :
+                      </span>{" "}
+                      <span className="font-medium">{facture?.id}</span>
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">
+                        Date d&apos;émission :
+                      </span>{" "}
+                      <span className="font-medium">
+                        {facture?.date_emission
+                          ? format(new Date(facture.date_emission), "dd MMMM yyyy")
+                          : "-"}
+                      </span>
+                    </p>
+                    <p>
+                      <span className="text-muted-foreground">Échéance :</span>{" "}
+                      <span className="font-medium">À réception</span>
+                    </p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Élève concerné */}
-            <div className="mt-8 mb-2 text-lg font-medium">
-              <span className="text-muted-foreground">Émise pour&nbsp;: </span>
-              <span className="font-bold">
-                {facture?.eleve_nom} {facture?.eleve_prenom}
-              </span>
+            {/* Student Info */}
+            <div className="rounded-lg bg-muted/30 p-4">
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                Facturé à
+              </h3>
+              <p className="text-lg font-semibold">
+                {facture?.eleve_prenom} {facture?.eleve_nom}
+              </p>
             </div>
 
-            {/* Tableau des détails */}
-            <div className="mt-2 rounded-lg border overflow-x-auto bg-gray-50">
-              <table className="w-full border-collapse">
+            {/* Invoice Details Table */}
+            <div className="rounded-lg border overflow-hidden">
+              <table className="w-full">
                 <thead>
-                  <tr className="bg-gray-100 border-b">
-                    <th className="py-3 px-2 text-left font-semibold text-sm">
+                  <tr className="bg-muted/50">
+                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
                       Description
                     </th>
-                    <th className="py-3 px-2 text-left font-semibold text-sm">
+                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
                       Période
                     </th>
-                    <th className="py-3 px-2 text-right font-semibold text-sm">
-                      Prix
+                    <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+                      Montant
                     </th>
                   </tr>
                 </thead>
-                <tbody>
+                <tbody className="divide-y">
                   {details_facture.map((detail) => (
-                    <tr key={detail.id} className="border-b last:border-b-0">
-                      <td className="py-3 px-2">{detail.description}</td>
-                      <td className="py-3 px-2">
-                        {detail.date_debut_periode
-                          ? "Du " +
-                            format(detail.date_debut_periode, "dd-MM-yyyy")
-                          : ""}
-                        {detail.date_fin_periode
-                          ? " au " +
-                            format(detail.date_fin_periode, "dd-MM-yyyy")
-                          : ""}
+                    <tr key={detail.id} className="hover:bg-muted/30">
+                      <td className="px-4 py-3">{detail.description}</td>
+                      <td className="px-4 py-3">
+                        {detail.date_debut_periode && (
+                          <>
+                            Du{" "}
+                            {format(
+                              new Date(detail.date_debut_periode),
+                              "dd MMMM yyyy",
+                            )}
+                            {detail.date_fin_periode && (
+                              <> au {format(new Date(detail.date_fin_periode), "dd MMMM yyyy")}</>
+                            )}
+                          </>
+                        )}
                       </td>
-                      <td className="py-3 px-2 text-right font-semibold">
-                        {detail.montant} CHF
+                      <td className="px-4 py-3 text-right font-medium">
+                        {detail.montant.toFixed(2)} CHF
                       </td>
                     </tr>
                   ))}
-                  <tr>
-                    <td
-                      className="py-4 px-2 text-right font-bold text-base"
-                      colSpan={2}
-                    >
-                      Total à payer
+                  <tr className="bg-muted/50">
+                    <td colSpan={2} className="px-4 py-4 text-right font-bold">
+                      Total
                     </td>
-                    <td className="py-4 px-2 text-right font-bold text-base text-blue-900">
-                      {facture?.montant_total} CHF
+                    <td className="px-4 py-4 text-right font-bold text-primary">
+                      {facture?.montant_total.toFixed(2)} CHF
                     </td>
                   </tr>
                 </tbody>
               </table>
             </div>
 
-            {/* Bloc bancaire */}
-            <div className="mt-8 rounded-lg border bg-blue-50 p-4">
-              <h3 className="font-semibold mb-2 text-blue-800">
-                Coordonnées bancaires :
+            {/* Bank Details */}
+            <div className="rounded-lg border bg-muted/30 p-6 space-y-4">
+              <h3 className="font-semibold text-primary">
+                Coordonnées bancaires
               </h3>
-              <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-sm">
-                <div className="font-medium">Ecole P.E.G SARL</div>
-                <div></div>
-                <div>Compte courant</div>
-                <div>UBS</div>
-                <div>No de compte</div>
-                <div>240-288885.00ZP</div>
-                <div>No de client</div>
-                <div>240-28885</div>
-                <div>IBAN</div>
-                <div>CH55 0024 0240 2888 8500 Z</div>
-                <div>Code BIC / SWIFT</div>
-                <div>UBS W CH ZH 80A</div>
-                <Image
-                  src="/QR.png"
-                  alt="QR Code"
-                  width={150}
-                  height={150}
-                  className="object-contain"
-                  priority
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-x-4 text-sm">
+                    <div className="text-muted-foreground">Titulaire</div>
+                    <div className="font-medium">Ecole P.E.G SARL</div>
+                    <div className="text-muted-foreground">Compte</div>
+                    <div className="font-medium">240-288885.00ZP</div>
+                    <div className="text-muted-foreground">IBAN</div>
+                    <div className="font-medium">CH55 0024 0240 2888 8500 Z</div>
+                    <div className="text-muted-foreground">BIC / SWIFT</div>
+                    <div className="font-medium">UBS W CH ZH 80A</div>
+                  </div>
+                </div>
+                <div className="flex justify-center md:justify-end">
+                  <Image
+                    src="/QR.png"
+                    alt="QR Code pour paiement"
+                    width={120}
+                    height={120}
+                    className="object-contain"
+                    priority
+                  />
+                </div>
               </div>
             </div>
           </CardContent>
-          <CardFooter className="justify-between border-t px-8 py-4">
-            <p className="text-xs text-muted-foreground italic">
+          <CardFooter className="justify-between border-t px-8 py-4 bg-muted/50">
+            <p className="text-sm text-muted-foreground">
               Merci de votre confiance.
             </p>
           </CardFooter>
         </Card>
       </div>
 
-      {/* Bouton "Payer" en dehors de la facture exportée */}
-      <div className="flex justify-end mt-6">
+      {/* Payment Button */}
+      <div className="flex justify-end pt-4">
         <Button
           size="lg"
-          className="bg-green-600 hover:bg-green-700 text-white px-8 rounded-xl shadow"
+          className="bg-green-600 hover:bg-green-700 text-white px-8 shadow-sm transition-all duration-200 hover:shadow-md"
           onClick={() =>
             router.push(`/ecole_peg/factures/facture/${factureId}/payer`)
           }
         >
-          Payer
+          Procéder au paiement
         </Button>
       </div>
     </div>

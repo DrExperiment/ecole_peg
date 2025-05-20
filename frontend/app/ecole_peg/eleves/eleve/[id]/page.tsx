@@ -24,6 +24,8 @@ import React, { use, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import axios from "axios";
+import { Input } from "@/components/input";
+import { Label } from "@/components/label";
 
 interface Eleve {
   id: number;
@@ -210,9 +212,7 @@ export default function ElevePage({
 
     fetchPaiements();
     fetchFactures();
-
-    console.log(factures);
-  }, [factures, fetchDocuments, fetchTests, id, resolvedParams.id]);
+  }, [fetchDocuments, fetchTests, resolvedParams.id]);
 
   async function supprimerEleve(id_eleve: number | undefined) {
     if (!id_eleve) return;
@@ -278,9 +278,9 @@ export default function ElevePage({
   }
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <Button variant="ghost" size="icon" asChild>
+    <div className="container mx-auto py-6 space-y-6">
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="ghost" size="icon" asChild className="h-8 w-8">
           <Link href="/ecole_peg/eleves">
             <ArrowLeft className="h-4 w-4" />
           </Link>
@@ -290,8 +290,8 @@ export default function ElevePage({
         </h1>
       </div>
 
-      <Tabs defaultValue="fiche" className="space-y-4">
-        <TabsList>
+      <Tabs defaultValue="fiche" className="space-y-6">
+        <TabsList className="bg-card">
           <TabsTrigger value="fiche">Fiche élève</TabsTrigger>
           <TabsTrigger value="garants">Garant</TabsTrigger>
           <TabsTrigger value="paiements">Paiements</TabsTrigger>
@@ -303,11 +303,12 @@ export default function ElevePage({
         </TabsList>
 
         <TabsContent value="fiche">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
               <CardTitle>Informations personnelles</CardTitle>
+              <CardDescription>Détails et coordonnées de l&apos;élève</CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm">
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
               {[
                 { label: "Nom", value: eleve?.nom },
                 { label: "Prénom", value: eleve?.prenom },
@@ -353,15 +354,15 @@ export default function ElevePage({
                 { label: "Langue maternelle", value: eleve?.langue_maternelle },
                 { label: "Autres langues", value: eleve?.autres_langues },
               ].map((item, index) => (
-                <div key={index} className="flex flex-col min-w-0 break-words">
-                  <p className="text-muted-foreground font-medium">
+                <div key={index} className="space-y-1.5">
+                  <p className="text-sm font-medium text-muted-foreground">
                     {item.label}
                   </p>
-                  <p>{item.value || "-"}</p>
+                  <p className="text-sm">{item.value || "-"}</p>
                 </div>
               ))}
-              <div className="col-span-2">
-                <Button variant="outline" className="w-full">
+              <div className="col-span-full mt-4">
+                <Button variant="default" className="w-full">
                   <Link
                     href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire`}
                   >
@@ -370,7 +371,7 @@ export default function ElevePage({
                 </Button>
               </div>
             </CardContent>
-            <CardFooter className="justify-between border-t px-6 py-4">
+            <CardFooter className="justify-between border-t px-6 py-4 bg-muted/50">
               <Button variant="outline" asChild>
                 <Link href={`/ecole_peg/eleves/eleve/${id}/modifier`}>
                   Modifier
@@ -388,18 +389,18 @@ export default function ElevePage({
         </TabsContent>
 
         <TabsContent value="inscriptions">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
               <CardTitle>Inscriptions</CardTitle>
               <CardDescription>
                 Historique des inscriptions de l&apos;élève
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {inscriptions.length > 0 ? (
                 <Table>
                   <TableHeader>
-                    <TableRow>
+                    <TableRow className="hover:bg-muted/50">
                       <TableHead>Date</TableHead>
                       <TableHead>But</TableHead>
                       <TableHead>Frais</TableHead>
@@ -407,41 +408,48 @@ export default function ElevePage({
                       <TableHead>Date sortie</TableHead>
                       <TableHead>Motif sortie</TableHead>
                       <TableHead>Type</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
-
                   <TableBody>
                     {inscriptions.map((inscription) => (
-                      <TableRow key={inscription.id}>
+                      <TableRow key={inscription.id} className="hover:bg-muted/50">
                         <TableCell>
                           {format(
                             new Date(inscription.date_inscription),
-                            "yyyy-MM-dd",
+                            "dd/MM/yyyy"
                           )}
                         </TableCell>
                         <TableCell>{inscription.but}</TableCell>
                         <TableCell>
                           {inscription.frais_inscription} CHF
                         </TableCell>
-                        <TableCell>{inscription.statut}</TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            inscription.statut === "A"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}>
+                            {inscription.statut === "A" ? "Active" : "Inactive"}
+                          </span>
+                        </TableCell>
                         <TableCell>
                           {inscription.date_sortie
-                            ? format(
-                                new Date(inscription.date_sortie),
-                                "yyyy-MM-dd",
-                              )
-                            : "   -"}
+                            ? format(new Date(inscription.date_sortie), "dd/MM/yyyy")
+                            : "-"}
                         </TableCell>
-
-                        <TableCell>{inscription.motif_sortie}</TableCell>
+                        <TableCell>{inscription.motif_sortie || "-"}</TableCell>
                         <TableCell>
-                          {inscription.preinscription
-                            ? "Préinscription"
-                            : "Inscription"}
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            inscription.preinscription
+                              ? "bg-blue-100 text-blue-800"
+                              : "bg-emerald-100 text-emerald-800"
+                          }`}>
+                            {inscription.preinscription ? "Préinscription" : "Inscription"}
+                          </span>
                         </TableCell>
-                        <TableCell>
-                          <Button variant="ghost" asChild>
+                        <TableCell className="text-right space-x-2">
+                          <Button variant="outline" size="sm" asChild>
                             <Link
                               href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/${inscription?.id}/modifier`}
                             >
@@ -450,6 +458,7 @@ export default function ElevePage({
                           </Button>
                           <Button
                             variant="destructive"
+                            size="sm"
                             onClick={() => {
                               supprimerInscription(inscription.id);
                             }}
@@ -462,26 +471,27 @@ export default function ElevePage({
                   </TableBody>
                 </Table>
               ) : (
-                <p>Aucune inscription trouvée.</p>
+                <div className="p-6 text-center text-muted-foreground">
+                  Aucune inscription trouvée.
+                </div>
               )}
             </CardContent>
-            <CardFooter className="justify-end border-t px-6 py-4"></CardFooter>
           </Card>
         </TabsContent>
 
         <TabsContent value="factures">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
               <CardTitle>Historique des factures</CardTitle>
               <CardDescription>
-                Tous les factures de l&apos;élève
+                Gestion des factures de l&apos;élève
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow>
-                    <TableHead>Numero</TableHead>
+                  <TableRow className="hover:bg-muted/50">
+                    <TableHead>Numéro</TableHead>
                     <TableHead>Date</TableHead>
                     <TableHead>Montant</TableHead>
                     <TableHead>Statut</TableHead>
@@ -491,28 +501,26 @@ export default function ElevePage({
                 <TableBody>
                   {factures.length > 0 ? (
                     factures.map((facture) => (
-                      <TableRow key={facture.id}>
-                        <TableCell>{facture.id}</TableCell>
+                      <TableRow key={facture.id} className="hover:bg-muted/50">
+                        <TableCell className="font-medium">#{facture.id}</TableCell>
                         <TableCell>
-                          {format(facture.date_emission, "yyyy-MM-dd")}
+                          {format(new Date(facture.date_emission), "dd/MM/yyyy")}
                         </TableCell>
-                        <TableCell>{facture.montant_total} CHF</TableCell>
+                        <TableCell>{facture.montant_total.toFixed(2)} CHF</TableCell>
                         <TableCell>
                           {facture.montant_restant === 0 ? (
-                            <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                              Payé
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                              Payée
                             </span>
                           ) : (
-                            <span className="rounded-full bg-amber-100 px-2 py-1 text-xs font-medium text-amber-800">
-                              on payé
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
+                              En attente
                             </span>
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link
-                              href={`/ecole_peg/factures/facture/${facture.id}`}
-                            >
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/ecole_peg/factures/facture/${facture.id}`}>
                               Détails
                             </Link>
                           </Button>
@@ -521,7 +529,7 @@ export default function ElevePage({
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center">
+                      <TableCell colSpan={5} className="text-center text-muted-foreground h-24">
                         Aucune facture trouvée.
                       </TableCell>
                     </TableRow>
@@ -529,12 +537,10 @@ export default function ElevePage({
                 </TableBody>
               </Table>
             </CardContent>
-            <CardFooter className="justify-between border-t px-6 py-4">
+            <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50">
               <Button
                 onClick={() => {
-                  router.push(
-                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`,
-                  );
+                  router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`);
                 }}
               >
                 Nouvelle facture
@@ -544,48 +550,53 @@ export default function ElevePage({
         </TabsContent>
 
         <TabsContent value="paiements">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
               <CardTitle>Historique des paiements</CardTitle>
               <CardDescription>
-                Tous les paiements et factures de l&apos;étudiant
+                Suivi des paiements effectués par l&apos;élève
               </CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="hover:bg-muted/50">
                     <TableHead>Date</TableHead>
                     <TableHead>Description</TableHead>
-                    <TableHead>Période</TableHead>
+                    <TableHead>Méthode</TableHead>
                     <TableHead>Montant</TableHead>
-                    <TableHead>Statut</TableHead>
+                    <TableHead>Mode</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paiements?.length > 0 ? (
                     paiements.map((paiement) => (
-                      <TableRow key={paiement.id}>
+                      <TableRow key={paiement.id} className="hover:bg-muted/50">
                         <TableCell>
                           {paiement.date_paiement
-                            ? new Date(
-                                paiement.date_paiement,
-                              ).toLocaleDateString()
+                            ? format(new Date(paiement.date_paiement), "dd/MM/yyyy")
                             : "-"}
                         </TableCell>
-
                         <TableCell>{eleve?.nom ?? "-"}</TableCell>
                         <TableCell>
-                          {paiement.methode_paiement ?? "-"}
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {paiement.methode_paiement}
+                          </span>
                         </TableCell>
-                        <TableCell>{paiement.montant ?? "-"}</TableCell>
-                        <TableCell>{paiement.mode_paiement}</TableCell>
+                        <TableCell>
+                          <span className="font-medium">
+                            {paiement.montant.toFixed(2)} CHF
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                            {paiement.mode_paiement}
+                          </span>
+                        </TableCell>
                         <TableCell className="text-right">
-                          <Button variant="ghost" size="sm" asChild>
-                            <Link
-                              href={`/ecole_peg/eleves/eleve/${paiement.id}`}
-                            >
+                          <Button variant="outline" size="sm" asChild>
+                            <Link href={`/ecole_peg/eleves/eleve/${paiement.id}`}>
                               Détails
                             </Link>
                           </Button>
@@ -594,7 +605,7 @@ export default function ElevePage({
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={6} className="text-center">
+                      <TableCell colSpan={6} className="text-center text-muted-foreground h-24">
                         Aucun paiement trouvé
                       </TableCell>
                     </TableRow>
@@ -602,13 +613,6 @@ export default function ElevePage({
                 </TableBody>
               </Table>
             </CardContent>
-            <CardFooter className="justify-between border-t px-6 py-4">
-              <Button>
-                <Link href={`/ecole_peg/eleves/eleve/${id}/paiement`}>
-                  ajouter paiement
-                </Link>
-              </Button>
-            </CardFooter>
           </Card>
         </TabsContent>
 
@@ -704,72 +708,90 @@ export default function ElevePage({
           </Card>
         </TabsContent>
         <TabsContent value="garants">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
               <CardTitle>Informations garant</CardTitle>
+              <CardDescription>
+                Coordonnées de la personne garante
+              </CardDescription>
             </CardHeader>
-            <CardContent className="grid grid-cols-2 gap-x-12 gap-y-4 text-sm">
+            <CardContent className="p-6">
               {garant ? (
-                [
-                  { label: "Nom", value: garant.nom },
-                  { label: "Prénom", value: garant.prenom },
-                  { label: "Téléphone", value: garant.telephone },
-                  { label: "Email", value: garant.email },
-                  {
-                    label: "Adresse",
-                    value:
-                      [garant.rue, garant.numero, garant.npa, garant.localite]
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {[
+                    { label: "Nom", value: garant.nom },
+                    { label: "Prénom", value: garant.prenom },
+                    { label: "Téléphone", value: garant.telephone },
+                    { label: "Email", value: garant.email },
+                    {
+                      label: "Adresse complète",
+                      value: [garant.rue, garant.numero, garant.npa, garant.localite]
                         .filter(Boolean)
                         .join(" ") || "-",
-                  },
-                ].map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex flex-col min-w-0 break-words"
-                  >
-                    <p className="text-muted-foreground font-medium">
-                      {item.label}
-                    </p>
-                    <p>{item.value || "-"}</p>
-                  </div>
-                ))
+                    },
+                  ].map((item, index) => (
+                    <div key={index} className="space-y-1.5">
+                      <p className="text-sm font-medium text-muted-foreground">
+                        {item.label}
+                      </p>
+                      <p className="text-sm">{item.value || "-"}</p>
+                    </div>
+                  ))}
+                </div>
               ) : (
-                <p className="col-span-2 text-sm text-muted-foreground italic">
-                  Aucun garant trouvé pour cet élève.
-                </p>
+                <div className="text-center py-6">
+                  <p className="text-sm text-muted-foreground">
+                    Aucun garant n&apos;est associé à cet élève.
+                  </p>
+                  <Button className="mt-4" variant="outline" asChild>
+                    <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/ajouter`}>
+                      Ajouter un garant
+                    </Link>
+                  </Button>
+                </div>
               )}
             </CardContent>
+            {garant && (
+              <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50">
+                <Button variant="outline" asChild>
+                  <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/modifier`}>
+                    Modifier le garant
+                  </Link>
+                </Button>
+              </CardFooter>
+            )}
           </Card>
         </TabsContent>
 
         <TabsContent value="documents">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
               <CardTitle>Documents</CardTitle>
               <CardDescription>
-                Documents administratifs de l&apos;étudiant
+                Documents administratifs de l&apos;élève
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <ul className="space-y-2">
+            <CardContent className="p-6 space-y-6">
+              <div className="rounded-lg border divide-y">
                 {documents.length > 0 ? (
                   documents.map((doc) => (
-                    <li
+                    <div
                       key={doc.id}
-                      className="flex justify-between items-center"
+                      className="flex items-center justify-between p-4 hover:bg-muted/50"
                     >
-                      <a
-                        href={doc.fichier_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 underline"
-                      >
-                        {doc.nom}
-                      </a>
-
-                      <span className="text-sm text-muted-foreground">
-                        {doc.date_ajout}
-                      </span>
+                      <div className="flex items-center gap-4">
+                        <a
+                          href={doc.fichier_url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm font-medium text-blue-600 hover:underline"
+                        >
+                          {doc.nom}
+                        </a>
+                        <span className="text-sm text-muted-foreground">
+                          {format(new Date(doc.date_ajout), "dd/MM/yyyy")}
+                        </span>
+                      </div>
                       <Button
                         variant="destructive"
                         size="sm"
@@ -777,37 +799,56 @@ export default function ElevePage({
                       >
                         Supprimer
                       </Button>
-                    </li>
+                    </div>
                   ))
                 ) : (
-                  <p>Aucun document trouvé.</p>
+                  <div className="p-4 text-center text-muted-foreground">
+                    Aucun document trouvé.
+                  </div>
                 )}
-              </ul>
+              </div>
 
-              <form onSubmit={handleUpload}>
-                <input
-                  type="text"
-                  name="nom"
-                  placeholder="Nom du document"
-                  required
-                  className="border p-2 w-full my-2"
-                />
-                <input type="file" name="fichier" required className="my-2" />
-                <Button type="submit">Ajouter un document</Button>
+              <form onSubmit={handleUpload} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="nom">Nom du document</Label>
+                    <Input
+                      type="text"
+                      name="nom"
+                      id="nom"
+                      placeholder="Nom du document"
+                      required
+                      className="w-full"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="fichier">Fichier</Label>
+                    <Input 
+                      type="file" 
+                      name="fichier" 
+                      id="fichier" 
+                      required
+                      className="w-full" 
+                    />
+                  </div>
+                </div>
+                <Button type="submit" className="w-full md:w-auto">
+                  Ajouter un document
+                </Button>
               </form>
             </CardContent>
           </Card>
         </TabsContent>
         <TabsContent value="tests">
-          <Card>
-            <CardHeader>
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
               <CardTitle>Historique des tests</CardTitle>
-              <CardDescription>Tous les tests de l&apos;élève</CardDescription>
+              <CardDescription>Résultats des tests de l&apos;élève</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               <Table>
                 <TableHeader>
-                  <TableRow>
+                  <TableRow className="hover:bg-muted/50">
                     <TableHead>Date</TableHead>
                     <TableHead>Niveau</TableHead>
                     <TableHead>Note</TableHead>
@@ -817,12 +858,24 @@ export default function ElevePage({
                 <TableBody>
                   {tests.length > 0 ? (
                     tests.map((test) => (
-                      <TableRow key={test.id}>
+                      <TableRow key={test.id} className="hover:bg-muted/50">
                         <TableCell>
-                          {format(test.date_test, "dd-MM-yyyy")}
+                          {format(new Date(test.date_test), "dd/MM/yyyy")}
                         </TableCell>
-                        <TableCell>{test.niveau}</TableCell>
-                        <TableCell>{test.note}</TableCell>
+                        <TableCell>
+                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                            {test.niveau}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                            test.note >= 4 
+                              ? "bg-green-100 text-green-800"
+                              : "bg-red-100 text-red-800"
+                          }`}>
+                            {test.note}
+                          </span>
+                        </TableCell>
                         <TableCell className="text-right">
                           <Button
                             variant="destructive"
@@ -836,20 +889,18 @@ export default function ElevePage({
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center">
-                        Aucun test trouvée.
+                      <TableCell colSpan={4} className="text-center text-muted-foreground h-24">
+                        Aucun test trouvé.
                       </TableCell>
                     </TableRow>
                   )}
                 </TableBody>
               </Table>
             </CardContent>
-            <CardFooter className="justify-between border-t px-6 py-4">
+            <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50">
               <Button
                 onClick={() => {
-                  router.push(
-                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`,
-                  );
+                  router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`);
                 }}
               >
                 Nouveau test

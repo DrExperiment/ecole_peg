@@ -128,8 +128,8 @@ export default function PaiementFacturePage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+    <div className="container mx-auto px-4 py-6 max-w-3xl">
+      <div className="flex items-center gap-4 mb-8">
         <Button variant="ghost" size="icon" onClick={handleAnnuler}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
@@ -137,81 +137,130 @@ export default function PaiementFacturePage() {
       </div>
 
       {!facture ? (
-        <p>Chargement de la facture...</p>
+        <div className="flex items-center justify-center p-8">
+          <div className="flex flex-col items-center gap-4">
+            <div className="loading loading-spinner loading-lg"></div>
+            <p className="text-muted-foreground">Chargement de la facture...</p>
+          </div>
+        </div>
       ) : (
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Facture {facture.id} - {facture.date_emission}
+        <form onSubmit={handleSubmit}>
+          <Card className="shadow-lg">
+            <CardHeader className="space-y-1">
+              <CardTitle className="text-2xl">
+                Facture #{facture.id}
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Émise le {new Date(facture.date_emission).toLocaleDateString('fr-FR')}
+              </p>
             </CardHeader>
-            <CardContent className="space-y-2">
-              <p>
-                <strong>Élève :</strong> {facture.inscription__eleve__prenom}{" "}
-                {facture.inscription__eleve__nom}
-              </p>
-              <p>
-                <strong>Montant total :</strong>{" "}
-                {formatCurrency(facture.montant_total)}
-              </p>
-              <p>
-                <strong>Montant restant :</strong>{" "}
-                {formatCurrency(facture.montant_restant)}
-              </p>
-
-              <div className="space-y-2">
-                <Label htmlFor="montant">Montant du paiement (CHF)</Label>
-                <Input
-                  id="montant"
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  max={facture.montant_restant}
-                  value={montant}
-                  onChange={(e) => setMontant(e.target.value)}
-                  required
-                />
+            <CardContent className="space-y-6">
+              {/* Information de la facture */}
+              <div className="rounded-lg border bg-card p-4 text-card-foreground">
+                <div className="grid gap-4">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm text-muted-foreground">Élève :</span>
+                    <span className="font-medium">
+                      {facture.inscription__eleve__prenom} {facture.inscription__eleve__nom}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <span className="text-sm text-muted-foreground">Montant total</span>
+                      <p className="font-medium">{formatCurrency(facture.montant_total)}</p>
+                    </div>
+                    <div>
+                      <span className="text-sm text-muted-foreground">Montant restant</span>
+                      <p className="font-medium text-blue-600">{formatCurrency(facture.montant_restant)}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
 
-              <div className="space-y-2">
-                <Label>Mode de paiement</Label>
-                <Select value={modePaiement} onValueChange={setModePaiement}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un mode" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Personnel">Personnel</SelectItem>
-                    <SelectItem value="BPA">BPA</SelectItem>
-                    <SelectItem value="CAF">CAF</SelectItem>
-                    <SelectItem value="Hospice">Hospice</SelectItem>
-                    <SelectItem value="Autre">Autre</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {modePaiement === "Personnel" && (
+              {/* Formulaire de paiement */}
+              <div className="space-y-6">
                 <div className="space-y-2">
-                  <Label>Méthode de paiement</Label>
-                  <Select
-                    value={methodePaiement}
-                    onValueChange={setMethodePaiement}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Méthode" />
+                  <Label htmlFor="montant" className="text-base">
+                    Montant du paiement
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="montant"
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      max={facture.montant_restant}
+                      value={montant}
+                      onChange={(e) => setMontant(e.target.value)}
+                      onWheel={(e) => e.currentTarget.blur()}
+                      className="pl-8 font-mono"
+                      placeholder="0.00"
+                      required
+                    />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                      CHF
+                    </span>
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Maximum: {formatCurrency(facture.montant_restant)}
+                  </p>
+                </div>
+
+                <div className="space-y-2">
+                  <Label className="text-base">Mode de paiement</Label>
+                  <Select value={modePaiement} onValueChange={setModePaiement}>
+                    <SelectTrigger className="w-full">
+                      <SelectValue placeholder="Sélectionner un mode de paiement" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Espèces">Espèces</SelectItem>
-                      <SelectItem value="Virement">Virement</SelectItem>
-                      <SelectItem value="Carte">Carte</SelectItem>
-                      <SelectItem value="Téléphone">Téléphone</SelectItem>
+                      <SelectItem value="Personnel">Personnel</SelectItem>
+                      <SelectItem value="BPA">BPA</SelectItem>
+                      <SelectItem value="CAF">CAF</SelectItem>
+                      <SelectItem value="Hospice">Hospice</SelectItem>
+                      <SelectItem value="Autre">Autre</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
-              )}
+
+                {modePaiement === "Personnel" && (
+                  <div className="space-y-2">
+                    <Label className="text-base">Méthode de paiement</Label>
+                    <Select
+                      value={methodePaiement}
+                      onValueChange={setMethodePaiement}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Choisir une méthode de paiement" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Espèces">Espèces</SelectItem>
+                        <SelectItem value="Virement">Virement bancaire</SelectItem>
+                        <SelectItem value="Carte">Carte bancaire</SelectItem>
+                        <SelectItem value="Téléphone">Paiement mobile</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+              </div>
             </CardContent>
-            <CardFooter className="flex justify-end gap-2">
-              <Button type="submit">Enregistrer le paiement</Button>
+            <CardFooter className="flex flex-col sm:flex-row gap-4 sm:justify-end">
+              <Button 
+                variant="outline" 
+                type="button"
+                onClick={handleAnnuler}
+                className="w-full sm:w-auto"
+              >
+                Annuler
+              </Button>
+              <Button 
+                type="submit"
+                className="w-full sm:w-auto"
+              >
+                {parseFloat(montant) > 0 
+                  ? `Enregistrer le paiement de ${formatCurrency(parseFloat(montant))}` 
+                  : 'Enregistrer le paiement'
+                }
+              </Button>
             </CardFooter>
           </Card>
         </form>

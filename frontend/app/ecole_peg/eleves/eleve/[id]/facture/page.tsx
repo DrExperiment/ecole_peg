@@ -20,12 +20,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/select";
-import { Calendar } from "@/components/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
-import { CalendarIcon, ArrowLeft, Save, Trash2, Plus } from "lucide-react";
+import { ArrowLeft, Save, Trash2, Plus } from "lucide-react";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
-import { cn } from "@/lib/utils";
 import { useForm } from "react-hook-form";
 import { Textarea } from "@/components/textarea";
 import axios from "axios";
@@ -75,7 +71,6 @@ export default function NouvelleFacturePage({
   const router = useRouter();
   const resolvedParams = use(params);
 
-  const [date, setDate] = useState<Date | undefined>(undefined);
   const [total, setTotal] = useState<string>("0");
   const [details_facture, setDetailsFacture] = useState<DetailFacture[]>([]);
   const [eleve, setEleve] = useState<Eleve | undefined>(undefined);
@@ -108,7 +103,7 @@ export default function NouvelleFacturePage({
   const modifierDetail = (
     index: number,
     champ: keyof DetailFacture,
-    valeur: unknown,
+    valeur: unknown
   ) => {
     const nouveauxDetails = [...details_facture];
     nouveauxDetails[index] = {
@@ -128,7 +123,6 @@ export default function NouvelleFacturePage({
 
   const onSoumission = useCallback(async () => {
     const donneesCompletes: {
-      date_emission: string | undefined;
       details_facture: {
         description: string;
         date_debut_periode: string | undefined;
@@ -138,7 +132,6 @@ export default function NouvelleFacturePage({
       id_inscription?: number;
       id_cours_prive?: number;
     } = {
-      date_emission: date ? format(date, "yyyy-MM-dd") : undefined,
       details_facture: details_facture.map((detail) => ({
         description: detail.description,
         date_debut_periode: detail.date_debut_periode
@@ -160,26 +153,19 @@ export default function NouvelleFacturePage({
     try {
       await axios.post(
         `http://localhost:8000/api/factures/facture/`,
-        donneesCompletes,
+        donneesCompletes
       );
       router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
     } catch (erreur) {
       console.error("Erreur: ", erreur);
     }
-  }, [
-    date,
-    details_facture,
-    typeFacturation,
-    idReference,
-    router,
-    resolvedParams.id,
-  ]);
+  }, [details_facture, typeFacturation, idReference, router, resolvedParams.id]);
 
   useEffect(() => {
     async function fetchEleve() {
       try {
         const { data } = await axios.get<Eleve>(
-          `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`,
+          `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`
         );
         setEleve(data);
       } catch (e) {
@@ -190,7 +176,7 @@ export default function NouvelleFacturePage({
     async function fetchInscriptions() {
       try {
         const { data } = await axios.get(
-          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`,
+          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`
         );
         setInscriptions(data);
       } catch (e) {
@@ -201,7 +187,7 @@ export default function NouvelleFacturePage({
     async function fetchCoursPrives() {
       try {
         const { data } = await axios.get(
-          `http://localhost:8000/api/cours/eleves/${resolvedParams.id}/cours_prives/`,
+          `http://localhost:8000/api/cours/eleves/${resolvedParams.id}/cours_prives/`
         );
         setCoursPrives(data);
       } catch (e) {
@@ -215,250 +201,240 @@ export default function NouvelleFacturePage({
   }, [resolvedParams.id]);
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
+    <div className="container mx-auto py-6 max-w-4xl">
+      <div className="flex items-center gap-2 mb-6">
         <Button variant="ghost" size="icon" asChild>
           <Link href={`/ecole_peg/eleves/eleve/${resolvedParams.id}`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
-          Créer une nouvelle facture pour {eleve?.nom} {eleve?.prenom}
+          Nouvelle facture pour {eleve?.prenom} {eleve?.nom}
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit(onSoumission)}>
+      <form onSubmit={handleSubmit(onSoumission)} className="space-y-6">
         <Card>
-          <CardHeader>
-            <CardTitle>Nouvelle facture</CardTitle>
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl">Détails de la facture</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label>Type de facturation</Label>
-              <Select
-                defaultValue={typeFacturation}
-                onValueChange={(val) => {
-                  setTypeFacturation(val as "inscription" | "cours_prive");
-                  setIdReference(undefined);
-                }}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="inscription">Inscription</SelectItem>
-                  <SelectItem value="cours_prive">Cours Privé</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
-            {typeFacturation === "inscription" ? (
+          <CardContent className="grid gap-6">
+            <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
-                <Label>Inscription</Label>
+                <Label>Type de facturation</Label>
                 <Select
-                  required
-                  onValueChange={(val) => setIdReference(Number(val))}
+                  defaultValue={typeFacturation}
+                  onValueChange={(val) => {
+                    setTypeFacturation(val as "inscription" | "cours_prive");
+                    setIdReference(undefined);
+                  }}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner l'inscription" />
+                  <SelectTrigger className="w-full">
+                    <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {inscriptions
-                      .filter((i) => !i.preinscription)
-                      .map((i) => (
-                        <SelectItem key={i.id} value={i.id.toString()}>
-                          {format(i.date_inscription, "dd-MM-yyyy")} (
-                          {i.statut === "A" ? "Active" : "Inactive"}) (
-                          {i.frais_inscription} CHF)
-                        </SelectItem>
-                      ))}
+                    <SelectItem value="inscription">
+                      Inscription au cours
+                    </SelectItem>
+                    <SelectItem value="cours_prive">Cours privé</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
-            ) : (
-              <div className="space-y-2">
-                <Label>Cours Privé</Label>
-                <Select
-                  required
-                  onValueChange={(val) => setIdReference(Number(val))}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Sélectionner un cours privé" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {coursPrives.map((c) => (
-                      <SelectItem key={c.id} value={c.id.toString()}>
-                        {format(c.date_cours_prive, "dd-MM-yyyy")} (
-                        {c.enseignant__nom} {c.enseignant__prenom} - {c.tarif}{" "}
-                        CHF)
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            )}
 
-            <div className="space-y-2">
-              <Label>Date de la facture</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left font-normal",
-                      !date && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {date ? (
-                      format(date, "dd-MM-yyyy", { locale: fr })
-                    ) : (
-                      <span>Sélectionner une date</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar mode="single" selected={date} onSelect={setDate} />
-                </PopoverContent>
-              </Popover>
+              <div className="space-y-2">
+                {typeFacturation === "inscription" ? (
+                  <>
+                    <Label>Inscription</Label>
+                    <Select
+                      required
+                      onValueChange={(val) => setIdReference(Number(val))}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Sélectionner l'inscription" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {inscriptions
+                          .filter((i) => !i.preinscription)
+                          .map((i) => (
+                            <SelectItem key={i.id} value={i.id.toString()}>
+                              {format(i.date_inscription, "dd-MM-yyyy")} (
+                              {i.statut === "A" ? "Active" : "Inactive"}) (
+                              {i.frais_inscription} CHF)
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                ) : (
+                  <>
+                    <Label>Cours Privé</Label>
+                    <Select
+                      required
+                      onValueChange={(val) => setIdReference(Number(val))}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Sélectionner un cours privé" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {coursPrives.map((c) => (
+                          <SelectItem key={c.id} value={c.id.toString()}>
+                            {format(c.date_cours_prive, "dd-MM-yyyy")} (
+                            {c.enseignant__prenom} {c.enseignant__nom} -{" "}
+                            {c.tarif} CHF)
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </>
+                )}
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="mt-4">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>Détails de la facture</CardTitle>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
+            <CardTitle className="text-2xl">Lignes de facturation</CardTitle>
             <Button
               type="button"
               variant="outline"
-              size="sm"
               onClick={ajouterDetail}
+              className="gap-2"
             >
-              <Plus className="mr-2 h-4 w-4" />
-              Ajouter un détail
+              <Plus className="h-4 w-4" />
+              Ajouter une ligne
             </Button>
           </CardHeader>
-          <CardContent className="space-y-6">
-            {details_facture.map((detail, index) => (
-              <div
-                key={index}
-                className="space-y-4 p-4 border rounded-md relative"
-              >
-                {details_facture.length > 1 && (
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="absolute top-2 right-2"
-                    onClick={() => supprimerDetail(index)}
+          <CardContent>
+            <div className="space-y-6">
+              {details_facture.length === 0 ? (
+                <div className="rounded-lg border border-dashed p-8 text-center">
+                  <p className="text-sm text-muted-foreground">
+                    Aucune ligne de facturation. Cliquez sur &quot;Ajouter une
+                    ligne&quot; pour commencer.
+                  </p>
+                </div>
+              ) : (
+                details_facture.map((detail, index) => (
+                  <div
+                    key={index}
+                    className="relative space-y-4 rounded-lg border bg-card p-4 shadow-sm transition-colors hover:bg-accent/5"
                   >
-                    <Trash2 className="h-4 w-4 text-destructive" />
-                  </Button>
-                )}
+                    {details_facture.length > 1 && (
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-2 top-2 h-8 w-8 opacity-70 hover:opacity-100"
+                        onClick={() => supprimerDetail(index)}
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    )}
 
-                <div className="space-y-2">
-                  <Label>Description</Label>
-                  <Textarea
-                    value={detail.description}
-                    onChange={(e) =>
-                      modifierDetail(index, "description", e.target.value)
-                    }
-                    required
-                  />
-                </div>
+                    <div className="space-y-2">
+                      <Label>Description</Label>
+                      <Textarea
+                        value={detail.description}
+                        onChange={(e) =>
+                          modifierDetail(index, "description", e.target.value)
+                        }
+                        placeholder="Description de la ligne de facturation"
+                        className="min-h-[80px]"
+                        required
+                      />
+                    </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Période du</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !detail.date_debut_periode &&
-                              "text-muted-foreground",
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {detail.date_debut_periode
-                            ? format(detail.date_debut_periode, "dd-MM-yyyy", {
-                                locale: fr,
-                              })
-                            : "Sélectionner une date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={detail.date_debut_periode}
-                          onSelect={(date) =>
-                            modifierDetail(index, "date_debut_periode", date)
+                    <div className="grid gap-4 sm:grid-cols-2">
+                      <div className="space-y-2">
+                        <Label>Période du</Label>
+                        <Input
+                          type="date"
+                          className="w-full"
+                          value={
+                            detail.date_debut_periode
+                              ? format(detail.date_debut_periode, "yyyy-MM-dd")
+                              : ""
                           }
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            modifierDetail(
+                              index,
+                              "date_debut_periode",
+                              value ? new Date(value) : undefined
+                            );
+                          }}
                         />
-                      </PopoverContent>
-                    </Popover>
-                  </div>
+                      </div>
 
-                  <div className="space-y-2">
-                    <Label>au</Label>
-                    <Popover>
-                      <PopoverTrigger asChild>
-                        <Button
-                          variant="outline"
-                          className={cn(
-                            "w-full justify-start text-left font-normal",
-                            !detail.date_fin_periode && "text-muted-foreground",
-                          )}
-                        >
-                          <CalendarIcon className="mr-2 h-4 w-4" />
-                          {detail.date_fin_periode
-                            ? format(detail.date_fin_periode, "dd-MM-yyyy", {
-                                locale: fr,
-                              })
-                            : "Sélectionner une date"}
-                        </Button>
-                      </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0">
-                        <Calendar
-                          mode="single"
-                          selected={detail.date_fin_periode}
-                          onSelect={(date) =>
-                            modifierDetail(index, "date_fin_periode", date)
+                      <div className="space-y-2">
+                        <Label>au</Label>
+                        <Input
+                          type="date"
+                          className="w-full"
+                          value={
+                            detail.date_fin_periode
+                              ? format(detail.date_fin_periode, "yyyy-MM-dd")
+                              : ""
                           }
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            modifierDetail(
+                              index,
+                              "date_fin_periode",
+                              value ? new Date(value) : undefined
+                            );
+                          }}
                         />
-                      </PopoverContent>
-                    </Popover>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label>Montant (CHF)</Label>
+                      <Input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={detail.montant}
+                        onChange={(e) =>
+                          modifierDetail(index, "montant", e.target.value)
+                        }
+                        onWheel={(e) => e.currentTarget.blur()}
+                        placeholder="0.00"
+                        className="font-mono"
+                        required
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
+
+              {details_facture.length > 0 && (
+                <div className="mt-6 flex justify-end rounded-lg border bg-card p-4">
+                  <div className="text-right">
+                    <p className="text-sm text-muted-foreground">Total</p>
+                    <p className="text-2xl font-bold tabular-nums">
+                      {total} CHF
+                    </p>
                   </div>
                 </div>
-
-                <div className="space-y-2">
-                  <Label>Montant (CHF)</Label>
-                  <Input
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    value={detail.montant}
-                    onChange={(e) =>
-                      modifierDetail(index, "montant", e.target.value)
-                    }
-                    required
-                  />
-                </div>
-              </div>
-            ))}
-
-            <div className="flex justify-end pt-4 border-t">
-              <div className="text-right">
-                <p className="text-sm text-muted-foreground">Montant total:</p>
-                <p className="text-xl font-bold">{total} CHF</p>
-              </div>
+              )}
             </div>
           </CardContent>
-          <CardFooter>
-            <Button type="submit" disabled={isSubmitting}>
-              <Save className="mr-2 h-4 w-4" />
-              {isSubmitting ? "En cours..." : "Enregistrer"}
+          <CardFooter className="flex justify-end">
+            <Button
+              type="submit"
+              className="min-w-[150px]"
+              disabled={isSubmitting || details_facture.length === 0}
+            >
+              {isSubmitting ? (
+                <>Sauvegarde en cours...</>
+              ) : (
+                <>
+                  <Save className="h-4 w-4" />
+                  Enregistrer
+                </>
+              )}
             </Button>
           </CardFooter>
         </Card>

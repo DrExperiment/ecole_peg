@@ -7,7 +7,7 @@ import axios from "axios";
 import { debounce } from "lodash";
 
 import { Button } from "@/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/card";
 import { Input } from "@/components/input";
 import { Label } from "@/components/label";
 import { RadioGroup, RadioGroupItem } from "@/components/radio-group";
@@ -168,170 +168,214 @@ export default function NouveauCoursPrivePage() {
   };
 
   return (
-    <div className="flex flex-col gap-4">
-      {/* En-tête */}
-      <div className="flex items-center gap-2">
+    <div className="container mx-auto px-4 py-6 max-w-4xl">
+      <div className="flex items-center gap-4 mb-8">
         <Button variant="ghost" size="icon" asChild>
           <Link href="/ecole_peg/cours_prives">
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="text-3xl font-bold">Nouveau Cours Privé</h1>
+        <h1 className="text-3xl font-bold tracking-tight">Nouveau Cours Privé</h1>
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* === Sélection des élèves === */}
-        <Card>
+        <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Étudiants</CardTitle>
+            <CardTitle>Détails du cours privé</CardTitle>
+            <CardDescription>
+              Sélectionnez les élèves, l&apos;enseignant et définissez les détails du cours.
+            </CardDescription>
           </CardHeader>
-          <CardContent>
-            <Label htmlFor="searchEleve">Rechercher un élève</Label>
-            <Input
-              id="searchEleve"
-              placeholder="Nom..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-            {searchResults.length > 0 && (
-              <ul className="border rounded max-h-40 overflow-y-auto">
-                {searchResults.map((x) => (
-                  <li
+          <CardContent className="space-y-8">
+            {/* === Sélection des élèves === */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="searchEleve" className="text-base">Élèves</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Recherchez et ajoutez un ou plusieurs élèves pour ce cours privé
+                </p>
+              </div>
+              
+              <div className="relative">
+                <Input
+                  id="searchEleve"
+                  placeholder="Rechercher par nom ou prénom..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full"
+                />
+                {searchResults.length > 0 && (
+                  <ul className="absolute z-10 w-full border rounded-md mt-1 max-h-48 overflow-y-auto bg-white shadow-lg">
+                    {searchResults.map((x) => (
+                      <li
+                        key={x.id}
+                        className="p-3 hover:bg-blue-50 cursor-pointer transition-colors border-b last:border-b-0"
+                        onClick={() => addEleve(x)}
+                      >
+                        {x.nom} {x.prenom}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+
+              <div className="flex flex-wrap gap-2 min-h-[2.5rem]">
+                {selectedEleves.map((x) => (
+                  <span
                     key={x.id}
-                    className="p-2 hover:bg-gray-100 cursor-pointer"
-                    onClick={() => addEleve(x)}
+                    className="px-3 py-1.5 bg-blue-100 rounded-full flex items-center gap-2 text-sm font-medium shadow-sm border border-blue-200 transition-colors hover:bg-blue-200"
                   >
                     {x.nom} {x.prenom}
-                  </li>
+                    <button
+                      type="button"
+                      onClick={() => removeEleve(x.id)}
+                      className="text-blue-600 hover:text-blue-800 focus:outline-none"
+                      aria-label={`Retirer ${x.nom} ${x.prenom}`}
+                    >
+                      ×
+                    </button>
+                  </span>
                 ))}
-              </ul>
-            )}
-            <div className="flex flex-wrap gap-2 mt-2">
-              {selectedEleves.map((x) => (
-                <span
-                  key={x.id}
-                  className="px-2 py-1 bg-blue-100 rounded-full flex items-center gap-1"
-                >
-                  {x.nom} {x.prenom}
-                  <button
-                    type="button"
-                    onClick={() => removeEleve(x.id)}
-                    className="text-red-500"
-                  >
-                    ×
-                  </button>
-                </span>
-              ))}
+                {selectedEleves.length === 0 && (
+                  <p className="text-sm text-muted-foreground p-2">
+                    Aucun élève sélectionné
+                  </p>
+                )}
+              </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* === Sélection enseignant === */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Enseignant</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Label htmlFor="enseignantSelect">Choisir un enseignant</Label>
-            <Select
-              value={selectedEnseignant?.id.toString() ?? ""}
-              onValueChange={(val) => {
-                const e = enseignants.find((x) => x.id === Number(val)) || null;
-                setSelectedEnseignant(e);
-              }}
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Sélectionnez…" />
-              </SelectTrigger>
-              <SelectContent>
-                {enseignants.map((x) => (
-                  <SelectItem key={x.id} value={x.id.toString()}>
-                    {x.nom} {x.prenom}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-
-        {/* === Infos cours privé === */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Détails du cours</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="dateCoursPrive">Date du cours</Label>
-                <Input
-                  id="dateCoursPrive"
-                  type="date"
-                  value={dateCoursPrive}
-                  onChange={(e) => setDateCoursPrive(e.target.value)}
-                  required
-                />
+            {/* === Sélection enseignant === */}
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="enseignantSelect" className="text-base">Enseignant</Label>
+                <p className="text-sm text-muted-foreground mb-2">
+                  Sélectionnez l&apos;enseignant qui donnera ce cours privé
+                </p>
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="tarif">Tarif</Label>
-                <Input
-                  id="tarif"
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={tarif}
-                  onChange={(e) => setTarif(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="heureDebut">Heure de début</Label>
-                <Input
-                  id="heureDebut"
-                  type="time"
-                  value={heureDebut}
-                  onChange={(e) => setHeureDebut(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="heureFin">Heure de fin</Label>
-                <Input
-                  id="heureFin"
-                  type="time"
-                  value={heureFin}
-                  onChange={(e) => setHeureFin(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label>Lieu</Label>
-              <RadioGroup
-                value={lieu}
-                onValueChange={(val) => setLieu(val as "ecole" | "domicile")}
-                className="flex space-x-4"
+              
+              <Select
+                value={selectedEnseignant?.id.toString() ?? ""}
+                onValueChange={(val) => {
+                  const e = enseignants.find((x) => x.id === Number(val)) || null;
+                  setSelectedEnseignant(e);
+                }}
+                required
               >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="ecole" id="lieu-ecole" />
-                  <Label htmlFor="lieu-ecole">À l&apos;école</Label>
+                <SelectTrigger id="enseignantSelect" className="w-full">
+                  <SelectValue placeholder="Choisir un enseignant" />
+                </SelectTrigger>
+                <SelectContent>
+                  {enseignants.map((x) => (
+                    <SelectItem key={x.id} value={x.id.toString()}>
+                      {x.nom} {x.prenom}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* === Infos cours privé === */}
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="dateCoursPrive" className="text-base">Date du cours</Label>
+                  <Input
+                    id="dateCoursPrive"
+                    type="date"
+                    value={dateCoursPrive}
+                    onChange={(e) => setDateCoursPrive(e.target.value)}
+                    required
+                    className="w-full font-mono"
+                  />
                 </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="domicile" id="lieu-domicile" />
-                  <Label htmlFor="lieu-domicile">À domicile</Label>
+
+                <div className="space-y-2">
+                  <Label htmlFor="tarif" className="text-base">Tarif (€)</Label>
+                  <Input
+                    id="tarif"
+                    type="number"
+                    min={0}
+                    step="0.01"
+                    placeholder="0.00"
+                    value={tarif}
+                    onChange={(e) => setTarif(e.target.value)}
+                    onWheel={(e) => e.currentTarget.blur()}
+                    required
+                    className="w-full font-mono"
+                  />
                 </div>
-              </RadioGroup>
+
+                <div className="space-y-2">
+                  <Label htmlFor="heureDebut" className="text-base">Heure de début</Label>
+                  <Input
+                    id="heureDebut"
+                    type="time"
+                    value={heureDebut}
+                    onChange={(e) => setHeureDebut(e.target.value)}
+                    required
+                    className="w-full font-mono"
+                  />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="heureFin" className="text-base">Heure de fin</Label>
+                  <Input
+                    id="heureFin"
+                    type="time"
+                    value={heureFin}
+                    onChange={(e) => setHeureFin(e.target.value)}
+                    required
+                    className="w-full font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <Label className="text-base">Lieu du cours</Label>
+                  <p className="text-sm text-muted-foreground mb-2">
+                    Indiquez où le cours privé aura lieu
+                  </p>
+                </div>
+                
+                <RadioGroup
+                  value={lieu}
+                  onValueChange={(val) => setLieu(val as "ecole" | "domicile")}
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div className="flex flex-col space-y-1 rounded-lg border p-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="ecole" id="lieu-ecole" />
+                      <Label htmlFor="lieu-ecole" className="font-medium">À l&apos;école</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground pl-6">
+                      Le cours aura lieu dans les locaux de l&apos;école
+                    </p>
+                  </div>
+
+                  <div className="flex flex-col space-y-1 rounded-lg border p-4">
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="domicile" id="lieu-domicile" />
+                      <Label htmlFor="lieu-domicile" className="font-medium">À domicile</Label>
+                    </div>
+                    <p className="text-sm text-muted-foreground pl-6">
+                      Le cours aura lieu au domicile de l&apos;élève
+                    </p>
+                  </div>
+                </RadioGroup>
+              </div>
             </div>
           </CardContent>
+          <CardFooter>
+            <Button type="submit" className="w-full md:w-auto">
+              <Save className="mr-2 h-4 w-4" />
+              {selectedEleves.length > 0 ? 
+                `Créer le cours privé pour ${selectedEleves.length} élève${selectedEleves.length > 1 ? 's' : ''}` : 
+                'Créer le cours privé'
+              }
+            </Button>
+          </CardFooter>
         </Card>
-
-        <div className="flex justify-end">
-          <Button type="submit">
-            <Save className="mr-2 h-4 w-4" /> Enregistrer
-          </Button>
-        </div>
       </form>
     </div>
   );

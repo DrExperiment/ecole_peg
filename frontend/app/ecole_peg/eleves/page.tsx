@@ -105,11 +105,11 @@ export default function ElevesPage() {
   const pagesTotales = Math.ceil(nombreTotal / taillePage);
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="container mx-auto py-8 space-y-6">
       <div className="flex items-center justify-between">
-        <div>
+        <div className="space-y-1">
           <h1 className="text-3xl font-bold tracking-tight">Élèves</h1>
-          <p className="text-muted-foreground">
+          <p className="text-sm text-muted-foreground">
             Gérez les élèves de l&apos;école
           </p>
         </div>
@@ -129,8 +129,8 @@ export default function ElevesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4">
-            <div className="flex items-center gap-4 flex-wrap">
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-4">
               <div className="relative flex-1 min-w-[250px]">
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -163,8 +163,8 @@ export default function ElevesPage() {
             </div>
 
             {loading && (
-              <div className="text-center text-sm font-medium text-muted-foreground">
-                Chargement...
+              <div className="flex justify-center p-4">
+                <div className="text-sm text-muted-foreground">Chargement...</div>
               </div>
             )}
 
@@ -172,20 +172,20 @@ export default function ElevesPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Prénom</TableHead>
-                    <TableHead>Date de naissance</TableHead>
-                    <TableHead>Téléphone</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Pays</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead className="font-medium">Nom</TableHead>
+                    <TableHead className="font-medium">Prénom</TableHead>
+                    <TableHead className="font-medium">Date de naissance</TableHead>
+                    <TableHead className="font-medium">Téléphone</TableHead>
+                    <TableHead className="font-medium">Email</TableHead>
+                    <TableHead className="font-medium">Pays</TableHead>
+                    <TableHead className="text-right font-medium">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {eleves.length > 0 ? (
                     eleves.map((eleve) => (
                       <TableRow key={eleve.id}>
-                        <TableCell>{eleve.nom ?? "-"}</TableCell>
+                        <TableCell className="font-medium">{eleve.nom ?? "-"}</TableCell>
                         <TableCell>{eleve.prenom ?? "-"}</TableCell>
                         <TableCell>{eleve.date_naissance ?? "-"}</TableCell>
                         <TableCell>{eleve.telephone ?? "-"}</TableCell>
@@ -202,7 +202,7 @@ export default function ElevesPage() {
                     ))
                   ) : (
                     <TableRow>
-                      <TableCell colSpan={7} className="text-center">
+                      <TableCell colSpan={7} className="text-center py-6 text-muted-foreground">
                         Aucun élève trouvé.
                       </TableCell>
                     </TableRow>
@@ -211,26 +211,28 @@ export default function ElevesPage() {
               </Table>
             </div>
 
-            <div className="flex justify-end gap-4 my-4">
-              <button
+            <div className="flex items-center justify-end space-x-4 py-4">
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setNumPage((prec) => Math.max(prec - 1, 1))}
                 disabled={numPage === 1}
-                className="px-4 py-2 bg-gray-200 rounded"
               >
                 Précédent
-              </button>
+              </Button>
 
-              <span>
+              <span className="text-sm text-muted-foreground">
                 Page {numPage} sur {pagesTotales}
               </span>
 
-              <button
+              <Button
+                variant="outline"
+                size="sm"
                 onClick={() => setNumPage((prec) => prec + 1)}
                 disabled={numPage === pagesTotales}
-                className="px-4 py-2 bg-gray-200 rounded"
               >
                 Suivant
-              </button>
+              </Button>
             </div>
           </div>
         </CardContent>

@@ -22,15 +22,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/select";
-import { RadioGroup, RadioGroupItem } from "@/components/radio-group";
-import { Calendar } from "@/components/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/popover";
-import { CalendarIcon, ArrowLeft, Save } from "lucide-react";
+import { RadioGroupItem } from "@/components/radio-group";
+import { ArrowLeft, Save } from "lucide-react";
 import { Textarea } from "@/components/textarea";
+import { RadioGroup } from "@/components/radio-group";
 
-import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import { fr } from "date-fns/locale";
 
 interface Pays {
   id: number;
@@ -72,7 +69,7 @@ export default function EditElevePage({
   const [eleve, setEleve] = useState<Eleve | null>(null);
   const [sexe, setSexe] = useState<"H" | "F">("H");
   const [dateNaissance, setDateNaissance] = useState<Date | undefined>(
-    undefined,
+    undefined
   );
   const [niveau, setNiveau] = useState<"A1" | "A2" | "B1" | "B2" | "C1">("A1");
   const [typePermis, setTypePermis] = useState<"E" | "S" | "B" | "P">("P");
@@ -97,18 +94,13 @@ export default function EditElevePage({
       setTypePermis(e.type_permis ?? "P");
       setDatePermis(e.date_permis ? new Date(e.date_permis) : undefined);
       setIdPays(e.pays_id); // ⬅️ mettre après que paysList est défini
-      console.log("paysList:", paysList);
-      console.log(
-        "pays trouvé:",
-        paysList.find((p) => p.id === idPays),
-      );
     }
 
     fetchData().catch(console.error);
-  }, [id, idPays, paysList]);
+  }, [id]);
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
   ) => {
     const { name, value } = e.target;
     setEleve((prev) => (prev ? ({ ...prev, [name]: value } as Eleve) : prev));
@@ -134,7 +126,7 @@ export default function EditElevePage({
     try {
       await axios.put(
         `http://localhost:8000/api/eleves/eleves/${id}/`,
-        payload,
+        payload
       );
       router.push(`/ecole_peg/eleves/eleve/${id}`);
     } catch (err) {
@@ -144,332 +136,412 @@ export default function EditElevePage({
     }
   };
 
-  if (!eleve) return <p>Chargement…</p>;
+  if (!eleve) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="flex flex-col items-center gap-4">
+          <div className="loading loading-spinner loading-lg"></div>
+          <p className="text-muted-foreground">Chargement des données...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center gap-2">
+    <div className="container mx-auto px-4 py-6 max-w-5xl">
+      <div className="flex items-center gap-4 mb-8">
         <Button variant="ghost" size="icon" asChild>
           <Link href={`/ecole_peg/eleves/eleve/${eleve.id}`}>
             <ArrowLeft className="h-4 w-4" />
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Modifier l’élève</h1>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Modifier l&apos;élève
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            {eleve.prenom} {eleve.nom}
+          </p>
+        </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="grid gap-4 md:grid-cols-2">
-        <Card>
-          <CardHeader>
-            <CardTitle>Détails personnels</CardTitle>
-            <CardDescription>
-              Modifie les infos de base de l’élève
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="nom">Nom</Label>
-                <Input
-                  id="nom"
-                  name="nom"
-                  value={eleve.nom}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-              <div>
-                <Label htmlFor="prenom">Prénom</Label>
-                <Input
-                  id="prenom"
-                  name="prenom"
-                  value={eleve.prenom}
-                  onChange={handleChange}
-                  required
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label>Sexe</Label>
-              <RadioGroup
-                value={sexe}
-                onValueChange={(v) => setSexe(v as "H" | "F")}
-                className="flex gap-4"
-              >
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="H" id="sexe-h" />
-                  <Label htmlFor="sexe-h">Homme</Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="F" id="sexe-f" />
-                  <Label htmlFor="sexe-f">Femme</Label>
-                </div>
-              </RadioGroup>
-            </div>
-
-            <div>
-              <Label>Date de naissance</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left",
-                      !dateNaissance && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {dateNaissance
-                      ? format(dateNaissance, "dd-MM-yyyy", { locale: fr })
-                      : "Sélectionner une date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="p-0">
-                  <Calendar
-                    mode="single"
-                    selected={dateNaissance}
-                    onSelect={setDateNaissance}
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <div className="grid gap-6 md:grid-cols-2">
+          {/* Détails personnels */}
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle>Détails personnels</CardTitle>
+              <CardDescription>
+                Informations personnelles de l&apos;élève
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="nom" className="text-base">
+                    Nom
+                  </Label>
+                  <Input
+                    id="nom"
+                    name="nom"
+                    value={eleve.nom}
+                    onChange={handleChange}
+                    className="font-medium"
+                    required
                   />
-                </PopoverContent>
-              </Popover>
-            </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="prenom" className="text-base">
+                    Prénom
+                  </Label>
+                  <Input
+                    id="prenom"
+                    name="prenom"
+                    value={eleve.prenom}
+                    onChange={handleChange}
+                    className="font-medium"
+                    required
+                  />
+                </div>
+              </div>
 
-            <div>
-              <Label htmlFor="lieu_naissance">Lieu de naissance</Label>
-              <Input
-                id="lieu_naissance"
-                name="lieu_naissance"
-                value={eleve.lieu_naissance}
-                onChange={handleChange}
-              />
-            </div>
+              <div className="space-y-4">
+                <Label className="text-base">Sexe</Label>
+                <RadioGroup
+                  value={sexe}
+                  onValueChange={(value) => setSexe(value as "H" | "F")}
+                  className="grid grid-cols-2 gap-4"
+                >
+                  <div
+                    className={`relative flex items-center space-x-2 rounded-lg border p-4 cursor-pointer transition-colors ${
+                      sexe === "H" ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
+                    <RadioGroupItem value="H" id="sexe-h" />
+                    <Label htmlFor="sexe-h" className="font-medium cursor-pointer">
+                      Homme
+                    </Label>
+                  </div>
+                  <div
+                    className={`relative flex items-center space-x-2 rounded-lg border p-4 cursor-pointer transition-colors ${
+                      sexe === "F" ? "border-primary bg-primary/5" : ""
+                    }`}
+                  >
+                    <RadioGroupItem value="F" id="sexe-f" />
+                    <Label htmlFor="sexe-f" className="font-medium cursor-pointer">
+                      Femme
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
 
-            <div>
-              <Label htmlFor="pays">Pays</Label>
-              <Select
-                value={idPays ? String(idPays) : ""}
-                onValueChange={(v) => setIdPays(Number(v))}
-              >
-                <SelectTrigger>
-                  <SelectValue>
-                    {paysList.find((p) => p.id === idPays)?.nom ||
-                      "Sélectionner un pays"}
-                  </SelectValue>
-                </SelectTrigger>
+              <div className="space-y-2">
+                <Label className="text-base">Date de naissance</Label>
+                <Input
+                  type="date"
+                  id="date_naissance"
+                  name="date_naissance"
+                  required
+                  className="font-mono"
+                  value={dateNaissance ? format(dateNaissance, "yyyy-MM-dd") : ""}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setDateNaissance(value ? new Date(value) : undefined);
+                  }}
+                />
+              </div>
 
-                <SelectContent>
-                  {paysList.map((p) => (
-                    <SelectItem key={p.id} value={p.id.toString()}>
-                      {p.nom}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div>
-              <Label htmlFor="langue_maternelle">Langue maternelle</Label>
-              <Input
-                id="langue_maternelle"
-                name="langue_maternelle"
-                value={eleve.langue_maternelle ?? ""}
-                onChange={handleChange}
-              />
-            </div>
-            <div>
-              <Label htmlFor="autres_langues">Autres langues</Label>
-              <Input
-                id="autres_langues"
-                name="autres_langues"
-                value={eleve.autres_langues ?? ""}
-                onChange={handleChange}
-              />
-            </div>
-          </CardContent>
-        </Card>
+              <div className="space-y-2">
+                <Label htmlFor="lieu_naissance" className="text-base">Lieu de naissance</Label>
+                <Input
+                  id="lieu_naissance"
+                  name="lieu_naissance"
+                  value={eleve.lieu_naissance}
+                  onChange={handleChange}
+                  className="font-medium"
+                />
+              </div>
 
-        <Card>
+              <div className="space-y-2">
+                <Label htmlFor="pays" className="text-base">Pays d&apos;origine</Label>
+                <Select
+                  value={idPays ? String(idPays) : ""}
+                  onValueChange={(v) => setIdPays(Number(v))}
+                >
+                  <SelectTrigger>
+                    <SelectValue>
+                      {paysList.find((p) => p.id === idPays)?.nom ||
+                        "Sélectionner un pays"}
+                    </SelectValue>
+                  </SelectTrigger>
+                  <SelectContent>
+                    {paysList.map((p) => (
+                      <SelectItem key={p.id} value={p.id.toString()}>
+                        {p.nom}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="langue_maternelle" className="text-base">Langue maternelle</Label>
+                <Input
+                  id="langue_maternelle"
+                  name="langue_maternelle"
+                  value={eleve.langue_maternelle ?? ""}
+                  onChange={handleChange}
+                  className="font-medium"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="autres_langues" className="text-base">Autres langues</Label>
+                <Input
+                  id="autres_langues"
+                  name="autres_langues"
+                  value={eleve.autres_langues ?? ""}
+                  onChange={handleChange}
+                  className="font-medium"
+                  placeholder="Séparées par des virgules"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Coordonnées */}
+          <Card className="shadow-lg">
+            <CardHeader>
+              <CardTitle>Coordonnées</CardTitle>
+              <CardDescription>
+                Informations de contact et adresse
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="telephone" className="text-base">Téléphone</Label>
+                <Input
+                  id="telephone"
+                  name="telephone"
+                  value={eleve.telephone}
+                  onChange={handleChange}
+                  className="font-mono"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-base">Email</Label>
+                <Input
+                  id="email"
+                  name="email"
+                  type="email"
+                  value={eleve.email}
+                  onChange={handleChange}
+                  className="font-medium"
+                  required
+                />
+              </div>
+
+              <div className="relative rounded-lg border bg-card p-4 space-y-4">
+                <h3 className="font-medium">Adresse</h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="rue" className="text-sm">Rue</Label>
+                    <Input
+                      id="rue"
+                      name="rue"
+                      value={eleve.rue ?? ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="numero" className="text-sm">Numéro</Label>
+                    <Input
+                      id="numero"
+                      name="numero"
+                      value={eleve.numero ?? ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="npa" className="text-sm">NPA</Label>
+                    <Input
+                      id="npa"
+                      name="npa"
+                      value={eleve.npa ?? ""}
+                      onChange={handleChange}
+                      className="font-mono"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="localite" className="text-sm">Localité</Label>
+                    <Input
+                      id="localite"
+                      name="localite"
+                      value={eleve.localite ?? ""}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="adresse_facturation" className="text-base">
+                  Adresse de facturation
+                  <span className="text-sm text-muted-foreground ml-2">
+                    (si différente)
+                  </span>
+                </Label>
+                <Textarea
+                  id="adresse_facturation"
+                  name="adresse_facturation"
+                  value={eleve.adresse_facturation ?? ""}
+                  onChange={handleChange}
+                  placeholder="Laisser vide si identique à l'adresse principale"
+                  className="min-h-[100px]"
+                />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Niveau et Permis */}
+        <Card className="shadow-lg">
           <CardHeader>
-            <CardTitle>Coordonnées & adresse</CardTitle>
+            <CardTitle>Niveau & Permis de séjour</CardTitle>
             <CardDescription>
-              Modifie téléphone, email et adresse
+              Niveau de langue et informations administratives
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <Label htmlFor="telephone">Téléphone</Label>
-              <Input
-                id="telephone"
-                name="telephone"
-                value={eleve.telephone}
-                onChange={handleChange}
-                required
-              />
-            </div>
-            <div>
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                value={eleve.email}
-                onChange={handleChange}
-                required
-              />
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="rue">Rue</Label>
-                <Input
-                  id="rue"
-                  name="rue"
-                  value={eleve.rue ?? ""}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="numero">Numéro</Label>
-                <Input
-                  id="numero"
-                  name="numero"
-                  value={eleve.numero ?? ""}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-2 gap-4">
-              <div>
-                <Label htmlFor="npa">NPA</Label>
-                <Input
-                  id="npa"
-                  name="npa"
-                  value={eleve.npa ?? ""}
-                  onChange={handleChange}
-                />
-              </div>
-              <div>
-                <Label htmlFor="localite">Localité</Label>
-                <Input
-                  id="localite"
-                  name="localite"
-                  value={eleve.localite ?? ""}
-                  onChange={handleChange}
-                />
-              </div>
-            </div>
-
-            <div>
-              <Label htmlFor="adresse_facturation">
-                Adresse de facturation
-              </Label>
-              <Textarea
-                id="adresse_facturation"
-                name="adresse_facturation"
-                value={eleve.adresse_facturation ?? ""}
-                onChange={handleChange}
-              />
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card className="md:col-span-2">
-          <CardHeader>
-            <CardTitle>Niveau & permis</CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 gap-4">
-            <div>
-              <Label>Langue niveau</Label>
-              <Select
-                value={niveau}
-                onValueChange={(v) =>
-                  setNiveau(v as "A1" | "A2" | "B1" | "B2" | "C1")
-                }
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un niveau" />
-                </SelectTrigger>
-                <SelectContent>
+          <CardContent className="space-y-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-4">
+                <Label className="text-base">Niveau de langue</Label>
+                <RadioGroup
+                  value={niveau}
+                  onValueChange={(value) => setNiveau(value as "A1" | "A2" | "B1" | "B2" | "C1")}
+                  className="grid grid-cols-5 gap-2"
+                >
                   {["A1", "A2", "B1", "B2", "C1"].map((n) => (
-                    <SelectItem key={n} value={n}>
-                      {n}
-                    </SelectItem>
+                    <div
+                      key={n}
+                      className={`relative flex items-center justify-center p-3 rounded-lg border cursor-pointer transition-colors ${
+                        niveau === n ? "border-primary bg-primary/5" : ""
+                      }`}
+                    >
+                      <RadioGroupItem value={n} id={`niveau-${n}`} className="absolute inset-0 opacity-0" />
+                      <Label htmlFor={`niveau-${n}`} className="font-medium cursor-pointer">
+                        {n}
+                      </Label>
+                    </div>
                   ))}
-                </SelectContent>
-              </Select>
-            </div>
+                </RadioGroup>
+              </div>
 
-            <div>
-              <Label>Type de permis</Label>
-              <Select
-                value={typePermis}
-                onValueChange={(v) => setTypePermis(v as "E" | "S" | "B" | "P")}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Sélectionner un type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="E">Permis étudiant</SelectItem>
-                  <SelectItem value="S">Permis S</SelectItem>
-                  <SelectItem value="B">Permis B</SelectItem>
-                  <SelectItem value="P">Pas de permis</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-4">
+                <Label className="text-base">Type de permis</Label>
+                <RadioGroup
+                  value={typePermis}
+                  onValueChange={(value) => setTypePermis(value as "E" | "S" | "B" | "P")}
+                  className="grid grid-cols-2 gap-4"
+                >
+                  {[
+                    { value: "E", label: "Permis étudiant", desc: "Pour les étudiants" },
+                    { value: "S", label: "Permis S", desc: "Protection temporaire" },
+                    { value: "B", label: "Permis B", desc: "Séjour annuel" },
+                    { value: "P", label: "Pas de permis", desc: "Aucun permis requis" }
+                  ].map(({ value, label, desc }) => (
+                    <div
+                      key={value}
+                      className={`flex flex-col space-y-1 rounded-lg border p-4 cursor-pointer transition-colors ${
+                        typePermis === value ? "border-primary bg-primary/5" : ""
+                      }`}
+                    >
+                      <div className="flex items-center space-x-2">
+                        <RadioGroupItem value={value} id={`permis-${value}`} className="sr-only" />
+                        <div className={`w-2 h-2 rounded-full ${
+                          typePermis === value ? "bg-primary" : "bg-muted"
+                        }`} />
+                        <Label htmlFor={`permis-${value}`} className="font-medium cursor-pointer">{label}</Label>
+                      </div>
+                      <p className="text-sm text-muted-foreground pl-4">{desc}</p>
+                    </div>
+                  ))}
+                </RadioGroup>
+              </div>
 
-            <div>
-              <Label>Date de permis</Label>
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    className={cn(
-                      "w-full justify-start text-left",
-                      !datePermis && "text-muted-foreground",
-                    )}
-                  >
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {datePermis
-                      ? format(datePermis, "dd-MM-yyyy", { locale: fr })
-                      : "Sélectionner une date"}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="p-0">
-                  <Calendar
-                    mode="single"
-                    selected={datePermis}
-                    onSelect={setDatePermis}
+              {typePermis !== "P" && (
+                <div className="space-y-2">
+                  <Label className="text-base">Date du permis</Label>
+                  <Input
+                    type="date"
+                    id="date_permis"
+                    name="date_permis"
+                    className="font-mono"
+                    value={datePermis ? format(datePermis, "yyyy-MM-dd") : ""}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      setDatePermis(value ? new Date(value) : undefined);
+                    }}
                   />
-                </PopoverContent>
-              </Popover>
+                </div>
+              )}
             </div>
 
-            <div className="col-span-2">
-              <Label htmlFor="src_decouverte">Source de découverte</Label>
-              <Textarea
-                id="src_decouverte"
-                name="src_decouverte"
-                value={eleve.src_decouverte ?? ""}
-                onChange={handleChange}
-              />
-            </div>
+            <div className="space-y-4 pt-4">
+              <div className="space-y-2">
+                <Label htmlFor="src_decouverte" className="text-base">
+                  Comment avez-vous connu l&apos;école ?
+                </Label>
+                <Textarea
+                  id="src_decouverte"
+                  name="src_decouverte"
+                  value={eleve.src_decouverte ?? ""}
+                  onChange={handleChange}
+                  placeholder="Internet, recommandation, publicité..."
+                />
+              </div>
 
-            <div className="col-span-2">
-              <Label htmlFor="commentaires">Commentaires</Label>
-              <Textarea
-                id="commentaires"
-                name="commentaires"
-                value={eleve.commentaires ?? ""}
-                onChange={handleChange}
-              />
+              <div className="space-y-2">
+                <Label htmlFor="commentaires" className="text-base">
+                  Commentaires
+                  <span className="text-sm text-muted-foreground ml-2">
+                    (optionnel)
+                  </span>
+                </Label>
+                <Textarea
+                  id="commentaires"
+                  name="commentaires"
+                  value={eleve.commentaires ?? ""}
+                  onChange={handleChange}
+                  placeholder="Informations supplémentaires..."
+                  className="min-h-[100px]"
+                />
+              </div>
             </div>
           </CardContent>
         </Card>
 
-        <div className="md:col-span-2 flex justify-end">
-          <Button type="submit" disabled={isSubmitting}>
+        <div className="flex flex-col sm:flex-row gap-4 sm:justify-end">
+          <Button
+            variant="outline"
+            type="button"
+            onClick={() => router.back()}
+            className="w-full sm:w-auto"
+          >
+            Annuler
+          </Button>
+          <Button
+            type="submit"
+            disabled={isSubmitting}
+            className="w-full sm:w-auto"
+          >
             <Save className="mr-2 h-4 w-4" />
-            {isSubmitting ? "Enregistrement..." : "Enregistrer"}
+            {isSubmitting ? "Enregistrement..." : "Enregistrer les modifications"}
           </Button>
         </div>
       </form>
