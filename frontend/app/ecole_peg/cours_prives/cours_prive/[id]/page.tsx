@@ -175,14 +175,6 @@ export default function CoursPriveDetailsPage() {
           >
             Modifier
           </Button>
-          <Button
-            variant="default"
-            onClick={() =>
-              router.push(`/ecole_peg/cours_prives/cours_prive/${id}/presence`)
-            }
-          >
-            Gérer les présences
-          </Button>
         </CardFooter>
       </Card>
     </div>

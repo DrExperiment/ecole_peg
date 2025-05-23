@@ -119,7 +119,7 @@ export default function ElevePage({
   const fetchDocuments = useCallback(async () => {
     try {
       const reponse = await axios.get(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/`,
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/`
       );
 
       setDocuments(reponse.data);
@@ -131,7 +131,7 @@ export default function ElevePage({
   const fetchTests = useCallback(async () => {
     try {
       const reponse = await axios.get(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/tests/`,
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/tests/`
       );
 
       setTests(reponse.data);
@@ -155,7 +155,7 @@ export default function ElevePage({
     async function fetchInscriptions() {
       try {
         const res = await axios.get(
-          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`,
+          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`
         );
         setInscriptions(res.data);
       } catch (error) {
@@ -169,7 +169,7 @@ export default function ElevePage({
     async function fetchGarant() {
       try {
         const res = await axios.get(
-          `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/garant/`,
+          `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/garant/`
         );
         if (res.data?.id) {
           setGarant(res.data);
@@ -188,7 +188,7 @@ export default function ElevePage({
       try {
         const donnees = await axios
           .get(
-            `http://localhost:8000/api/factures/paiements/eleve/${resolvedParams.id}/`,
+            `http://localhost:8000/api/factures/paiements/eleve/${resolvedParams.id}/`
           )
           .then((response) => response.data);
 
@@ -201,7 +201,7 @@ export default function ElevePage({
     async function fetchFactures() {
       try {
         const reponse = await axios.get(
-          `http://localhost:8000/api/factures/factures/eleve/${resolvedParams.id}/`,
+          `http://localhost:8000/api/factures/factures/eleve/${resolvedParams.id}/`
         );
 
         setFactures(reponse.data);
@@ -219,7 +219,7 @@ export default function ElevePage({
 
     try {
       await axios.delete(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/`,
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/`
       );
 
       router.push("/ecole_peg/eleves");
@@ -231,7 +231,7 @@ export default function ElevePage({
   async function supprimerTest(id_test: number) {
     try {
       await axios.delete(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/tests/${id_test}/`,
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/tests/${id_test}/`
       );
 
       fetchTests();
@@ -247,7 +247,7 @@ export default function ElevePage({
     try {
       await axios.post(
         `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/`,
-        formData, // ✅ PAS DE headers ici
+        formData // ✅ PAS DE headers ici
       );
       form.reset();
       fetchDocuments(); // Recharge la liste
@@ -259,7 +259,7 @@ export default function ElevePage({
   async function supprimerDocument(documentId: number) {
     try {
       await axios.delete(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/${documentId}/`,
+        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/${documentId}/`
       );
       fetchDocuments();
     } catch (error) {
@@ -269,7 +269,7 @@ export default function ElevePage({
   async function supprimerInscription(inscriptionId: number) {
     try {
       await axios.delete(
-        `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionId}/`,
+        `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionId}/`
       );
       setInscriptions((old) => old.filter((i) => i.id !== inscriptionId));
     } catch (erreur) {
@@ -317,7 +317,12 @@ export default function ElevePage({
               {[
                 { label: "Nom", value: eleve?.nom },
                 { label: "Prénom", value: eleve?.prenom },
-                { label: "Date de naissance", value: eleve?.date_naissance },
+                {
+                  label: "Date de naissance",
+                  value: eleve?.date_naissance
+                    ? format(new Date(eleve.date_naissance), "dd/MM/yyyy")
+                    : "-",
+                },
                 { label: "Lieu de naissance", value: eleve?.lieu_naissance },
                 {
                   label: "Sexe",
@@ -325,16 +330,17 @@ export default function ElevePage({
                     eleve?.sexe === "H"
                       ? "Homme"
                       : eleve?.sexe === "F"
-                        ? "Femme"
-                        : "-",
+                      ? "Femme"
+                      : "-",
                 },
+                { label: "Rue", value: eleve?.rue },
+                { label: "Numéro", value: eleve?.numero },
+                { label: "NPA", value: eleve?.npa },
+                { label: "Localité", value: eleve?.localite },
                 { label: "Pays", value: eleve?.pays__nom },
                 {
-                  label: "Adresse",
-                  value:
-                    [eleve?.rue, eleve?.numero, eleve?.npa, eleve?.localite]
-                      .filter(Boolean)
-                      .join(" ") || "-",
+                  label: "Adresse de facturation",
+                  value: eleve?.adresse_facturation,
                 },
                 { label: "Téléphone", value: eleve?.telephone },
                 { label: "Email", value: eleve?.email },
@@ -342,22 +348,26 @@ export default function ElevePage({
                   label: "Type de permis",
                   value:
                     eleve?.type_permis === "E"
-                      ? "Etudiant"
+                      ? "Étudiant"
                       : eleve?.type_permis === "P"
-                        ? "Pas de permis"
-                        : eleve?.type_permis === "S"
-                          ? "Permis S"
-                          : eleve?.type_permis === "B"
-                            ? "Permis B"
-                            : "-",
+                      ? "Pas de permis"
+                      : eleve?.type_permis === "S"
+                      ? "Permis S"
+                      : eleve?.type_permis === "B"
+                      ? "Permis B"
+                      : "-",
                 },
                 {
-                  label: "Date d'expiration de permis",
-                  value: eleve?.date_permis ?? "-",
+                  label: "Date d'expiration permis",
+                  value: eleve?.date_permis
+                    ? format(new Date(eleve.date_permis), "dd/MM/yyyy")
+                    : "-",
                 },
                 { label: "Niveau", value: eleve?.niveau },
                 { label: "Langue maternelle", value: eleve?.langue_maternelle },
                 { label: "Autres langues", value: eleve?.autres_langues },
+                { label: "Source de découverte", value: eleve?.src_decouverte },
+                { label: "Commentaires", value: eleve?.commentaires },
               ].map((item, index) => (
                 <div key={index} className="space-y-1.5">
                   <p className="text-sm font-medium text-muted-foreground">
@@ -376,6 +386,7 @@ export default function ElevePage({
                 </Button>
               </div>
             </CardContent>
+
             <CardFooter className="justify-between border-t px-6 py-4 bg-muted/50">
               <Button variant="outline" asChild>
                 <Link href={`/ecole_peg/eleves/eleve/${id}/modifier`}>
@@ -425,7 +436,7 @@ export default function ElevePage({
                         <TableCell>
                           {format(
                             new Date(inscription.date_inscription),
-                            "dd/MM/yyyy",
+                            "dd/MM/yyyy"
                           )}
                         </TableCell>
                         <TableCell>{inscription.but}</TableCell>
@@ -447,7 +458,7 @@ export default function ElevePage({
                           {inscription.date_sortie
                             ? format(
                                 new Date(inscription.date_sortie),
-                                "dd/MM/yyyy",
+                                "dd/MM/yyyy"
                               )
                             : "-"}
                         </TableCell>
@@ -525,7 +536,7 @@ export default function ElevePage({
                         <TableCell>
                           {format(
                             new Date(facture.date_emission),
-                            "dd/MM/yyyy",
+                            "dd/MM/yyyy"
                           )}
                         </TableCell>
                         <TableCell>
@@ -570,7 +581,7 @@ export default function ElevePage({
               <Button
                 onClick={() => {
                   router.push(
-                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`,
+                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`
                   );
                 }}
               >
@@ -608,7 +619,7 @@ export default function ElevePage({
                           {paiement.date_paiement
                             ? format(
                                 new Date(paiement.date_paiement),
-                                "dd/MM/yyyy",
+                                "dd/MM/yyyy"
                               )
                             : "-"}
                         </TableCell>
@@ -952,7 +963,7 @@ export default function ElevePage({
               <Button
                 onClick={() => {
                   router.push(
-                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`,
+                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`
                   );
                 }}
               >

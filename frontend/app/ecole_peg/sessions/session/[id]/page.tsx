@@ -24,7 +24,6 @@ import {
   Calendar,
   Users,
   Bookmark,
-  GraduationCap,
 } from "lucide-react";
 import React, { use, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -43,6 +42,8 @@ interface Session {
   date_fin: string;
   capacite_max: number;
   statut: string;
+  periode_journee?: string;
+  seances_mois?: number;
 }
 
 interface FichePresence {
@@ -176,66 +177,78 @@ export default function SessionPage({
               </div>
             </CardHeader>
 
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <Calendar className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Période
-                      </p>
-                      <p className="text-sm">
-                        {session?.date_debut && session?.date_fin ? (
-                          <>
-                            Du {formatDate(session.date_debut)} au{" "}
-                            {formatDate(session.date_fin)}
-                          </>
-                        ) : (
-                          "Dates non définies"
-                        )}
-                      </p>
-                    </div>
-                  </div>
+           <CardContent className="p-6">
+  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <Calendar className="h-4 w-4 text-muted-foreground" />
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Période</p>
+          <p className="text-sm">
+            {session?.date_debut && session?.date_fin ? (
+              <>
+                Du {formatDate(session.date_debut)} au {formatDate(session.date_fin)}
+              </>
+            ) : (
+              "Dates non définies"
+            )}
+          </p>
+        </div>
+      </div>
 
-                  <div className="flex items-center gap-3">
-                    <Users className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Capacité maximale
-                      </p>
-                      <p className="text-sm">{session?.capacite_max} élèves</p>
-                    </div>
-                  </div>
-                </div>
+      <div className="flex items-center gap-3">
+        <Bookmark className="h-4 w-4 text-muted-foreground" />
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Type</p>
+          <p className="text-sm">
+            {session?.type === "I" ? "Intensif" : "Semi-intensif"}
+          </p>
+        </div>
+      </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-center gap-3">
-                    <GraduationCap className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Enseignant
-                      </p>
-                      <p className="text-sm">
-                        {session?.prenom_enseignant} {session?.nom_enseignant}
-                      </p>
-                    </div>
-                  </div>
+      <div className="flex items-center gap-3">
+        <Users className="h-4 w-4 text-muted-foreground" />
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Capacité max</p>
+          <p className="text-sm">{session?.capacite_max ?? "-"}</p>
+        </div>
+      </div>
+    </div>
 
-                  <div className="flex items-center gap-3">
-                    <Bookmark className="h-4 w-4 text-muted-foreground" />
-                    <div>
-                      <p className="text-sm font-medium text-muted-foreground">
-                        Type de session
-                      </p>
-                      <p className="text-sm">
-                        {session?.type === "I" ? "Intensif" : "Semi-intensif"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CardContent>
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <Bookmark className="h-4 w-4 text-muted-foreground" />
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Niveau</p>
+          <p className="text-sm">{session?.cours__niveau}</p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Calendar className="h-4 w-4 text-muted-foreground" />
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Période journée</p>
+          <p className="text-sm">
+            {session?.periode_journee === "M"
+              ? "Matin"
+              : session?.periode_journee === "S"
+              ? "Soir"
+              : "-"}
+          </p>
+        </div>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <Bookmark className="h-4 w-4 text-muted-foreground" />
+        <div>
+          <p className="text-sm font-medium text-muted-foreground">Séances par mois</p>
+          <p className="text-sm">{session?.seances_mois ?? "-"}</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</CardContent>
+
 
             <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50 space-x-2">
               <Button variant="outline" asChild>

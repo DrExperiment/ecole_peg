@@ -55,6 +55,7 @@ class SessionOut(Schema):
     periode_journee: str | None = None
     statut: str
     seances_mois: int
+    capacite_max: int
 
 
 # ------------------- COURS PRIVES -------------------
@@ -86,7 +87,6 @@ class InscriptionIn(Schema):
     but: str | None = None
     preinscription: bool | None = None
     id_session: int
-    date_inscription: date | None = None
 
 
 class InscriptionOut(Schema):

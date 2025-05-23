@@ -128,10 +128,14 @@ export default function FacturePage() {
             <div className="flex flex-col md:flex-row md:justify-between gap-6">
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-2xl font-bold text-primary">
-                    Le Français de A à Z
-                  </h2>
-                  <p className="text-lg text-muted-foreground">École PEG</p>
+                  <Image
+                               src="/logo/ecole_peg.png"
+                               alt="École PEG"
+                               width={200}
+                               height={100}
+                               className="object-contain"
+                             />
+                  
                 </div>
                 <div className="space-y-1 text-sm text-muted-foreground">
                   <p>Rue du Nant 34</p>
@@ -268,7 +272,7 @@ export default function FacturePage() {
                     src="/QR.png"
                     alt="QR Code pour paiement"
                     width={120}
-                    height={120}
+                    height={80}
                     className="object-contain"
                     priority
                   />

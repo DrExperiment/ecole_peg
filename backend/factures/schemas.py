@@ -14,7 +14,6 @@ class FactureIn(Schema):
     id_inscription: int | None = None
     id_cours_prive: int | None = None
     id_eleve: int | None = None
-    date_emission: date
     details_facture: list[DetailFactureIn]
 
 

@@ -96,7 +96,6 @@ def creer_facture(request, payload: FactureIn):
         inscription=inscription,
         cours_prive=cours_prive,
         eleve=eleve,
-        date_emission=donnees["date_emission"]
     )
 
     # Créer les détails de la facture
