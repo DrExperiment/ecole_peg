@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, useCallback, FormEvent } from "react";
-import { useRouter, useParams } from "next/navigation";
-import axios from "axios";
+import { useEffect, useState, useCallback, use } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
 import { debounce } from "lodash";
-
 import { Button } from "@/components/button";
 import {
   Card,
@@ -25,22 +24,24 @@ import {
   SelectItem,
 } from "@/components/select";
 import { ArrowLeft, Save } from "lucide-react";
-import { useToast } from "@/components/use-toast";
+import { useForm } from "react-hook-form";
+import { format } from "date-fns";
 
-// Types
 interface Eleve {
   id: number;
   nom: string;
   prenom: string;
 }
+
 interface Enseignant {
   id: number;
   nom: string;
   prenom: string;
 }
-interface CoursPriveOut {
+
+interface CoursPrive {
   id: number;
-  date_cours_prive: string;
+  date_cours_prive: Date;
   heure_debut: string;
   heure_fin: string;
   tarif: number;
@@ -48,162 +49,172 @@ interface CoursPriveOut {
   enseignant: number;
   enseignant__nom: string;
   enseignant__prenom: string;
-  eleves_ids: number[] | string[];
+  eleves_ids: number[];
   eleves: string[];
 }
 
-export default function ModifierCoursPrivePage() {
+export default function ModifierCoursPrivePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
-  const params = useParams();
-  const { toast } = useToast();
+  const resolvedParams = use(params);
 
-  const id = params?.id as string | undefined;
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+    reset,
+  } = useForm();
 
-  // ==== États
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [searchResults, setSearchResults] = useState<Eleve[]>([]);
-  const [selectedEleves, setSelectedEleves] = useState<Eleve[]>([]);
+  const [recherche, setRecherche] = useState<string>("");
+  const [resultats, setResultats] = useState<Eleve[]>([]);
+  const [eleves_selectionnes, setElevesSelectionnes] = useState<Eleve[]>([]);
+
   const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
-  const [selectedEnseignant, setSelectedEnseignant] = useState<Enseignant | null>(null);
+  const [id_enseignant, setIdEnseignant] = useState<number | undefined>(
+    undefined
+  );
 
-  const [dateCoursPrive, setDateCoursPrive] = useState<string>("");
-  const [heureDebut, setHeureDebut] = useState<string>("");
-  const [heureFin, setHeureFin] = useState<string>("");
-  const [tarif, setTarif] = useState<string>("");
-  const [lieu, setLieu] = useState<"ecole" | "domicile">("ecole");
+  const [date_cours_prive, setDateCoursPrive] = useState<Date | undefined>(
+    undefined
+  );
+  const [heure_debut, setHeureDebut] = useState<string>("");
+  const [heure_fin, setHeureFin] = useState<string>("");
 
-  const [loading, setLoading] = useState(true);
+  const [lieu, setLieu] = useState<"E" | "D">("E");
 
-  // ==== Charger cours privé et listes ====
+  const [chargement, setChargement] = useState(true);
+
   useEffect(() => {
-    async function fetchData() {
-      setLoading(true);
+    async function fetchDonnees() {
+      setChargement(true);
+
       try {
-        const [coursRes, enseignantsRes] = await Promise.all([
-          axios.get(`http://localhost:8000/api/cours/cours_prive/${id}/`),
-          axios.get("http://localhost:8000/api/cours/enseignants/"),
+        const [reponse_cours_prive, reponse_enseignants] = await Promise.all([
+          api.get<CoursPrive>(`/cours/cours_prive/${resolvedParams.id}/`),
+          api.get<Enseignant[]>("/cours/enseignants/"),
         ]);
-        const cours: CoursPriveOut = coursRes.data;
-        // Adapter selon structure API
-        const enseignantsList: Enseignant[] = Array.isArray(enseignantsRes.data)
-          ? enseignantsRes.data
-          : enseignantsRes.data.enseignants;
 
-        setDateCoursPrive(cours.date_cours_prive);
-        setHeureDebut(cours.heure_debut.slice(0, 5));
-        setHeureFin(cours.heure_fin.slice(0, 5));
-        setTarif(String(cours.tarif));
-        setLieu(cours.lieu === "D" ? "domicile" : "ecole");
+        const cours_prive = reponse_cours_prive.data;
 
-        setEnseignants(enseignantsList);
-        const enseignant = enseignantsList.find((x) =>
-          x.id === (typeof cours.enseignant === "string" ? Number(cours.enseignant) : cours.enseignant)
-        ) || enseignantsList.find((x) =>
-          `${x.nom} ${x.prenom}` === `${cours.enseignant__nom} ${cours.enseignant__prenom}`
-        ) || null;
-        setSelectedEnseignant(enseignant);
+        const enseignants = reponse_enseignants.data;
 
-        // Récupérer les élèves du cours (avec recherche si besoin)
-        if (cours.eleves_ids && cours.eleves_ids.length) {
-          // Charger tous les élèves correspondants par leur ID
-          const eleveIds = cours.eleves_ids.map(Number);
-          const { data } = await axios.get<{ eleves: Eleve[] }>(
-            "http://localhost:8000/api/eleves/eleves/",
-            { params: { ids: eleveIds.join(",") } }
-          );
-          setSelectedEleves(data.eleves || []);
+        setDateCoursPrive(new Date(cours_prive.date_cours_prive));
+
+        setHeureDebut(cours_prive.heure_debut.slice(0, 5));
+        setHeureFin(cours_prive.heure_fin.slice(0, 5));
+
+        setLieu(cours_prive.lieu === "D" ? "D" : "E");
+
+        reset({
+          tarif: cours_prive.tarif,
+        });
+
+        setEnseignants(enseignants);
+
+        setIdEnseignant(cours_prive.enseignant);
+
+        if (cours_prive.eleves_ids && cours_prive.eleves_ids.length) {
+          const ids_eleves = cours_prive.eleves_ids;
+
+          const reponse = await api.get("/eleves/eleves/", {
+            params: { ids: ids_eleves.join(",") },
+          });
+
+          setElevesSelectionnes(reponse.data.eleves || []);
         }
-      } catch {
-        toast({ title: "Erreur", description: "Impossible de charger le cours privé." });
+      } catch (err) {
+        console.error("Erreur", err);
       } finally {
-        setLoading(false);
+        setChargement(false);
       }
     }
-    if (id) fetchData();
-    // eslint-disable-next-line
-  }, [id]);
 
-  // ==== Recherche d'élèves débouncée ====
-  const fetchEleves = useCallback((term: string) => {
-    const debouncedFetch = debounce(async (searchTerm: string) => {
-      if (!searchTerm) {
-        setSearchResults([]);
+    fetchDonnees();
+  }, [reset, resolvedParams.id]);
+
+  const fetchEleves = useCallback((recherche: string) => {
+    const debouncedFetch = debounce(async (recherche: string) => {
+      if (!recherche) {
+        setResultats([]);
+
         return;
       }
+
       try {
-        const { data } = await axios.get<{ eleves: Eleve[] }>(
-          "http://localhost:8000/api/eleves/eleves/",
-          { params: { recherche: searchTerm } },
-        );
-        setSearchResults(data.eleves || []);
-      } catch {
-        setSearchResults([]);
+        const reponse = await api.get("/eleves/eleves/", {
+          params: { recherche: recherche },
+        });
+
+        setResultats(reponse.data.eleves || []);
+      } catch (err) {
+        console.error("Erreur: ", err);
+
+        setResultats([]);
       }
     }, 300);
-    debouncedFetch(term);
+
+    debouncedFetch(recherche);
   }, []);
+
   useEffect(() => {
-    fetchEleves(searchTerm);
-  }, [searchTerm, fetchEleves]);
+    fetchEleves(recherche);
+  }, [recherche, fetchEleves]);
 
-  // ==== Gestion des élèves sélectionnés ====
-  const addEleve = (e: Eleve) => {
-    if (!selectedEleves.find((x) => x.id === e.id)) {
-      setSelectedEleves((prev) => [...prev, e]);
+  const ajouterEleve = (e: Eleve) => {
+    if (!eleves_selectionnes.find((x) => x.id === e.id)) {
+      setElevesSelectionnes((prec) => [...prec, e]);
     }
-    setSearchTerm("");
-    setSearchResults([]);
-  };
-  const removeEleve = (id: number) => {
-    setSelectedEleves((prev) => prev.filter((x) => x.id !== id));
+
+    setRecherche("");
+
+    setResultats([]);
   };
 
-  // ==== Modification du cours privé ====
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
-    if (!dateCoursPrive || !heureDebut || !heureFin || !tarif) {
-      toast({
-        title: "Erreur",
-        description: "Remplissez date, heures et tarif.",
-      });
-      return;
-    }
-    if (!selectedEnseignant) {
-      toast({ title: "Erreur", description: "Sélectionnez un enseignant." });
-      return;
-    }
-    if (selectedEleves.length === 0) {
-      toast({ title: "Erreur", description: "Ajoutez au moins un élève." });
-      return;
-    }
-
-    const payload = {
-      date_cours_prive: dateCoursPrive,
-      heure_debut: heureDebut,
-      heure_fin: heureFin,
-      tarif: Number(tarif),
-      lieu: lieu === "ecole" ? "E" : "D",
-      eleves_ids: selectedEleves.map((x) => x.id),
-      enseignant: selectedEnseignant.id,
-    };
-
-    try {
-      await axios.put(
-        `http://localhost:8000/api/cours/cours_prive/${id}/`,
-        payload
-      );
-      toast({ title: "Succès", description: "Cours privé modifié." });
-      setTimeout(() => router.back(), 800);
-    } catch {
-      toast({
-        title: "Erreur",
-        description: "Impossible de modifier le cours privé.",
-      });
-    }
+  const supprimerEleve = (id: number) => {
+    setElevesSelectionnes((prec) => prec.filter((x) => x.id !== id));
   };
 
-  if (loading) return <div>Chargement...</div>;
+  const onSoumission = useCallback(
+    async (donnees: object) => {
+      const donnees_completes = {
+        ...donnees,
+        date_cours_prive: date_cours_prive
+          ? format(date_cours_prive, "yyyy-MM-dd")
+          : "",
+        heure_debut,
+        heure_fin,
+        eleves_ids: eleves_selectionnes.map((x) => x.id),
+        enseignant: id_enseignant,
+        lieu,
+      };
+
+      try {
+        await api.put(
+          `/cours/cours_prive/${resolvedParams.id}/`,
+          donnees_completes
+        );
+
+        router.push(`/ecole_peg/cours_prives/cours_prive/${resolvedParams.id}/`);
+      } catch (err) {
+        console.error("Erreur: ", err);
+      }
+    },
+    [
+      date_cours_prive,
+      eleves_selectionnes,
+      heure_debut,
+      heure_fin,
+      id_enseignant,
+      lieu,
+      resolvedParams.id,
+      router,
+    ]
+  );
+
+  if (chargement) return <div>Chargement...</div>;
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
@@ -211,7 +222,7 @@ export default function ModifierCoursPrivePage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push(`/ecole_peg/cours_prives/cours_prive/${resolvedParams.id}/`)}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -221,7 +232,7 @@ export default function ModifierCoursPrivePage() {
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSoumission)} className="space-y-6">
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Éditer le cours privé</CardTitle>
@@ -230,10 +241,10 @@ export default function ModifierCoursPrivePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
-
-            {/* === Élèves recherchables === */}
             <div className="space-y-4">
-              <Label htmlFor="searchEleve" className="text-base">Élèves</Label>
+              <Label htmlFor="searchEleve" className="text-base">
+                Élèves
+              </Label>
               <p className="text-sm text-muted-foreground mb-2">
                 Recherchez et ajoutez un ou plusieurs élèves à ce cours privé
               </p>
@@ -241,17 +252,17 @@ export default function ModifierCoursPrivePage() {
                 <Input
                   id="searchEleve"
                   placeholder="Rechercher par nom ou prénom..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={recherche}
+                  onChange={(e) => setRecherche(e.target.value)}
                   className="w-full"
                 />
-                {searchResults.length > 0 && (
+                {resultats.length > 0 && (
                   <ul className="absolute z-10 w-full border rounded-md mt-1 max-h-48 overflow-y-auto bg-white shadow-lg">
-                    {searchResults.map((x) => (
+                    {resultats.map((x) => (
                       <li
                         key={x.id}
                         className="p-3 hover:bg-blue-50 cursor-pointer transition-colors border-b last:border-b-0"
-                        onClick={() => addEleve(x)}
+                        onClick={() => ajouterEleve(x)}
                       >
                         {x.nom} {x.prenom}
                       </li>
@@ -261,7 +272,7 @@ export default function ModifierCoursPrivePage() {
               </div>
 
               <div className="flex flex-wrap gap-2 min-h-[2.5rem]">
-                {selectedEleves.map((x) => (
+                {eleves_selectionnes.map((x) => (
                   <span
                     key={x.id}
                     className="px-3 py-1.5 bg-blue-100 rounded-full flex items-center gap-2 text-sm font-medium shadow-sm border border-blue-200 transition-colors hover:bg-blue-200"
@@ -269,7 +280,7 @@ export default function ModifierCoursPrivePage() {
                     {x.nom} {x.prenom}
                     <button
                       type="button"
-                      onClick={() => removeEleve(x.id)}
+                      onClick={() => supprimerEleve(x.id)}
                       className="text-blue-600 hover:text-blue-800 focus:outline-none"
                       aria-label={`Retirer ${x.nom} ${x.prenom}`}
                     >
@@ -277,7 +288,7 @@ export default function ModifierCoursPrivePage() {
                     </button>
                   </span>
                 ))}
-                {selectedEleves.length === 0 && (
+                {eleves_selectionnes.length === 0 && (
                   <p className="text-sm text-muted-foreground p-2">
                     Aucun élève sélectionné
                   </p>
@@ -294,10 +305,9 @@ export default function ModifierCoursPrivePage() {
                 Sélectionnez l&apos;enseignant pour ce cours privé
               </p>
               <Select
-                value={selectedEnseignant?.id.toString() ?? ""}
-                onValueChange={(val) => {
-                  const e = enseignants.find((x) => x.id === Number(val)) || null;
-                  setSelectedEnseignant(e);
+                value={id_enseignant?.toString() ?? ""}
+                onValueChange={(value) => {
+                  setIdEnseignant(Number(value));
                 }}
                 required
               >
@@ -314,7 +324,6 @@ export default function ModifierCoursPrivePage() {
               </Select>
             </div>
 
-            {/* === Détails du cours === */}
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
@@ -324,8 +333,14 @@ export default function ModifierCoursPrivePage() {
                   <Input
                     id="dateCoursPrive"
                     type="date"
-                    value={dateCoursPrive}
-                    onChange={(e) => setDateCoursPrive(e.target.value)}
+                    value={
+                      date_cours_prive instanceof Date && !isNaN(date_cours_prive.getTime())
+                        ? format(date_cours_prive, "yyyy-MM-dd")
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setDateCoursPrive(new Date(e.target.value))
+                    }
                     required
                   />
                 </div>
@@ -340,10 +355,11 @@ export default function ModifierCoursPrivePage() {
                     min={0}
                     step="0.01"
                     placeholder="0.00"
-                    value={tarif}
-                    onChange={(e) => setTarif(e.target.value)}
                     onWheel={(e) => e.currentTarget.blur()}
-                    required
+                    {...register("tarif", {
+                      required: "Tarif est obligatoire",
+                      valueAsNumber: true,
+                    })}
                   />
                 </div>
 
@@ -354,7 +370,7 @@ export default function ModifierCoursPrivePage() {
                   <Input
                     id="heureDebut"
                     type="time"
-                    value={heureDebut}
+                    value={heure_debut}
                     onChange={(e) => setHeureDebut(e.target.value)}
                     required
                   />
@@ -367,14 +383,13 @@ export default function ModifierCoursPrivePage() {
                   <Input
                     id="heureFin"
                     type="time"
-                    value={heureFin}
+                    value={heure_fin}
                     onChange={(e) => setHeureFin(e.target.value)}
                     required
                   />
                 </div>
               </div>
 
-              {/* === Lieu radio select === */}
               <div className="space-y-4">
                 <Label className="text-base">Lieu du cours</Label>
                 <p className="text-sm text-muted-foreground mb-2">
@@ -382,12 +397,12 @@ export default function ModifierCoursPrivePage() {
                 </p>
                 <RadioGroup
                   value={lieu}
-                  onValueChange={(val) => setLieu(val as "ecole" | "domicile")}
+                  onValueChange={(value) => setLieu(value as "E" | "D")}
                   className="grid grid-cols-2 gap-4"
                 >
                   <div className="flex flex-col space-y-1 rounded-lg border p-4">
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="ecole" id="lieu-ecole" />
+                      <RadioGroupItem value="E" id="lieu-ecole" />
                       <Label htmlFor="lieu-ecole" className="font-medium">
                         À l&apos;école
                       </Label>
@@ -399,7 +414,7 @@ export default function ModifierCoursPrivePage() {
 
                   <div className="flex flex-col space-y-1 rounded-lg border p-4">
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="domicile" id="lieu-domicile" />
+                      <RadioGroupItem value="D" id="lieu-domicile" />
                       <Label htmlFor="lieu-domicile" className="font-medium">
                         À domicile
                       </Label>
@@ -413,7 +428,11 @@ export default function ModifierCoursPrivePage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full md:w-auto">
+            <Button
+              type="submit"
+              className="w-full md:w-auto"
+              disabled={isSubmitting}
+            >
               <Save className="mr-2 h-4 w-4" />
               Modifier le cours privé
             </Button>

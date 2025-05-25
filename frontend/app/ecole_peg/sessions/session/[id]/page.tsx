@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -19,31 +18,25 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/table";
-import {
-  ArrowLeft,
-  Calendar,
-  Users,
-  Bookmark,
-} from "lucide-react";
-import React, { use, useEffect, useState } from "react";
+import { ArrowLeft, Calendar, Users, Bookmark } from "lucide-react";
+import { use, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
-import axios from "axios";
+import { api } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 
 interface Session {
   id: number;
   cours__nom: string;
-  type: string;
-  cours__niveau: string;
-  nom_enseignant: string;
-  prenom_enseignant: string;
-  date_debut: string;
-  date_fin: string;
+  cours__type_cours: "I" | "S";
+  cours__niveau: "A1" | "A2" | "B1" | "B2" | "C1";
+  date_debut: Date;
+  date_fin: Date;
   capacite_max: number;
-  statut: string;
-  periode_journee?: string;
-  seances_mois?: number;
+  statut: "O" | "F";
+  periode_journee: "M" | "S";
+  seances_mois: number;
 }
 
 interface FichePresence {
@@ -59,71 +52,61 @@ export default function SessionPage({
 }) {
   const router = useRouter();
   const resolvedParams = use(params);
+
   const [session, setSession] = useState<Session>();
   const [fiches, setFiches] = useState<FichePresence[]>([]);
 
-  useEffect(() => {
-    async function fetchFiches() {
-      try {
-        const response = await axios.get<FichePresence[]>(
-          `http://localhost:8000/api/cours/session/${resolvedParams.id}/fiches_presences/`,
-        );
-        setFiches(response.data);
-      } catch (erreur) {
-        console.error("Erreur lors du chargement des fiches :", erreur);
-      }
+  const fetchFiches = useCallback(async () => {
+    try {
+      const reponse = await api.get<FichePresence[]>(
+        `/cours/session/${resolvedParams.id}/fiches_presences/`
+      );
+
+      setFiches(reponse.data);
+    } catch (err) {
+      console.error("Erreur lors du chargement des fiches: ", err);
     }
-    fetchFiches();
   }, [resolvedParams.id]);
+
+  useEffect(() => {
+    fetchFiches();
+  }, [fetchFiches]);
 
   useEffect(() => {
     async function fetchSession() {
       try {
-        const response = await axios.get(
-          `http://localhost:8000/api/cours/sessions/${resolvedParams.id}`,
+        const reponse = await api.get<Session>(
+          `/cours/sessions/${resolvedParams.id}`
         );
-        setSession(response.data);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+
+        setSession(reponse.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
+
     fetchSession();
   }, [resolvedParams.id]);
 
-  async function supprimerSession(id_session: number | undefined) {
-    if (!id_session) return;
+  async function supprimerSession() {
     try {
-      await axios.delete(
-        `http://localhost:8000/api/cours/sessions/${id_session}/`,
-      );
-      router.push("/ecole_peg/sessions");
-    } catch (erreur) {
-      console.error("Erreur: ", erreur);
+      await api.delete(`/cours/sessions/${resolvedParams.id}/`);
+
+      router.push("/ecole_peg/sessions/");
+    } catch (err) {
+      console.error("Erreur: ", err);
     }
   }
 
   async function supprimerFiche(id_fiche: number) {
     try {
-      await axios.delete(
-        `http://localhost:8000/api/cours/fiche_presences/${id_fiche}/`,
-      );
-      setFiches((prev) => prev.filter((f) => f.id !== id_fiche));
-    } catch (erreur) {
-      console.error("Erreur suppression fiche :", erreur);
-      alert("Impossible de supprimer la fiche, réessayez.");
+      await api.delete(`/cours/fiche_presences/${id_fiche}/`);
+
+      fetchFiches();
+    } catch (err) {
+      console.error("Erreur: ", err);
     }
   }
-
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "-";
-    try {
-      const date = new Date(dateString);
-      if (isNaN(date.getTime())) return "-";
-      return format(date, "d MMMM yyyy", { locale: fr });
-    } catch {
-      return "-";
-    }
-  };
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -131,7 +114,7 @@ export default function SessionPage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push("/ecole_peg/sessions/")}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -141,8 +124,8 @@ export default function SessionPage({
             {session?.cours__nom}
           </h1>
           <p className="text-muted-foreground">
-            {session?.type === "I" ? "Intensif" : "Semi-intensif"} - Niveau{" "}
-            {session?.cours__niveau}
+            {session?.cours__type_cours === "I" ? "Intensif" : "Semi-intensif"}{" "}
+            - Niveau {session?.cours__niveau}
           </p>
         </div>
       </div>
@@ -177,91 +160,105 @@ export default function SessionPage({
               </div>
             </CardHeader>
 
-           <CardContent className="p-6">
-  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Calendar className="h-4 w-4 text-muted-foreground" />
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">Période</p>
-          <p className="text-sm">
-            {session?.date_debut && session?.date_fin ? (
-              <>
-                Du {formatDate(session.date_debut)} au {formatDate(session.date_fin)}
-              </>
-            ) : (
-              "Dates non définies"
-            )}
-          </p>
-        </div>
-      </div>
+            <CardContent className="p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Période
+                      </p>
+                      <p className="text-sm">
+                        {session?.date_debut && session?.date_fin ? (
+                          <>
+                            Du {formatDate(session.date_debut)} au{" "}
+                            {formatDate(session.date_fin)}
+                          </>
+                        ) : (
+                          "Dates non définies"
+                        )}
+                      </p>
+                    </div>
+                  </div>
 
-      <div className="flex items-center gap-3">
-        <Bookmark className="h-4 w-4 text-muted-foreground" />
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">Type</p>
-          <p className="text-sm">
-            {session?.type === "I" ? "Intensif" : "Semi-intensif"}
-          </p>
-        </div>
-      </div>
+                  <div className="flex items-center gap-3">
+                    <Bookmark className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Type
+                      </p>
+                      <p className="text-sm">
+                        {session?.cours__type_cours === "I"
+                          ? "Intensif"
+                          : "Semi-intensif"}
+                      </p>
+                    </div>
+                  </div>
 
-      <div className="flex items-center gap-3">
-        <Users className="h-4 w-4 text-muted-foreground" />
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">Capacité max</p>
-          <p className="text-sm">{session?.capacite_max ?? "-"}</p>
-        </div>
-      </div>
-    </div>
+                  <div className="flex items-center gap-3">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Capacité max
+                      </p>
+                      <p className="text-sm">{session?.capacite_max ?? "-"}</p>
+                    </div>
+                  </div>
+                </div>
 
-    <div className="space-y-4">
-      <div className="flex items-center gap-3">
-        <Bookmark className="h-4 w-4 text-muted-foreground" />
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">Niveau</p>
-          <p className="text-sm">{session?.cours__niveau}</p>
-        </div>
-      </div>
+                <div className="space-y-4">
+                  <div className="flex items-center gap-3">
+                    <Bookmark className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Niveau
+                      </p>
+                      <p className="text-sm">{session?.cours__niveau}</p>
+                    </div>
+                  </div>
 
-      <div className="flex items-center gap-3">
-        <Calendar className="h-4 w-4 text-muted-foreground" />
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">Période journée</p>
-          <p className="text-sm">
-            {session?.periode_journee === "M"
-              ? "Matin"
-              : session?.periode_journee === "S"
-              ? "Soir"
-              : "-"}
-          </p>
-        </div>
-      </div>
+                  <div className="flex items-center gap-3">
+                    <Calendar className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Période journée
+                      </p>
+                      <p className="text-sm">
+                        {session?.periode_journee === "M"
+                          ? "Matin"
+                          : session?.periode_journee === "S"
+                          ? "Soir"
+                          : "-"}
+                      </p>
+                    </div>
+                  </div>
 
-      <div className="flex items-center gap-3">
-        <Bookmark className="h-4 w-4 text-muted-foreground" />
-        <div>
-          <p className="text-sm font-medium text-muted-foreground">Séances par mois</p>
-          <p className="text-sm">{session?.seances_mois ?? "-"}</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</CardContent>
-
+                  <div className="flex items-center gap-3">
+                    <Bookmark className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Séances par mois
+                      </p>
+                      <p className="text-sm">{session?.seances_mois ?? "-"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
 
             <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50 space-x-2">
-              <Button variant="outline" asChild>
-                <Link
-                  href={`/ecole_peg/sessions/session/${resolvedParams.id}/modifier`}
-                >
-                  Modifier
-                </Link>
-              </Button>
               <Button
-                variant="destructive"
-                onClick={() => supprimerSession(Number(resolvedParams.id))}
+                variant="outline"
+                onClick={() => {
+                  router.push(
+                    `/ecole_peg/sessions/session/${resolvedParams.id}/modifier`
+                  );
+                }}
               >
+                Modifier
+              </Button>
+              <Button variant="destructive" onClick={() => supprimerSession()}>
                 Supprimer
               </Button>
             </CardFooter>
@@ -280,7 +277,6 @@ export default function SessionPage({
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-muted/50">
-                    <TableHead>ID</TableHead>
                     <TableHead>Mois</TableHead>
                     <TableHead>Année</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
@@ -290,18 +286,24 @@ export default function SessionPage({
                   {fiches.length > 0 ? (
                     fiches.map((fiche) => (
                       <TableRow key={fiche.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">
-                          #{fiche.id}
+                        <TableCell>
+                          {format(fiche.mois, "MMMM", { locale: fr })
+                            .charAt(0)
+                            .toUpperCase() +
+                            format(fiche.mois, "MMMM", { locale: fr }).slice(1)}
                         </TableCell>
-                        <TableCell>{fiche.mois}</TableCell>
                         <TableCell>{fiche.annee}</TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link
-                              href={`${resolvedParams.id}/fiche/${fiche.id}`}
-                            >
-                              Consulter
-                            </Link>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              router.push(
+                                `${resolvedParams.id}/fiche/${fiche.id}`
+                              );
+                            }}
+                          >
+                            Consulter
                           </Button>
                           <Button
                             variant="destructive"
@@ -327,12 +329,16 @@ export default function SessionPage({
               </Table>
             </CardContent>
             <CardFooter className="justify-between border-t px-6 py-4 bg-muted/50">
-              <Button variant="default" asChild>
-                <Link
-                  href={`/ecole_peg/sessions/session/${resolvedParams.id}/fiche`}
-                >
-                  Nouvelle fiche de présence
-                </Link>
+              <Button
+                variant="default"
+                onClick={() => {
+                  router.push(
+                    `/ecole_peg/sessions/session/${resolvedParams.id}/fiche`
+                  );
+                }}
+                disabled={session?.statut === "O"}
+              >
+                Nouvelle fiche de présence
               </Button>
             </CardFooter>
           </Card>

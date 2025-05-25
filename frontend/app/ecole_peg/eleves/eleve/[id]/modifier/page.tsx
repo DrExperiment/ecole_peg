@@ -1,9 +1,8 @@
 "use client";
 
-import { use, useEffect, useState } from "react";
+import { use, useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
-
+import { api } from "@/lib/api";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -25,8 +24,9 @@ import { RadioGroupItem } from "@/components/radio-group";
 import { ArrowLeft, Save } from "lucide-react";
 import { Textarea } from "@/components/textarea";
 import { RadioGroup } from "@/components/radio-group";
-
 import { format } from "date-fns";
+import { useForm } from "react-hook-form";
+import { isAxiosError } from "axios";
 
 interface Pays {
   id: number;
@@ -34,12 +34,9 @@ interface Pays {
 }
 
 interface Eleve {
-  id: number;
   nom: string;
   prenom: string;
-  date_naissance: string;
   lieu_naissance: string;
-  sexe: "H" | "F";
   rue?: string;
   numero?: string;
   npa?: string;
@@ -47,103 +44,139 @@ interface Eleve {
   telephone: string;
   email: string;
   adresse_facturation?: string;
-  type_permis?: "E" | "S" | "B" | "P";
-  date_permis?: string;
-  niveau: "A1" | "A2" | "B1" | "B2" | "C1";
   langue_maternelle?: string;
   autres_langues?: string;
   src_decouverte?: string;
   commentaires?: string;
-  pays_id: number;
 }
 
-export default function EditElevePage({
+export default function ModifierElevePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  const { id } = use(params);
+  const resolvedParams = use(params);
   const router = useRouter();
 
-  const [eleve, setEleve] = useState<Eleve | null>(null);
   const [sexe, setSexe] = useState<"H" | "F">("H");
-  const [dateNaissance, setDateNaissance] = useState<Date | undefined>(
-    undefined,
+  const [date_naissance, setDateNaissance] = useState<Date | undefined>(
+    undefined
   );
   const [niveau, setNiveau] = useState<"A1" | "A2" | "B1" | "B2" | "C1">("A1");
-  const [typePermis, setTypePermis] = useState<"E" | "S" | "B" | "P">("P");
-  const [datePermis, setDatePermis] = useState<Date | undefined>(undefined);
-  const [paysList, setPaysList] = useState<Pays[]>([]);
-  const [idPays, setIdPays] = useState<number>(0);
+  const [type_permis, setTypePermis] = useState<"E" | "S" | "B" | "P">("P");
+  const [date_permis, setDatePermis] = useState<Date | undefined>(undefined);
+  const [pays, setPays] = useState<Pays[]>([]);
+  const [id_pays, setIdPays] = useState<number>(0);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm<Eleve>();
 
-  useEffect(() => {
-    async function fetchData() {
-      const [{ data: e }, { data: pays }] = await Promise.all([
-        axios.get<Eleve>(`http://localhost:8000/api/eleves/eleve/${id}/`),
-        axios.get<Pays[]>(`http://localhost:8000/api/eleves/pays/`),
+  const fetchDonnees = useCallback(async () => {
+    try {
+      const [reponse_eleves, reponse_pays] = await Promise.all([
+        api.get(`/eleves/eleve/${resolvedParams.id}/`),
+        api.get<Pays[]>(`/eleves/pays/`),
       ]);
 
-      setPaysList(pays); // ⬅️ mettre en premier
-      setEleve(e);
-      setSexe(e.sexe);
-      setDateNaissance(new Date(e.date_naissance));
-      setNiveau(e.niveau);
-      setTypePermis(e.type_permis ?? "P");
-      setDatePermis(e.date_permis ? new Date(e.date_permis) : undefined);
-      setIdPays(e.pays_id); // ⬅️ mettre après que paysList est défini
-    }
+      const eleve = reponse_eleves.data;
 
-    fetchData().catch(console.error);
-  }, [id]);
+      setPays(reponse_pays.data);
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>,
-  ) => {
-    const { name, value } = e.target;
-    setEleve((prev) => (prev ? ({ ...prev, [name]: value } as Eleve) : prev));
-  };
+      setSexe(eleve.sexe);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!eleve) return;
-    setIsSubmitting(true);
+      setDateNaissance(new Date(eleve.date_naissance));
 
-    const payload = {
-      ...eleve,
-      sexe,
-      date_naissance: dateNaissance
-        ? format(dateNaissance, "yyyy-MM-dd")
-        : undefined,
-      niveau,
-      type_permis: typePermis,
-      date_permis: datePermis ? format(datePermis, "yyyy-MM-dd") : undefined,
-      pays_id: idPays,
-    };
+      setNiveau(eleve.niveau);
 
-    try {
-      await axios.put(
-        `http://localhost:8000/api/eleves/eleves/${id}/`,
-        payload,
+      setTypePermis(eleve.type_permis);
+
+      setDatePermis(
+        eleve.date_permis ? new Date(eleve.date_permis) : undefined
       );
-      router.push(`/ecole_peg/eleves/eleve/${id}`);
+
+      setIdPays(eleve.pays_id);
+
+      reset({
+        nom: eleve.nom,
+        prenom: eleve.prenom,
+        lieu_naissance: eleve.lieu_naissance,
+        telephone: eleve.telephone,
+        email: eleve.email,
+        rue: eleve.rue,
+        numero: eleve.numero,
+        npa: eleve.npa,
+        localite: eleve.localite,
+        adresse_facturation: eleve.adresse_facturation,
+        langue_maternelle: eleve.langue_maternelle,
+        autres_langues: eleve.autres_langues,
+        src_decouverte: eleve.src_decouverte,
+        commentaires: eleve.commentaires,
+      });
     } catch (err) {
       console.error(err);
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  }, [reset, resolvedParams.id]);
 
-  if (!eleve) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="flex flex-col items-center gap-4">
-          <div className="loading loading-spinner loading-lg"></div>
-          <p className="text-muted-foreground">Chargement des données...</p>
-        </div>
-      </div>
-    );
+  useEffect(() => {
+    fetchDonnees();
+  }, [fetchDonnees]);
+
+  const onSoumission = useCallback(
+    async (donnees: Eleve) => {
+      if (date_naissance && date_naissance > new Date()) {
+        alert("Date de naissance ne peut pas être dans le futur");
+
+        return;
+      }
+
+      const payload = {
+        ...donnees,
+        sexe,
+        date_naissance: date_naissance
+          ? format(date_naissance, "yyyy-MM-dd")
+          : undefined,
+        niveau,
+        type_permis: type_permis,
+        date_permis: date_permis
+          ? format(date_permis, "yyyy-MM-dd")
+          : undefined,
+        pays_id: id_pays,
+      };
+
+      try {
+        await api.put(`/eleves/eleves/${resolvedParams.id}/`, payload);
+
+        router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
+      } catch (err) {
+        if (isAxiosError(err) && err.response?.data?.erreurs) {
+          const erreurs = err.response.data.erreurs;
+
+          Object.entries(erreurs).forEach(([msgs]) => {
+            alert((msgs as unknown as string[]).join(", "));
+          });
+        } else {
+          console.error(err);
+        }
+      }
+    },
+    [
+      date_naissance,
+      date_permis,
+      id_pays,
+      niveau,
+      resolvedParams.id,
+      router,
+      sexe,
+      type_permis,
+    ]
+  );
+
+  if (pays.length === 0) {
+    return <div>Chargement…</div>;
   }
 
   return (
@@ -152,7 +185,7 @@ export default function EditElevePage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -161,15 +194,11 @@ export default function EditElevePage({
           <h1 className="text-3xl font-bold tracking-tight">
             Modifier l&apos;élève
           </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            {eleve.prenom} {eleve.nom}
-          </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSoumission)} className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
-          {/* Détails personnels */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle>Détails personnels</CardTitle>
@@ -185,11 +214,8 @@ export default function EditElevePage({
                   </Label>
                   <Input
                     id="nom"
-                    name="nom"
-                    value={eleve.nom}
-                    onChange={handleChange}
                     className="font-medium"
-                    required
+                    {...register("nom", { required: "Nom est obligatoire" })}
                   />
                 </div>
                 <div className="space-y-2">
@@ -198,11 +224,10 @@ export default function EditElevePage({
                   </Label>
                   <Input
                     id="prenom"
-                    name="prenom"
-                    value={eleve.prenom}
-                    onChange={handleChange}
                     className="font-medium"
-                    required
+                    {...register("prenom", {
+                      required: "Prénom est obligatoire",
+                    })}
                   />
                 </div>
               </div>
@@ -252,11 +277,13 @@ export default function EditElevePage({
                   required
                   className="font-mono"
                   value={
-                    dateNaissance ? format(dateNaissance, "yyyy-MM-dd") : ""
+                    date_naissance instanceof Date &&
+                    !isNaN(date_naissance.getTime())
+                      ? format(date_naissance, "yyyy-MM-dd")
+                      : ""
                   }
                   onChange={(e) => {
-                    const value = e.target.value;
-                    setDateNaissance(value ? new Date(value) : undefined);
+                    setDateNaissance(new Date(e.target.value));
                   }}
                 />
               </div>
@@ -267,10 +294,8 @@ export default function EditElevePage({
                 </Label>
                 <Input
                   id="lieu_naissance"
-                  name="lieu_naissance"
-                  value={eleve.lieu_naissance}
-                  onChange={handleChange}
                   className="font-medium"
+                  {...register("lieu_naissance")}
                 />
               </div>
 
@@ -279,17 +304,14 @@ export default function EditElevePage({
                   Pays d&apos;origine
                 </Label>
                 <Select
-                  value={idPays ? String(idPays) : ""}
+                  value={String(id_pays)}
                   onValueChange={(v) => setIdPays(Number(v))}
                 >
                   <SelectTrigger>
-                    <SelectValue>
-                      {paysList.find((p) => p.id === idPays)?.nom ||
-                        "Sélectionner un pays"}
-                    </SelectValue>
+                    <SelectValue placeholder="Séléctionner un pays" />
                   </SelectTrigger>
                   <SelectContent>
-                    {paysList.map((p) => (
+                    {pays.map((p) => (
                       <SelectItem key={p.id} value={p.id.toString()}>
                         {p.nom}
                       </SelectItem>
@@ -304,10 +326,8 @@ export default function EditElevePage({
                 </Label>
                 <Input
                   id="langue_maternelle"
-                  name="langue_maternelle"
-                  value={eleve.langue_maternelle ?? ""}
-                  onChange={handleChange}
                   className="font-medium"
+                  {...register("langue_maternelle")}
                 />
               </div>
 
@@ -317,17 +337,14 @@ export default function EditElevePage({
                 </Label>
                 <Input
                   id="autres_langues"
-                  name="autres_langues"
-                  value={eleve.autres_langues ?? ""}
-                  onChange={handleChange}
                   className="font-medium"
                   placeholder="Séparées par des virgules"
+                  {...register("autres_langues")}
                 />
               </div>
             </CardContent>
           </Card>
 
-          {/* Coordonnées */}
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle>Coordonnées</CardTitle>
@@ -342,11 +359,10 @@ export default function EditElevePage({
                 </Label>
                 <Input
                   id="telephone"
-                  name="telephone"
-                  value={eleve.telephone}
-                  onChange={handleChange}
                   className="font-mono"
-                  required
+                  {...register("telephone", {
+                    required: "Téléphone obligatoire",
+                  })}
                 />
               </div>
 
@@ -356,12 +372,9 @@ export default function EditElevePage({
                 </Label>
                 <Input
                   id="email"
-                  name="email"
                   type="email"
-                  value={eleve.email}
-                  onChange={handleChange}
                   className="font-medium"
-                  required
+                  {...register("email", { required: "Email obligatoire" })}
                 />
               </div>
 
@@ -372,23 +385,13 @@ export default function EditElevePage({
                     <Label htmlFor="rue" className="text-sm">
                       Rue
                     </Label>
-                    <Input
-                      id="rue"
-                      name="rue"
-                      value={eleve.rue ?? ""}
-                      onChange={handleChange}
-                    />
+                    <Input id="rue" {...register("rue")} />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="numero" className="text-sm">
                       Numéro
                     </Label>
-                    <Input
-                      id="numero"
-                      name="numero"
-                      value={eleve.numero ?? ""}
-                      onChange={handleChange}
-                    />
+                    <Input id="numero" {...register("numero")} />
                   </div>
                 </div>
 
@@ -399,22 +402,15 @@ export default function EditElevePage({
                     </Label>
                     <Input
                       id="npa"
-                      name="npa"
-                      value={eleve.npa ?? ""}
-                      onChange={handleChange}
                       className="font-mono"
+                      {...register("npa")}
                     />
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="localite" className="text-sm">
                       Localité
                     </Label>
-                    <Input
-                      id="localite"
-                      name="localite"
-                      value={eleve.localite ?? ""}
-                      onChange={handleChange}
-                    />
+                    <Input id="localite" {...register("localite")} />
                   </div>
                 </div>
               </div>
@@ -428,18 +424,15 @@ export default function EditElevePage({
                 </Label>
                 <Textarea
                   id="adresse_facturation"
-                  name="adresse_facturation"
-                  value={eleve.adresse_facturation ?? ""}
-                  onChange={handleChange}
                   placeholder="Laisser vide si identique à l'adresse principale"
                   className="min-h-[100px]"
+                  {...register("adresse_facturation")}
                 />
               </div>
             </CardContent>
           </Card>
         </div>
 
-        {/* Niveau et Permis */}
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Niveau & Permis de séjour</CardTitle>
@@ -484,7 +477,7 @@ export default function EditElevePage({
               <div className="space-y-4">
                 <Label className="text-base">Type de permis</Label>
                 <RadioGroup
-                  value={typePermis}
+                  value={type_permis}
                   onValueChange={(value) =>
                     setTypePermis(value as "E" | "S" | "B" | "P")
                   }
@@ -511,7 +504,7 @@ export default function EditElevePage({
                     <div
                       key={value}
                       className={`flex flex-col space-y-1 rounded-lg border p-4 cursor-pointer transition-colors ${
-                        typePermis === value
+                        type_permis === value
                           ? "border-primary bg-primary/5"
                           : ""
                       }`}
@@ -524,7 +517,7 @@ export default function EditElevePage({
                         />
                         <div
                           className={`w-2 h-2 rounded-full ${
-                            typePermis === value ? "bg-primary" : "bg-muted"
+                            type_permis === value ? "bg-primary" : "bg-muted"
                           }`}
                         />
                         <Label
@@ -542,7 +535,7 @@ export default function EditElevePage({
                 </RadioGroup>
               </div>
 
-              {typePermis !== "P" && (
+              {type_permis !== "P" && (
                 <div className="space-y-2">
                   <Label className="text-base">Date du permis</Label>
                   <Input
@@ -550,7 +543,7 @@ export default function EditElevePage({
                     id="date_permis"
                     name="date_permis"
                     className="font-mono"
-                    value={datePermis ? format(datePermis, "yyyy-MM-dd") : ""}
+                    value={date_permis instanceof Date && !isNaN(date_permis.getTime()) ? format(date_permis, "yyyy-MM-dd") : ""}
                     onChange={(e) => {
                       const value = e.target.value;
                       setDatePermis(value ? new Date(value) : undefined);
@@ -567,10 +560,8 @@ export default function EditElevePage({
                 </Label>
                 <Textarea
                   id="src_decouverte"
-                  name="src_decouverte"
-                  value={eleve.src_decouverte ?? ""}
-                  onChange={handleChange}
                   placeholder="Internet, recommandation, publicité..."
+                  {...register("src_decouverte")}
                 />
               </div>
 
@@ -583,11 +574,9 @@ export default function EditElevePage({
                 </Label>
                 <Textarea
                   id="commentaires"
-                  name="commentaires"
-                  value={eleve.commentaires ?? ""}
-                  onChange={handleChange}
                   placeholder="Informations supplémentaires..."
                   className="min-h-[100px]"
+                  {...register("commentaires")}
                 />
               </div>
             </div>

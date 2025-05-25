@@ -1,9 +1,9 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
-import axios from "axios";
-import { ArrowLeft } from "lucide-react";
 
+import { use, useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
+import { api } from "@/lib/api";
+import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -21,111 +21,77 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/select";
-import { useToast } from "@/components/use-toast";
+import { useForm } from "react-hook-form";
+import { formatDate } from "@/lib/utils";
 
 interface Facture {
   id: number;
-  date_emission: string;
+  numero_facture: number;
+  date_emission: Date;
   montant_total: number;
   montant_restant: number;
-  inscription__eleve__nom: string;
-  inscription__eleve__prenom: string;
+  eleve_nom: string;
+  eleve_prenom: string;
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("fr-CH", {
-    style: "currency",
-    currency: "CHF",
-  }).format(amount);
-}
+export default function PayerFacturePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const {
+    register,
+    handleSubmit,
+    watch,
+    formState: { isSubmitting },
+  } = useForm();
 
-// File: app/ecole_peg/factures/factures/[id]/payer/page.tsx
-export default function PaiementFacturePage() {
-  const params = useParams();
-  const id = params.id;
+  const resolvedParams = use(params);
   const router = useRouter();
-  const { toast } = useToast();
 
-  const [facture, setFacture] = useState<Facture | null>(null);
-  const [montant, setMontant] = useState("");
-  const [modePaiement, setModePaiement] = useState("Personnel");
-  const [methodePaiement, setMethodePaiement] = useState("Espèces");
+  const [facture, setFacture] = useState<Facture>();
+
+  const [mode_paiement, setModePaiement] = useState("PER");
+
+  const [methode_paiement, setMethodePaiement] = useState("ESP");
+
+  const montant = watch("montant");
 
   useEffect(() => {
-    console.log("Param id reçu:", id);
-    if (!id) return;
-    const fetchFacture = async () => {
+    async function fetchFacture() {
       try {
-        // Correct endpoint for fetching single facture
-        const url = `http://localhost:8000/api/factures/facture/${id}/`;
-        console.log("Fetching facture via URL:", url);
-        const res = await axios.get<Facture>(url);
-        console.log("Facture reçue:", res.data);
-        setFacture(res.data);
-      } catch (error) {
-        console.error("Erreur récupération facture :", error);
-        toast({
-          title: "Erreur",
-          description: "Impossible de charger la facture",
-          variant: "destructive",
-        });
-      }
-    };
-    fetchFacture();
-  }, [id, toast]);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!facture) return;
-    const montantPaiement = parseFloat(montant);
-    if (isNaN(montantPaiement) || montantPaiement <= 0) {
-      toast({
-        title: "Erreur",
-        description: "Montant invalide",
-        variant: "destructive",
-      });
-      return;
-    }
-    if (montantPaiement > facture.montant_restant) {
-      toast({
-        title: "Erreur",
-        description: "Le montant dépasse le montant restant",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    try {
-      await axios.post("http://localhost:8000/api/factures/paiements/", {
-        id_facture: facture.id,
-        montant: montantPaiement,
-        mode_paiement: modePaiement,
-        methode_paiement: methodePaiement,
-      });
-      toast({
-        title: "Paiement enregistré",
-        description: `Paiement de ${formatCurrency(montantPaiement)}`,
-      });
-      router.push("/ecole_peg/factures/");
-    } catch (error: unknown) {
-      console.error("Erreur enregistrement paiement :", error);
-      if (axios.isAxiosError(error) && error.response?.data?.detail) {
-        console.error(
-          "Détails de la validation :",
-          JSON.stringify(error.response.data.detail, null, 2),
+        const reponse = await api.get<Facture>(
+          `/factures/facture/${resolvedParams.id}/`
         );
-      }
-      toast({
-        title: "Erreur",
-        description: "Impossible d'enregistrer le paiement",
-        variant: "destructive",
-      });
-    }
-  };
 
-  const handleAnnuler = () => {
-    router.back();
-  };
+        setFacture(reponse.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
+      }
+    }
+
+    fetchFacture();
+  }, [resolvedParams.id]);
+
+  const onSoumission = useCallback(
+    async (donnees: object) => {
+      const donnees_completes = {
+        ...donnees,
+        id_facture: resolvedParams.id,
+        mode_paiement,
+        methode_paiement,
+      };
+
+      try {
+        await api.post("/factures/paiement/", donnees_completes);
+
+        router.push(`/ecole_peg/factures/facture/${resolvedParams.id}`);
+      } catch (err) {
+        console.error("Erreur: ", err);
+      }
+    },
+    [methode_paiement, mode_paiement, resolvedParams.id, router]
+  );
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-3xl">
@@ -133,7 +99,7 @@ export default function PaiementFacturePage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push(`/ecole_peg/factures/facture/${resolvedParams.id}/`)}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -144,22 +110,21 @@ export default function PaiementFacturePage() {
       {!facture ? (
         <div className="flex items-center justify-center p-8">
           <div className="flex flex-col items-center gap-4">
-            <div className="loading loading-spinner loading-lg"></div>
             <p className="text-muted-foreground">Chargement de la facture...</p>
           </div>
         </div>
       ) : (
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit(onSoumission)}>
           <Card className="shadow-lg">
             <CardHeader className="space-y-1">
-              <CardTitle className="text-2xl">Facture #{facture.id}</CardTitle>
+              <CardTitle className="text-2xl">
+                Facture #{facture.numero_facture}
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Émise le{" "}
-                {new Date(facture.date_emission).toLocaleDateString("fr-FR")}
+                Émise le {formatDate(facture.date_emission)}
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Information de la facture */}
               <div className="rounded-lg border bg-card p-4 text-card-foreground">
                 <div className="grid gap-4">
                   <div className="flex items-center gap-2">
@@ -167,8 +132,7 @@ export default function PaiementFacturePage() {
                       Élève :
                     </span>
                     <span className="font-medium">
-                      {facture.inscription__eleve__prenom}{" "}
-                      {facture.inscription__eleve__nom}
+                      {facture.eleve_nom} {facture.eleve_prenom}
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-4">
@@ -176,23 +140,20 @@ export default function PaiementFacturePage() {
                       <span className="text-sm text-muted-foreground">
                         Montant total
                       </span>
-                      <p className="font-medium">
-                        {formatCurrency(facture.montant_total)}
-                      </p>
+                      <p className="font-medium">{facture.montant_total} CHF</p>
                     </div>
                     <div>
                       <span className="text-sm text-muted-foreground">
                         Montant restant
                       </span>
                       <p className="font-medium text-blue-600">
-                        {formatCurrency(facture.montant_restant)}
+                        {facture.montant_restant} CHF
                       </p>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Formulaire de paiement */}
               <div className="space-y-6">
                 <div className="space-y-2">
                   <Label htmlFor="montant" className="text-base">
@@ -205,56 +166,66 @@ export default function PaiementFacturePage() {
                       step="0.01"
                       min="0.01"
                       max={facture.montant_restant}
-                      value={montant}
-                      onChange={(e) => setMontant(e.target.value)}
                       onWheel={(e) => e.currentTarget.blur()}
                       className="pl-8 font-mono"
                       placeholder="0.00"
-                      required
+                      {...register("montant", {
+                        required: "Montant est obligatoire",
+                        valueAsNumber: true,
+                      })}
                     />
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      CHF
-                    </span>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    Maximum: {formatCurrency(facture.montant_restant)}
+                    Maximum: {facture.montant_restant} CHF
                   </p>
                 </div>
 
                 <div className="space-y-2">
                   <Label className="text-base">Mode de paiement</Label>
-                  <Select value={modePaiement} onValueChange={setModePaiement}>
+                  <Select
+                    value={mode_paiement}
+                    onValueChange={(value) => setModePaiement(value)}
+                  >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Sélectionner un mode de paiement" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Personnel">Personnel</SelectItem>
+                      <SelectItem value="PER">Personnel</SelectItem>
                       <SelectItem value="BPA">BPA</SelectItem>
                       <SelectItem value="CAF">CAF</SelectItem>
-                      <SelectItem value="Hospice">Hospice</SelectItem>
-                      <SelectItem value="Autre">Autre</SelectItem>
+                      <SelectItem value="HOP">Hospice</SelectItem>
+                      <SelectItem value="AUT">Autre</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
-                {modePaiement === "Personnel" && (
+                {mode_paiement === "PER" && (
                   <div className="space-y-2">
                     <Label className="text-base">Méthode de paiement</Label>
                     <Select
-                      value={methodePaiement}
-                      onValueChange={setMethodePaiement}
+                      value={methode_paiement}
+                      onValueChange={(value) => setMethodePaiement(value)}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Choisir une méthode de paiement" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="Espèces">Espèces</SelectItem>
-                        <SelectItem value="Virement">
+                        <SelectItem value="ESP">Espèces</SelectItem>
+                        <SelectItem value="VIR">
                           Virement bancaire
                         </SelectItem>
-                        <SelectItem value="Carte">Carte bancaire</SelectItem>
-                        <SelectItem value="Téléphone">
+                        <SelectItem value="CAR">Carte bancaire</SelectItem>
+                        <SelectItem value="TEL">
                           Paiement mobile
+                        </SelectItem>
+                        <SelectItem value="TWI">
+                          Twint
+                        </SelectItem>
+                        <SelectItem value="PAY">
+                          PayPal
+                        </SelectItem>
+                        <SelectItem value="AUT">
+                          Autre
                         </SelectItem>
                       </SelectContent>
                     </Select>
@@ -266,14 +237,20 @@ export default function PaiementFacturePage() {
               <Button
                 variant="outline"
                 type="button"
-                onClick={handleAnnuler}
+                onClick={() => {
+                  router.back();
+                }}
                 className="w-full sm:w-auto"
               >
                 Annuler
               </Button>
-              <Button type="submit" className="w-full sm:w-auto">
-                {parseFloat(montant) > 0
-                  ? `Enregistrer le paiement de ${formatCurrency(parseFloat(montant))}`
+              <Button
+                type="submit"
+                className="w-full sm:w-auto"
+                disabled={isSubmitting}
+              >
+                {montant > 0
+                  ? `Enregistrer le paiement de ${montant} CHF`
                   : "Enregistrer le paiement"}
               </Button>
             </CardFooter>

@@ -26,65 +26,78 @@ import {
 } from "@/components/select";
 import { Plus } from "lucide-react";
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { api } from "@/lib/api";
+import { useRouter } from "next/navigation";
+import { formatDate } from "@/lib/utils";
 
 interface Session {
   id: number;
   cours__nom: string;
-  cours__niveau: string;
-  date_debut: string;
-  date_fin: string;
-  statut: string;
-  cours__type: string;
+  cours__niveau: "A1" | "A2" | "B1" | "B2" | "C1";
+  date_debut: Date;
+  date_fin: Date;
+  statut: "O" | "F";
+  cours__type_cours: "I" | "S";
 }
 
 export default function SessionsPage() {
-  const [sessions, setSessions] = useState<Session[]>([]);
-  const [page, setPage] = useState(1);
-  const [taille] = useState(10);
-  const [total, setTotal] = useState(0);
-  const [loading, setLoading] = useState(false);
+  const router = useRouter();
 
-  // Filtres
-  const [filtreType, setFiltreType] = useState("tous");
-  const [filtreNiveau, setFiltreNiveau] = useState("tous");
+  const [sessions, setSessions] = useState<Session[]>([]);
+
+  const [num_page, setNumPage] = useState<number>(1);
+  const [taille] = useState<number>(10);
+
+  const [total, setTotal] = useState<number>(0);
+  const [chargement, setChargement] = useState(false);
+
+  const [filtre_type, setFiltreType] = useState<"tous" | "I" | "S">("tous");
+  const [filtre_niveau, setFiltreNiveau] = useState<
+    "tous" | "A1" | "A2" | "B1" | "B2" | "C1"
+  >("tous");
 
   useEffect(() => {
     async function fetchSessions() {
-      setLoading(true);
+      setChargement(true);
+
       try {
-        const params: {
-          page: number;
-          taille: number;
-          type?: string;
-          niveau?: string;
-        } = { page, taille };
-        if (filtreType && filtreType !== "tous") params.type = filtreType;
-        if (filtreNiveau && filtreNiveau !== "tous")
-          params.niveau = filtreNiveau;
-        const reponse = await axios.get(
-          "http://localhost:8000/api/cours/sessions/",
-          { params },
-        );
+        const params: Record<string, string | number | undefined> = {
+          page: num_page,
+          taille: taille,
+        };
+
+        if (filtre_type && filtre_type !== "tous") params.type = filtre_type;
+
+        if (filtre_niveau && filtre_niveau !== "tous")
+          params.niveau = filtre_niveau;
+
+        const reponse = await api.get<{
+          sessions: Session[];
+          nombre_total: number;
+        }>("/cours/sessions/", { params });
+
         setSessions(reponse.data.sessions);
+
         setTotal(reponse.data.nombre_total);
-      } catch (erreur) {
+      } catch (err) {
         setSessions([]);
+
         setTotal(0);
-        console.error("Erreur: ", erreur);
+
+        console.error("Erreur: ", err);
       }
-      setLoading(false);
+
+      setChargement(false);
     }
+
     fetchSessions();
-    // Remise à la première page à chaque changement de filtre
-  }, [page, taille, filtreType, filtreNiveau]);
+  }, [filtre_niveau, filtre_type, num_page, taille]);
 
-  // Si on change les filtres, on repart de la page 1
   useEffect(() => {
-    setPage(1);
-  }, [filtreType, filtreNiveau]);
+    setNumPage(1);
+  }, [filtre_niveau, filtre_type]);
 
-  const totalPages = Math.ceil(total / taille);
+  const pages_totales = Math.ceil(total / taille);
 
   return (
     <div className="container mx-auto py-8 space-y-6">
@@ -95,11 +108,13 @@ export default function SessionsPage() {
             Gérez les sessions de l&apos;école
           </p>
         </div>
-        <Button asChild>
-          <Link href="/ecole_peg/sessions/session">
-            <Plus className="mr-2 h-4 w-4" />
-            Nouvelle session
-          </Link>
+        <Button
+          onClick={() => {
+            router.push("/ecole_peg/sessions/session");
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Nouvelle session
         </Button>
       </div>
 
@@ -112,7 +127,14 @@ export default function SessionsPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-wrap items-center gap-4">
-            <Select value={filtreNiveau} onValueChange={setFiltreNiveau}>
+            <Select
+              value={filtre_niveau}
+              onValueChange={(value) =>
+                setFiltreNiveau(
+                  value as "tous" | "A1" | "A2" | "B1" | "B2" | "C1"
+                )
+              }
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Niveau" />
               </SelectTrigger>
@@ -125,7 +147,12 @@ export default function SessionsPage() {
                 <SelectItem value="C1">C1</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filtreType} onValueChange={setFiltreType}>
+            <Select
+              value={filtre_type}
+              onValueChange={(value) =>
+                setFiltreType(value as "tous" | "I" | "S")
+              }
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
@@ -152,7 +179,7 @@ export default function SessionsPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {loading ? (
+                {chargement ? (
                   <TableRow>
                     <TableCell
                       colSpan={6}
@@ -168,15 +195,15 @@ export default function SessionsPage() {
                         {session.cours__nom}
                       </TableCell>
                       <TableCell>
-                        {session.cours__type === "I"
+                        {session.cours__type_cours === "I"
                           ? "Intensif"
                           : "Semi-intensif"}
                       </TableCell>
                       <TableCell>{session.cours__niveau}</TableCell>
                       <TableCell>
                         <span className="whitespace-nowrap">
-                          Du {new Date(session.date_debut).toLocaleDateString()}{" "}
-                          au {new Date(session.date_fin).toLocaleDateString()}
+                          Du {formatDate(session.date_debut)} au{" "}
+                          {formatDate(session.date_fin)}
                         </span>
                       </TableCell>
                       <TableCell>
@@ -215,24 +242,26 @@ export default function SessionsPage() {
             </Table>
           </div>
 
-          <div className="flex items-center justify-between">
-            <span className="text-sm text-muted-foreground">
-              Page {page} sur {totalPages || 1} · {total} sessions
-            </span>
+          <div className="flex items-center justify-end space-x-4 py-4">
             <div className="flex items-center space-x-2">
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={page === 1}
+                onClick={() => setNumPage((p) => Math.max(1, p - 1))}
+                disabled={num_page === 1}
               >
                 Précédent
               </Button>
+
+              <span className="text-sm text-muted-foreground">
+                Page {num_page} sur {pages_totales || 1}
+              </span>
+
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                disabled={page === totalPages || totalPages === 0}
+                onClick={() => setNumPage((p) => Math.min(pages_totales, p + 1))}
+                disabled={num_page === pages_totales || pages_totales === 0}
               >
                 Suivant
               </Button>

@@ -17,7 +17,7 @@ export default function Login() {
 
   useEffect(() => {
     est_authentifie().then(
-      (ok) => ok && router.replace("/ecole_peg/tableau_bord/"),
+      (ok) => ok && router.back(),
     );
   }, [router]);
 
@@ -29,7 +29,7 @@ export default function Login() {
 
       setAuthentifie(true);
 
-      router.push("/ecole_peg/tableau_bord/");
+      router.back();
     } catch {
       setErreur("Mot de passe incorrect");
     }

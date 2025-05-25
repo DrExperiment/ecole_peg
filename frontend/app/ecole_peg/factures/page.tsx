@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Button } from "@/components/button";
 import {
@@ -18,7 +17,6 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/table";
-import { Input } from "@/components/input";
 import {
   Select,
   SelectContent,
@@ -26,9 +24,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/select";
-import { FileText, Search } from "lucide-react";
-import { format } from "date-fns";
-import axios from "axios";
+import { FileText } from "lucide-react";
+import { api } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
+import { useRouter } from "next/navigation";
 
 interface Facture {
   id: number;
@@ -39,41 +38,64 @@ interface Facture {
   eleve_prenom: string;
 }
 
+interface ReponseFactures {
+  factures: Facture[];
+  nombre_total: number;
+}
+
 export default function FacturesPage() {
+  const router = useRouter();
+
   const [factures, setFactures] = useState<Facture[]>([]);
-  const [filtreStatut, setFiltreStatut] = useState("tous");
-  const [rechercheId, setRechercheId] = useState("");
+  const [nombre_total, setNombreTotal] = useState(0);
+  const [chargement, setChargement] = useState(false);
+  const [num_page, setNumPage] = useState(1);
+  const taille_page = 10;
+
+  const [filtre_statut, setFiltreStatut] = useState("tous");
+
+  useEffect(() => {
+    setNumPage(1);
+  }, [filtre_statut]);
 
   useEffect(() => {
     async function fetchFactures() {
+      setChargement(true);
       try {
-        const donnees: Facture[] = (
-          await axios.get("http://localhost:8000/api/factures/factures/")
-        ).data;
-        setFactures(donnees);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+        const params = {
+          page: num_page,
+          taille: taille_page,
+        };
+
+        let reponse;
+        if (filtre_statut === "impayees") {
+          reponse = await api.get<ReponseFactures>(
+            "/factures/factures/impayees/",
+            { params }
+          );
+        } else if (filtre_statut === "payees") {
+          reponse = await api.get<ReponseFactures>(
+            "/factures/factures/payees/",
+            { params }
+          );
+        } else {
+          reponse = await api.get<ReponseFactures>("/factures/factures/", {
+            params,
+          });
+        }
+
+        setFactures(reponse.data.factures);
+        setNombreTotal(reponse.data.nombre_total);
+      } catch (err) {
+        console.error("Erreur:", err);
+        setFactures([]);
+        setNombreTotal(0);
       }
+      setChargement(false);
     }
+
     fetchFactures();
-  }, []);
-
-  // Filtrage combiné statut + recherche id
-  const facturesFiltrees = factures.filter((facture) => {
-    const statutOK =
-      filtreStatut === "tous"
-        ? true
-        : filtreStatut === "paye"
-          ? facture.montant_restant === 0
-          : facture.montant_restant !== 0;
-
-    const rechercheOK =
-      rechercheId.trim() === ""
-        ? true
-        : facture.id.toString().includes(rechercheId.trim());
-
-    return statutOK && rechercheOK;
-  });
+  }, [filtre_statut, num_page, taille_page]);
 
   return (
     <div className="container mx-auto py-8 space-y-6">
@@ -94,35 +116,26 @@ export default function FacturesPage() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="relative flex-1 min-w-[250px]">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                type="search"
-                placeholder="Rechercher par ID de facture..."
-                className="pl-8"
-                value={rechercheId}
-                onChange={(e) => setRechercheId(e.target.value)}
-              />
-            </div>
-            <Select value={filtreStatut} onValueChange={setFiltreStatut}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Statut" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="tous">Tous les statuts</SelectItem>
-                <SelectItem value="paye">Payé</SelectItem>
-                <SelectItem value="non-paye">Non payé</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+          <Select
+            value={filtre_statut}
+            onValueChange={(value) => setFiltreStatut(value)}
+          >
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Statut" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="tous">Tous les statuts</SelectItem>
+              <SelectItem value="payees">Payées</SelectItem>
+              <SelectItem value="impayees">Impayées</SelectItem>
+            </SelectContent>
+          </Select>
 
           <div className="rounded-md border">
             <Table>
               <TableHeader>
                 <TableRow>
                   <TableHead className="font-medium">Date</TableHead>
-                  <TableHead className="font-medium">Étudiant</TableHead>
+                  <TableHead className="font-medium">Élève</TableHead>
                   <TableHead className="font-medium">Montant</TableHead>
                   <TableHead className="font-medium">Statut</TableHead>
                   <TableHead className="text-right font-medium">
@@ -131,16 +144,11 @@ export default function FacturesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {facturesFiltrees.length > 0 ? (
-                  facturesFiltrees.map((facture) => (
+                {factures.length > 0 ? (
+                  factures.map((facture) => (
                     <TableRow key={facture.id}>
                       <TableCell className="whitespace-nowrap">
-                        {facture.date_emission
-                          ? format(
-                              new Date(facture.date_emission),
-                              "dd MMM yyyy",
-                            )
-                          : "-"}
+                        {formatDate(facture.date_emission)}
                       </TableCell>
                       <TableCell className="font-medium">
                         {`${facture.eleve_nom} ${facture.eleve_prenom}`}
@@ -160,22 +168,26 @@ export default function FacturesPage() {
                       <TableCell>
                         {facture.montant_restant === 0 ? (
                           <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-green-50 text-green-700">
-                            Payé
+                            Payée
                           </span>
                         ) : (
                           <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-red-50 text-red-700">
-                            Non payé
+                            Impayée
                           </span>
                         )}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link
-                            href={`/ecole_peg/factures/facture/${facture.id}`}
-                          >
-                            <FileText className="mr-2 h-4 w-4" />
-                            Détails
-                          </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            router.push(
+                              `/ecole_peg/factures/facture/${facture.id}`
+                            );
+                          }}
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          Détails
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -186,12 +198,45 @@ export default function FacturesPage() {
                       colSpan={5}
                       className="text-center py-6 text-muted-foreground"
                     >
-                      Aucune facture trouvée.
+                      {chargement ? "Chargement..." : "Aucune facture trouvée."}
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          <div className="flex items-center justify-end space-x-4 py-4">
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNumPage((p) => Math.max(1, p - 1))}
+                disabled={num_page === 1}
+              >
+                Précédent
+              </Button>
+
+              <span className="text-sm text-muted-foreground">
+                Page {num_page} sur {Math.ceil(nombre_total / taille_page) || 1}
+              </span>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() =>
+                  setNumPage((p) =>
+                    Math.min(Math.ceil(nombre_total / taille_page), p + 1)
+                  )
+                }
+                disabled={
+                  num_page === Math.ceil(nombre_total / taille_page) ||
+                  nombre_total === 0
+                }
+              >
+                Suivant
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

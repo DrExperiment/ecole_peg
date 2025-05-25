@@ -1,58 +1,56 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { format } from "date-fns";
+import { fr } from "date-fns/locale";
+import {
+  Bell,
+  BookOpen,
+  Cake,
+  Clock,
+  DollarSign,
+  FileText,
+  Home,
+  PieChart,
+  UserMinus,
+  UserPlus,
+  Users,
+} from "lucide-react";
+import { api } from "@/lib/api";
 import {
   Card,
   CardContent,
+  CardDescription,
   CardHeader,
   CardTitle,
-  CardDescription,
 } from "@/components/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/tabs";
-import {
-  Users,
-  BookOpen,
-  UserPlus,
-  Cake,
-  FileText,
-  Bell,
-  Home,
-  Clock,
-  UserMinus,
-  PieChart,
-  DollarSign,
-} from "lucide-react";
-import { format } from "date-fns";
-import { fr } from "date-fns/locale/fr";
-import Link from "next/link";
 import { AlertBox } from "@/components/alert";
-import { Button } from "@/components/button";
 
 interface Anniversaire {
   id: number;
   nom: string;
   prenom: string;
-  date_naissance: string;
+  date_naissance: Date;
   age: number;
 }
 
 interface SessionOuverte {
-  date_debut: string;
+  date_debut: Date;
   eleves_restants: number;
 }
 
 interface ElevePresenceInferieur {
   nom: string;
   prenom: string;
-  date_naissance: string;
+  date_naissance: Date;
   taux_presence: number;
 }
 
 interface ElevePreinscription {
   nom: string;
   prenom: string;
-  date_naissance: string;
+  date_naissance: Date;
 }
 
 type Niveau = "A1" | "A2" | "B1" | "B2" | "C1";
@@ -66,7 +64,7 @@ interface Stats {
   factures: {
     nombre_factures_impayees: number;
     montant_total_paiements_mois: number;
-    montant_total_factures_impayees_mois: number;
+    montant_total_factures_impayees: number;
   };
   cours: {
     total_cours: number;
@@ -74,11 +72,11 @@ interface Stats {
     cours_prives_programmes_mois: number;
     sessions_ouvertes: SessionOuverte[];
     nombre_enseignants: number;
+    repartition_eleves_actifs: RepartitionNiveau[];
   };
   eleves: {
     total_eleves: number;
     eleves_actifs: number;
-    repartition_niveaux: RepartitionNiveau[];
     pays_plus_eleves: string | null;
     eleves_presence_inferieur_80: ElevePresenceInferieur[];
     eleves_preinscription_plus_3j: ElevePreinscription[];
@@ -86,62 +84,42 @@ interface Stats {
 }
 
 export default function TableauBordPage() {
-  const [stats, setStats] = useState<Stats | null>(null);
+  const [stats, setStats] = useState<Stats>();
+
   const [anniversaires, setAnniversaires] = useState<Anniversaire[]>([]);
-  const [tab, setTab] = useState<"apercu" | "alertes">("apercu");
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [chargement, setChargement] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    Promise.all([
-      axios.get<Stats>(
-        "http://localhost:8000/api/eleves/statistiques/dashboard/",
-      ),
-      axios.get<Anniversaire[]>(
-        "http://localhost:8000/api/eleves/anniversaires/",
-      ),
-    ])
-      .then(([s, a]) => {
-        setStats(s.data);
-        setAnniversaires(
-          a.data.map((x) => ({
-            ...x,
-            date_naissance: new Date(x.date_naissance).toISOString(),
-          })),
-        );
-      })
-      .catch((e) => setError(e.message || "Erreur réseau"))
-      .finally(() => setLoading(false));
+    setChargement(true);
+
+    async function fetchDonnees() {
+      try {
+        const [reponse_stats, reponse_anniv] = await Promise.all([
+          api.get<Stats>("/eleves/statistiques/dashboard/"),
+          api.get<Anniversaire[]>("/eleves/anniversaires/"),
+        ]);
+
+        setStats(reponse_stats.data);
+
+        setAnniversaires(reponse_anniv.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
+      }
+    }
+
+    fetchDonnees();
+
+    setChargement(false);
   }, []);
 
-  if (loading)
+  if (chargement)
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
         <span className="ml-3 text-gray-600">Chargement...</span>
       </div>
     );
 
-  if (error)
-    return (
-      <AlertBox
-        variant="error"
-        title="Impossible de charger les données"
-        dismissible
-        onDismiss={() => window.location.reload()}
-      >
-        <p className="mt-2 text-sm">{error}</p>
-        <Button className="mt-4" onClick={() => window.location.reload()}>
-          Réessayer
-        </Button>
-      </AlertBox>
-    );
-
   if (!stats) return <p>Aucune donnée disponible.</p>;
-
-  const dateFmt = (s: string, fmt = "dd MMMM yyyy") =>
-    format(new Date(s), fmt, { locale: fr });
 
   const aujourdHui = format(new Date(), "MMMM yyyy", { locale: fr });
 
@@ -163,12 +141,7 @@ export default function TableauBordPage() {
         </p>
       </div>
 
-      <Tabs
-        defaultValue={tab}
-        value={tab}
-        onValueChange={(v) => setTab(v as "apercu" | "alertes")}
-        className="space-y-4"
-      >
+      <Tabs defaultValue="apercu" className="space-y-4">
         <TabsList className="grid w-full grid-cols-2 lg:w-[400px]">
           <TabsTrigger value="apercu" className="flex items-center">
             <Home className="mr-2 h-4 w-4" /> Aperçu
@@ -258,26 +231,28 @@ export default function TableauBordPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {stats.eleves.repartition_niveaux.map((niveau) => {
+                  {stats.cours.repartition_eleves_actifs.map((niveau, index) => {
                     const pourcentage =
                       stats.eleves.eleves_actifs > 0
                         ? (niveau.total / stats.eleves.eleves_actifs) * 100
                         : 0;
                     return (
-                      <div key={niveau.niveau} className="space-y-2">
-                        <div className="flex items-center justify-between text-sm">
-                          <span className="font-medium">
+                      <div key={`${niveau.niveau}-${index}`} className="flex items-center space-x-4">
+                        <div className="flex-1 space-y-1">
+                          <p className="text-sm font-medium leading-none">
                             Niveau {niveau.niveau}
-                          </span>
-                          <span className="text-muted-foreground">
-                            {niveau.total} ({pourcentage.toFixed(1)}%)
-                          </span>
-                        </div>
-                        <div className="h-2 w-full overflow-hidden rounded-full bg-secondary">
-                          <div
-                            className="h-full bg-primary transition-all"
-                            style={{ width: `${pourcentage}%` }}
-                          />
+                          </p>
+                          <div className="flex items-center">
+                            <div className="h-2 w-full rounded-full bg-secondary">
+                              <div
+                                className="h-2 rounded-full bg-primary"
+                                style={{ width: `${pourcentage}%` }}
+                              />
+                            </div>
+                            <span className="ml-2 text-sm text-muted-foreground">
+                              {niveau.total}
+                            </span>
+                          </div>
                         </div>
                       </div>
                     );
@@ -300,11 +275,11 @@ export default function TableauBordPage() {
                       Montant reçu
                     </p>
                     <div className="flex items-center">
-                      <span className="text-2xl font-bold text-green-700">
-                        {stats.factures.montant_total_paiements_mois.toLocaleString(
-                          "fr-CH",
-                        )}{" "}
-                        CHF
+                      <span className="text-2xl font-bold">
+                        {stats.factures.montant_total_paiements_mois.toLocaleString('fr-FR', {
+                          style: 'currency',
+                          currency: 'CHF'
+                        })}
                       </span>
                     </div>
                   </div>
@@ -313,11 +288,11 @@ export default function TableauBordPage() {
                       Montant impayé
                     </p>
                     <div className="flex items-center">
-                      <span className="text-2xl font-bold text-red-700">
-                        {stats.factures.montant_total_factures_impayees_mois.toLocaleString(
-                          "fr-CH",
-                        )}{" "}
-                        CHF
+                      <span className="text-2xl font-bold">
+                        {stats.factures.montant_total_factures_impayees.toLocaleString('fr-FR', {
+                          style: 'currency',
+                          currency: 'CHF'
+                        })}
                       </span>
                     </div>
                   </div>
@@ -327,7 +302,7 @@ export default function TableauBordPage() {
                     Pays principal
                   </span>
                   <span className="font-medium">
-                    {stats.eleves.pays_plus_eleves || "Non défini"}
+                    {stats.eleves.pays_plus_eleves || 'Non défini'}
                   </span>
                 </div>
               </CardContent>
@@ -345,15 +320,16 @@ export default function TableauBordPage() {
               <CardContent>
                 {stats.cours.sessions_ouvertes.length > 0 ? (
                   <div className="space-y-4">
-                    {stats.cours.sessions_ouvertes.map((s, idx) => (
-                      <div
-                        key={idx}
-                        className="flex items-center justify-between"
-                      >
-                        <span className="text-sm">{dateFmt(s.date_debut)}</span>
-                        <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-blue-50 text-blue-700">
-                          {s.eleves_restants} places
-                        </span>
+                    {stats.cours.sessions_ouvertes.map((s) => (
+                      <div key={new Date(s.date_debut).toISOString()} className="flex items-center justify-between">
+                        <div className="space-y-1">
+                          <p className="text-sm font-medium leading-none">
+                            {format(new Date(s.date_debut), 'dd MMMM yyyy', { locale: fr })}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {s.eleves_restants} places disponibles
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
@@ -390,25 +366,13 @@ export default function TableauBordPage() {
                         className="flex items-center justify-between"
                       >
                         <div className="space-y-1">
-                          <Link
-                            href={`/ecole_peg/eleves/eleve/${anniv.id}/`}
-                            className="text-sm font-medium hover:underline"
-                          >
-                            {anniv.nom} {anniv.prenom}
-                          </Link>
-                          <p className="text-xs text-muted-foreground">
-                            {format(
-                              new Date(anniv.date_naissance),
-                              "dd-MM-yyyy",
-                            )}{" "}
-                            ({anniv.age} ans)
+                          <p className="text-sm font-medium leading-none">
+                            {anniv.prenom} {anniv.nom}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(anniv.date_naissance), 'dd MMMM')} - {anniv.age} ans
                           </p>
                         </div>
-                        <span className="text-sm font-medium">
-                          {format(new Date(anniv.date_naissance), "dd MMMM", {
-                            locale: fr,
-                          })}
-                        </span>
                       </div>
                     ))}
                   </div>
@@ -435,13 +399,12 @@ export default function TableauBordPage() {
                 >
                   <div className="flex items-center justify-between">
                     <p className="text-sm">
-                      {factures_impayees} facture
-                      {factures_impayees > 1 ? "s" : ""} en attente pour un
-                      montant de{" "}
-                      {stats.factures.montant_total_factures_impayees_mois.toLocaleString(
-                        "fr-CH",
-                      )}{" "}
-                      CHF
+                      {factures_impayees}{" "}
+                      {factures_impayees > 1 ? "factures impayées" : "facture impayée"} pour un montant total de{" "}
+                      {stats.factures.montant_total_factures_impayees.toLocaleString(
+                        "fr-FR",
+                        { style: "currency", currency: "CHF" }
+                      )}
                     </p>
                     <span className="text-2xl font-bold">
                       {factures_impayees}
@@ -457,68 +420,33 @@ export default function TableauBordPage() {
                     title="Faible taux de présence"
                     icon={<UserMinus className="h-5 w-5" />}
                   >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm">
-                        {eleves_absence} élève{eleves_absence > 1 ? "s" : ""}{" "}
-                        avec présence &lt; 80%
-                      </p>
-                      <span className="text-2xl font-bold">
-                        {eleves_absence}
-                      </span>
-                    </div>
+                    <p className="text-sm">
+                      {eleves_absence}{" "}
+                      {eleves_absence > 1
+                        ? "élèves ont"
+                        : "élève a"}{" "}
+                      un taux de présence inférieur à 80%
+                    </p>
                   </AlertBox>
 
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Détails des présences
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="rounded-lg border">
-                        <table className="min-w-full divide-y divide-border">
-                          <thead>
-                            <tr className="bg-muted/50">
-                              <th className="px-4 py-2 text-left text-sm font-medium">
-                                Nom
-                              </th>
-                              <th className="px-4 py-2 text-left text-sm font-medium">
-                                Prénom
-                              </th>
-                              <th className="px-4 py-2 text-left text-sm font-medium">
-                                Naissance
-                              </th>
-                              <th className="px-4 py-2 text-right text-sm font-medium">
-                                Présence
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border">
-                            {stats.eleves.eleves_presence_inferieur_80.map(
-                              (eleve, i) => (
-                                <tr key={i}>
-                                  <td className="px-4 py-2 text-sm">
-                                    {eleve.nom}
-                                  </td>
-                                  <td className="px-4 py-2 text-sm">
-                                    {eleve.prenom}
-                                  </td>
-                                  <td className="px-4 py-2 text-sm whitespace-nowrap">
-                                    {dateFmt(
-                                      eleve.date_naissance,
-                                      "dd/MM/yyyy",
-                                    )}
-                                  </td>
-                                  <td className="px-4 py-2 text-sm text-right font-medium text-red-600">
-                                    {eleve.taux_presence}%
-                                  </td>
-                                </tr>
-                              ),
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
+                  <Card className="p-4">
+                    <div className="space-y-4">
+                      {stats.eleves.eleves_presence_inferieur_80.map((eleve, index) => (
+                        <div
+                          key={`presence-${eleve.nom}-${eleve.prenom}-${index}`}
+                          className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
+                        >
+                          <div>
+                            <p className="font-medium">
+                              {eleve.prenom} {eleve.nom}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Taux : {(eleve.taux_presence * 100).toFixed(1)}%
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </Card>
                 </div>
               )}
@@ -530,63 +458,33 @@ export default function TableauBordPage() {
                     title="Préinscriptions en attente"
                     icon={<Clock className="h-5 w-5" />}
                   >
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm">
-                        {eleves_preinscription} préinscription
-                        {eleves_preinscription > 1 ? "s" : ""} de plus de 3
-                        jours
-                      </p>
-                      <span className="text-2xl font-bold">
-                        {eleves_preinscription}
-                      </span>
-                    </div>
+                    <p className="text-sm">
+                      {eleves_preinscription}{" "}
+                      {eleves_preinscription > 1
+                        ? "élèves sont"
+                        : "élève est"}{" "}
+                      en attente de confirmation depuis plus de 3 jours
+                    </p>
                   </AlertBox>
 
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <CardTitle className="text-sm font-medium">
-                        Liste des préinscriptions
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="rounded-lg border">
-                        <table className="min-w-full divide-y divide-border">
-                          <thead>
-                            <tr className="bg-muted/50">
-                              <th className="px-4 py-2 text-left text-sm font-medium">
-                                Nom
-                              </th>
-                              <th className="px-4 py-2 text-left text-sm font-medium">
-                                Prénom
-                              </th>
-                              <th className="px-4 py-2 text-left text-sm font-medium">
-                                Naissance
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-border">
-                            {stats.eleves.eleves_preinscription_plus_3j.map(
-                              (eleve, i) => (
-                                <tr key={i}>
-                                  <td className="px-4 py-2 text-sm">
-                                    {eleve.nom}
-                                  </td>
-                                  <td className="px-4 py-2 text-sm">
-                                    {eleve.prenom}
-                                  </td>
-                                  <td className="px-4 py-2 text-sm whitespace-nowrap">
-                                    {dateFmt(
-                                      eleve.date_naissance,
-                                      "dd/MM/yyyy",
-                                    )}
-                                  </td>
-                                </tr>
-                              ),
-                            )}
-                          </tbody>
-                        </table>
-                      </div>
-                    </CardContent>
+                  <Card className="p-4">
+                    <div className="space-y-4">
+                      {stats.eleves.eleves_preinscription_plus_3j.map((eleve, index) => (
+                        <div
+                          key={`preinscription-${eleve.nom}-${eleve.prenom}-${index}`}
+                          className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
+                        >
+                          <div>
+                            <p className="font-medium">
+                              {eleve.prenom} {eleve.nom}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Né(e) le {format(new Date(eleve.date_naissance), "dd/MM/yyyy")}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </Card>
                 </div>
               )}

@@ -1,7 +1,5 @@
 "use client";
 
-import type React from "react";
-
 import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/button";
@@ -16,7 +14,8 @@ import { Input } from "@/components/input";
 import { Label } from "@/components/label";
 import { ArrowLeft } from "lucide-react";
 import { useForm } from "react-hook-form";
-import axios from "axios";
+import { api } from "@/lib/api";
+
 export default function NouveauEnseignantPage() {
   const {
     register,
@@ -29,17 +28,14 @@ export default function NouveauEnseignantPage() {
   const onSoumission = useCallback(
     async (donnees: object) => {
       try {
-        await axios.post(
-          "http://localhost:8000/api/cours/enseignant/",
-          donnees,
-        );
+        await api.post("/cours/enseignant/", donnees);
 
         router.push("/ecole_peg/enseignants/");
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     },
-    [router],
+    [router]
   );
 
   return (
@@ -48,7 +44,7 @@ export default function NouveauEnseignantPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push("/ecole_peg/enseignants/")}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -123,7 +119,7 @@ export default function NouveauEnseignantPage() {
                   Enregistrement...
                 </>
               ) : (
-                "Enregistrer l&apos;enseignant"
+                "Enregistrer l'enseignant"
               )}
             </Button>
           </CardFooter>

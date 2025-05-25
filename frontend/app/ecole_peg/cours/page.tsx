@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -25,53 +24,59 @@ import {
   SelectValue,
 } from "@/components/select";
 import { Plus } from "lucide-react";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useCallback, useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { useRouter } from "next/navigation";
 
 interface Cours {
   id: number;
   nom: string;
-  type: string;
-  niveau: string;
+  type_cours: "I" | "S";
+  niveau: "A1" | "A2" | "B1" | "B2" | "C1";
   heures_par_semaine: number;
   duree_semaines: number;
   tarif: number;
 }
 
 export default function CoursPage() {
+  const router = useRouter();
+
   const [cours, setCours] = useState<Cours[]>([]);
-  const [filtreType, setFiltreType] = useState("tous");
-  const [filtreNiveau, setFiltreNiveau] = useState("tous");
+
+  const [filtre_type_cours, setFiltreType] = useState("tous");
+
+  const [filtre_niveau, setFiltreNiveau] = useState("tous");
+
+  const fetchCours = useCallback(async () => {
+    try {
+      const reponse = await api.get<Cours[]>("/cours/cours/");
+
+      setCours(reponse.data);
+    } catch (err) {
+      console.error("Erreur: ", err);
+    }
+  }, []);
 
   useEffect(() => {
-    async function fetchCours() {
-      try {
-        const reponse = await axios.get(
-          "http://localhost:8000/api/cours/cours/",
-        );
-        setCours(reponse.data);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
-      }
-    }
     fetchCours();
-  }, []);
+  }, [fetchCours]);
 
   async function supprimerCours(id_cours: number) {
     try {
-      await axios.delete(`http://localhost:8000/api/cours/cours/${id_cours}/`);
-      setCours((coursPrec) =>
-        coursPrec.filter((cours) => cours.id !== id_cours),
-      );
-    } catch (erreur) {
-      console.error("Erreur: ", erreur);
+      await api.delete(`/cours/cours/${id_cours}/`);
+
+      fetchCours();
+    } catch (err) {
+      console.error("Erreur: ", err);
     }
   }
 
-  // Filtrage côté front
-  const coursFiltres = cours.filter((c) => {
-    const typeOk = filtreType === "tous" || c.type === filtreType;
-    const niveauOk = filtreNiveau === "tous" || c.niveau === filtreNiveau;
+  const filtres_cours = cours.filter((c) => {
+    const typeOk =
+      filtre_type_cours === "tous" || c.type_cours === filtre_type_cours;
+
+    const niveauOk = filtre_niveau === "tous" || c.niveau === filtre_niveau;
+
     return typeOk && niveauOk;
   });
 
@@ -84,11 +89,13 @@ export default function CoursPage() {
             Gérez les cours de l&apos;école
           </p>
         </div>
-        <Button asChild>
-          <Link href="/ecole_peg/cours/cours">
-            <Plus className="mr-2 h-4 w-4" />
-            Nouveau cours
-          </Link>
+        <Button
+          onClick={() => {
+            router.push("/ecole_peg/cours/cours");
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Nouveau cours
         </Button>
       </div>
 
@@ -101,7 +108,10 @@ export default function CoursPage() {
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="flex flex-wrap items-center gap-4">
-            <Select value={filtreNiveau} onValueChange={setFiltreNiveau}>
+            <Select
+              value={filtre_niveau}
+              onValueChange={(value) => setFiltreNiveau(value)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Niveau" />
               </SelectTrigger>
@@ -114,7 +124,10 @@ export default function CoursPage() {
                 <SelectItem value="C1">C1</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={filtreType} onValueChange={setFiltreType}>
+            <Select
+              value={filtre_type_cours}
+              onValueChange={(value) => setFiltreType(value)}
+            >
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Type" />
               </SelectTrigger>
@@ -141,12 +154,14 @@ export default function CoursPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {coursFiltres.length > 0 ? (
-                  coursFiltres.map((cours) => (
+                {filtres_cours.length > 0 ? (
+                  filtres_cours.map((cours) => (
                     <TableRow key={cours.id}>
                       <TableCell className="font-medium">{cours.nom}</TableCell>
                       <TableCell>
-                        {cours.type === "I" ? "Intensif" : "Semi-intensif"}
+                        {cours.type_cours === "I"
+                          ? "Intensif"
+                          : "Semi-intensif"}
                       </TableCell>
                       <TableCell>{cours.niveau}</TableCell>
                       <TableCell>
@@ -155,10 +170,14 @@ export default function CoursPage() {
                       </TableCell>
                       <TableCell>{cours.tarif} CHF</TableCell>
                       <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link href={`/ecole_peg/cours/cours/${cours.id}`}>
-                            Détails
-                          </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            router.push(`/ecole_peg/cours/cours/${cours.id}/modifier/`);
+                          }}
+                        >
+                          Modifier
                         </Button>
                         <Button
                           variant="destructive"

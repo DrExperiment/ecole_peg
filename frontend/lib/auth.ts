@@ -1,12 +1,11 @@
-import axios from "axios";
+import { api } from "@/lib/api";
 
 export async function login(mot_de_passe: string) {
   try {
-    await axios.post(
-      "http://localhost:8000/api/auth/login/",
+    await api.post(
+      "/auth/login/",
       { mot_de_passe },
       {
-        withCredentials: true,
         headers: { "Content-Type": "application/json" },
       },
     );
@@ -16,18 +15,12 @@ export async function login(mot_de_passe: string) {
 }
 
 export async function logout() {
-  await axios.post(
-    "http://localhost:8000/api/auth/logout/",
-    {},
-    { withCredentials: true },
-  );
+  await api.post("/auth/logout/");
 }
 
 export async function est_authentifie() {
   try {
-    await axios.get("http://localhost:8000/api/auth/est_authentifie/", {
-      withCredentials: true,
-    });
+    await api.get("/auth/est_authentifie/");
 
     return true;
   } catch {

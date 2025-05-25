@@ -97,7 +97,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
                 setAuthentifie(false);
 
-                router.replace("/ecole_peg/login/");
+                router.push("/ecole_peg/login/");
               }}
               className="ml-auto hover:bg-destructive/10 hover:text-destructive"
             >

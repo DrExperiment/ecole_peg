@@ -1,18 +1,21 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { use, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { format } from "date-fns";
-import axios from "axios";
+import { api } from "@/lib/api";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Button } from "@/components/button";
 import { Card, CardContent, CardFooter } from "@/components/card";
 import { ArrowLeft, Download } from "lucide-react";
+import { formatDate } from "@/lib/utils";
+
+type Html2CanvasOptions = Parameters<typeof html2canvas>[1];
 
 interface Facture {
   id: number;
+  numero_facture: number;
   date_emission: Date;
   montant_total: number;
   eleve_nom: string;
@@ -22,94 +25,106 @@ interface Facture {
 interface DetailFacture {
   id: number;
   description: string;
-  date_debut_periode: Date;
-  date_fin_periode: Date;
+  date_debut_periode: Date | undefined;
+  date_fin_periode: Date | undefined;
   montant: number;
 }
 
-export default function FacturePage() {
+export default function FacturePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
-  const params = useParams();
-  const factureId = params.id as string;
+  const resolvedParams = use(params);
 
   const [facture, setFacture] = useState<Facture>();
   const [details_facture, setDetailsFacture] = useState<DetailFacture[]>([]);
+
   const factureRef = useRef<HTMLDivElement>(null);
 
-  const handleDownloadPdf = async () => {
-    if (factureRef.current) {
-      const canvas = await html2canvas(factureRef.current, {
-        width: window.innerWidth * 2,
-        height: window.innerHeight * 2,
-      });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF({
-        orientation: "portrait",
-        unit: "mm",
-        format: "a4",
-      });
-      const pageWidth = pdf.internal.pageSize.getWidth();
-      const pdfWidth = pageWidth;
-      const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-      pdf.addImage(imgData, "PNG", 0, 0, pdfWidth, pdfHeight);
-      pdf.save(`facture_${facture?.id || "ecole"}.pdf`);
-    }
+  const handleTelechargerPdf = async () => {
+    if (!factureRef.current) return;
+
+    const canvas = await html2canvas(factureRef.current, {
+      scale: 2,
+    } as Html2CanvasOptions);
+
+    const imgData = canvas.toDataURL("image/png");
+
+    const pdf = new jsPDF({
+      orientation: "portrait",
+      unit: "mm",
+      format: "a4",
+    });
+
+    const pageWidth = pdf.internal.pageSize.getWidth();
+
+    const pxToMm = pageWidth / canvas.width;
+    const imgWidthMm = canvas.width * pxToMm;
+    const imgHeightMm = canvas.height * pxToMm;
+
+    pdf.addImage(imgData, "PNG", 0, 0, imgWidthMm, imgHeightMm);
+
+    pdf.save(`facture_${facture?.id ?? "ecole"}.pdf`);
   };
 
   useEffect(() => {
     async function fetchFacture() {
       try {
-        const reponse = await axios.get(
-          `http://localhost:8000/api/factures/facture/${factureId}/`,
+        const reponse = await api.get<Facture>(
+          `/factures/facture/${resolvedParams.id}/`
         );
+
         setFacture(reponse.data);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
+
     async function fetchDetailsFacture() {
       try {
-        const reponse = await axios.get(
-          `http://localhost:8000/api/factures/facture/${factureId}/details/`,
+        const reponse = await api.get<DetailFacture[]>(
+          `/factures/facture/${resolvedParams.id}/details/`
         );
+
         setDetailsFacture(reponse.data);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
-    if (factureId) {
-      fetchFacture();
-      fetchDetailsFacture();
-    }
-  }, [factureId]);
+
+    fetchFacture();
+
+    fetchDetailsFacture();
+  }, [resolvedParams.id]);
 
   return (
     <div className="container mx-auto py-6 space-y-6">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.back()}
+            onClick={() => router.push("/ecole_peg/factures/")}
             aria-label="Retourner à la page précédente"
           >
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight">
-              Facture #{facture?.id}
+              Facture #{facture?.numero_facture}
             </h1>
             <p className="text-muted-foreground">
               {facture?.date_emission
-                ? format(new Date(facture.date_emission), "dd MMMM yyyy")
+                ? formatDate(facture?.date_emission)
                 : "-"}
             </p>
           </div>
         </div>
         <Button
           variant="outline"
-          onClick={handleDownloadPdf}
+          onClick={handleTelechargerPdf}
           className="shadow-sm"
         >
           <Download className="mr-2 h-4 w-4" />
@@ -117,25 +132,26 @@ export default function FacturePage() {
         </Button>
       </div>
 
-      {/* Invoice Content */}
       <div
         ref={factureRef}
-        className="bg-white rounded-xl shadow-md print:shadow-none"
+        className="bg-white rounded-xl shadow-md print:shadow-none mx-auto"
+        style={{
+          width: "210mm",
+          minHeight: "297mm",
+        }}
       >
         <Card className="border-none">
           <CardContent className="p-8 space-y-8">
-            {/* School Header */}
             <div className="flex flex-col md:flex-row md:justify-between gap-6">
               <div className="space-y-4">
                 <div>
                   <Image
-                               src="/logo/ecole_peg.png"
-                               alt="École PEG"
-                               width={200}
-                               height={100}
-                               className="object-contain"
-                             />
-                  
+                    src="/logo/ecole_peg.png"
+                    alt="École PEG"
+                    width={200}
+                    height={100}
+                    className="object-contain"
+                  />
                 </div>
                 <div className="space-y-1 text-sm text-muted-foreground">
                   <p>Rue du Nant 34</p>
@@ -155,7 +171,9 @@ export default function FacturePage() {
                       <span className="text-muted-foreground">
                         N° de facture :
                       </span>{" "}
-                      <span className="font-medium">{facture?.id}</span>
+                      <span className="font-medium">
+                        {facture?.numero_facture}
+                      </span>
                     </p>
                     <p>
                       <span className="text-muted-foreground">
@@ -163,10 +181,7 @@ export default function FacturePage() {
                       </span>{" "}
                       <span className="font-medium">
                         {facture?.date_emission
-                          ? format(
-                              new Date(facture.date_emission),
-                              "dd MMMM yyyy",
-                            )
+                          ? formatDate(facture?.date_emission)
                           : "-"}
                       </span>
                     </p>
@@ -179,17 +194,15 @@ export default function FacturePage() {
               </div>
             </div>
 
-            {/* Student Info */}
             <div className="rounded-lg bg-muted/30 p-4">
               <h3 className="text-sm font-medium text-muted-foreground mb-1">
                 Facturé à
               </h3>
               <p className="text-lg font-semibold">
-                {facture?.eleve_prenom} {facture?.eleve_nom}
+                {facture?.eleve_nom} {facture?.eleve_prenom}
               </p>
             </div>
 
-            {/* Invoice Details Table */}
             <div className="rounded-lg border overflow-hidden">
               <table className="w-full">
                 <thead>
@@ -212,20 +225,9 @@ export default function FacturePage() {
                       <td className="px-4 py-3">
                         {detail.date_debut_periode && (
                           <>
-                            Du{" "}
-                            {format(
-                              new Date(detail.date_debut_periode),
-                              "dd MMMM yyyy",
-                            )}
+                            Du {formatDate(detail.date_debut_periode)}
                             {detail.date_fin_periode && (
-                              <>
-                                {" "}
-                                au{" "}
-                                {format(
-                                  new Date(detail.date_fin_periode),
-                                  "dd MMMM yyyy",
-                                )}
-                              </>
+                              <> au {formatDate(detail.date_fin_periode)}</>
                             )}
                           </>
                         )}
@@ -247,7 +249,6 @@ export default function FacturePage() {
               </table>
             </div>
 
-            {/* Bank Details */}
             <div className="rounded-lg border bg-muted/30 p-6 space-y-4">
               <h3 className="font-semibold text-primary">
                 Coordonnées bancaires
@@ -288,13 +289,14 @@ export default function FacturePage() {
         </Card>
       </div>
 
-      {/* Payment Button */}
       <div className="flex justify-end pt-4">
         <Button
           size="lg"
           className="bg-green-600 hover:bg-green-700 text-white px-8 shadow-sm transition-all duration-200 hover:shadow-md"
           onClick={() =>
-            router.push(`/ecole_peg/factures/facture/${factureId}/payer`)
+            router.push(
+              `/ecole_peg/factures/facture/${resolvedParams.id}/payer`
+            )
           }
         >
           Procéder au paiement

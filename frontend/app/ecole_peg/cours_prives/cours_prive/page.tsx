@@ -1,10 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback, FormEvent } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { debounce } from "lodash";
-
 import { Button } from "@/components/button";
 import {
   Card,
@@ -25,153 +24,133 @@ import {
   SelectItem,
 } from "@/components/select";
 import { ArrowLeft, Save } from "lucide-react";
-import { useToast } from "@/components/use-toast";
+import { useForm } from "react-hook-form";
+import { format } from "date-fns";
 
-// Types
 interface Eleve {
   id: number;
   nom: string;
   prenom: string;
 }
+
 interface Enseignant {
   id: number;
   nom: string;
   prenom: string;
 }
 
-interface CreateCoursPrivePayload {
-  date_cours_prive: string; // "YYYY-MM-DD"
-  heure_debut: string; // "HH:MM"
-  heure_fin: string; // "HH:MM"
-  tarif: number;
-  lieu: "E" | "D";
-  eleves_ids: number[];
-  enseignant: number; // correspond à ton schema `enseignant: int`
-}
-
 export default function NouveauCoursPrivePage() {
   const router = useRouter();
-  const { toast } = useToast();
 
-  // === ÉTATS ÉLÈVES ========================
-  const [searchTerm, setSearchTerm] = useState<string>("");
-  const [searchResults, setSearchResults] = useState<Eleve[]>([]);
-  const [selectedEleves, setSelectedEleves] = useState<Eleve[]>([]);
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm();
 
-  // === ÉTATS ENSEIGNANTS ===================
+  const [recherche, setRecherche] = useState<string>("");
+  const [resultats, setResultats] = useState<Eleve[]>([]);
+  const [eleves_selectionnes, setElevesSelectionnes] = useState<Eleve[]>([]);
+
   const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
-  const [selectedEnseignant, setSelectedEnseignant] =
-    useState<Enseignant | null>(null);
+  const [id_enseignant, setIdEnseignant] = useState<number | undefined>(
+    undefined
+  );
 
-  // === ÉTATS COURS PRIVÉ ===================
-  const [dateCoursPrive, setDateCoursPrive] = useState<string>("");
-  const [heureDebut, setHeureDebut] = useState<string>("");
-  const [heureFin, setHeureFin] = useState<string>("");
-  const [tarif, setTarif] = useState<string>("");
-  const [lieu, setLieu] = useState<"ecole" | "domicile">("ecole");
+  const [date_cours_prive, setDateCoursPrive] = useState<Date | undefined>(
+    undefined
+  );
+  const [heure_debut, setHeureDebut] = useState<string>("");
+  const [heure_fin, setHeureFin] = useState<string>("");
+
+  const [lieu, setLieu] = useState<"E" | "D">("E");
 
   useEffect(() => {
-    axios
-      .get("http://localhost:8000/api/cours/enseignants/")
-      .then(({ data }) => {
-        // Ajoute ce log et regarde la console de ton navigateur
-        console.log("API enseignants:", data);
-        // Adapter ici selon la structure de la réponse
-        if (Array.isArray(data)) setEnseignants(data);
-        else if (Array.isArray(data.enseignants))
-          setEnseignants(data.enseignants);
-        else setEnseignants([]);
-      })
-      .catch((err) => console.error("Erreur chargement enseignants:", err));
+    async function fetchEnseignants() {
+      try {
+        const reponse = await api.get<Enseignant[]>("/cours/enseignants/");
+
+        setEnseignants(reponse.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
+      }
+    }
+
+    fetchEnseignants();
   }, []);
 
-  // --- Recherche d'élèves débouncée ---
   const fetchEleves = useCallback((term: string) => {
-    const debouncedFetch = debounce(async (searchTerm: string) => {
-      if (!searchTerm) {
-        setSearchResults([]);
+    const debouncedFetch = debounce(async (recherche: string) => {
+      if (!recherche) {
+        setResultats([]);
+
         return;
       }
+
       try {
-        const { data } = await axios.get<{ eleves: Eleve[] }>(
-          "http://localhost:8000/api/eleves/eleves/",
-          { params: { recherche: searchTerm } },
-        );
-        setSearchResults(data.eleves);
+        const reponse = await api.get("/eleves/eleves/", {
+          params: { recherche: recherche },
+        });
+
+        setResultats(reponse.data.eleves);
       } catch (err) {
         console.error(err);
       }
     }, 300);
+
     debouncedFetch(term);
   }, []);
+
   useEffect(() => {
-    fetchEleves(searchTerm);
-  }, [searchTerm, fetchEleves]);
+    fetchEleves(recherche);
+  }, [recherche, fetchEleves]);
 
-  const addEleve = (e: Eleve) => {
-    if (!selectedEleves.find((x) => x.id === e.id)) {
-      setSelectedEleves((prev) => [...prev, e]);
+  const ajouterEleve = (e: Eleve) => {
+    if (!eleves_selectionnes.find((x) => x.id === e.id)) {
+      setElevesSelectionnes((prec) => [...prec, e]);
     }
-    setSearchTerm("");
-    setSearchResults([]);
+
+    setRecherche("");
+
+    setResultats([]);
   };
-  const removeEleve = (id: number) => {
-    setSelectedEleves((prev) => prev.filter((x) => x.id !== id));
+
+  const supprimerEleve = (id: number) => {
+    setElevesSelectionnes((prec) => prec.filter((x) => x.id !== id));
   };
 
-  // === SOUMISSION DU FORMULAIRE ============
-  const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const onSoumission = useCallback(
+    async (donnees: object) => {
+      const donnees_completes = {
+        ...donnees,
+        date_cours_prive: date_cours_prive
+          ? format(date_cours_prive, "yyyy-MM-dd")
+          : "",
+        heure_debut,
+        heure_fin,
+        eleves_ids: eleves_selectionnes.map((x) => x.id),
+        enseignant: id_enseignant,
+        lieu,
+      };
 
-    // Validation front
-    if (!dateCoursPrive || !heureDebut || !heureFin || !tarif) {
-      toast({
-        title: "Erreur",
-        description: "Remplissez date, heures et tarif.",
-      });
-      return;
-    }
-    if (!selectedEnseignant) {
-      toast({ title: "Erreur", description: "Sélectionnez un enseignant." });
-      return;
-    }
-    if (selectedEleves.length === 0) {
-      toast({ title: "Erreur", description: "Ajoutez au moins un élève." });
-      return;
-    }
+      try {
+        await api.post("/cours/cours_prive/", donnees_completes);
 
-    // Construction payload
-    const payload: CreateCoursPrivePayload = {
-      date_cours_prive: dateCoursPrive,
-      heure_debut: heureDebut,
-      heure_fin: heureFin,
-      tarif: Number(tarif),
-      lieu: lieu === "ecole" ? "E" : "D",
-      eleves_ids: selectedEleves.map((x) => x.id),
-      enseignant: selectedEnseignant.id,
-    };
-
-    try {
-      await axios.post("http://localhost:8000/api/cours/cours_prive/", payload);
-      toast({ title: "Succès", description: "Cours privé créé." });
-      router.back();
-    } catch (err: unknown) {
-      console.error("Payload envoyé :", payload);
-      if (axios.isAxiosError(err)) {
-        console.error("Status :", err.response?.status);
-        console.error(
-          "Données retour API :",
-          JSON.stringify(err.response?.data, null, 2),
-        );
-      } else {
-        console.error("Erreur non HTTP :", err);
+        router.push("/ecole_peg/cours_prives/");
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
-      toast({
-        title: "Erreur",
-        description: "Impossible de créer le cours privé.",
-      });
-    }
-  };
+    },
+    [
+      date_cours_prive,
+      eleves_selectionnes,
+      heure_debut,
+      heure_fin,
+      id_enseignant,
+      lieu,
+      router,
+    ]
+  );
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-4xl">
@@ -179,7 +158,7 @@ export default function NouveauCoursPrivePage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push("/ecole_peg/cours_prives/")}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -189,7 +168,7 @@ export default function NouveauCoursPrivePage() {
         </h1>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit(onSoumission)} className="space-y-6">
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>Détails du cours privé</CardTitle>
@@ -199,7 +178,6 @@ export default function NouveauCoursPrivePage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-8">
-            {/* === Sélection des élèves === */}
             <div className="space-y-4">
               <div>
                 <Label htmlFor="searchEleve" className="text-base">
@@ -215,17 +193,17 @@ export default function NouveauCoursPrivePage() {
                 <Input
                   id="searchEleve"
                   placeholder="Rechercher par nom ou prénom..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
+                  value={recherche}
+                  onChange={(e) => setRecherche(e.target.value)}
                   className="w-full"
                 />
-                {searchResults.length > 0 && (
+                {resultats.length > 0 && (
                   <ul className="absolute z-10 w-full border rounded-md mt-1 max-h-48 overflow-y-auto bg-white shadow-lg">
-                    {searchResults.map((x) => (
+                    {resultats.map((x) => (
                       <li
                         key={x.id}
                         className="p-3 hover:bg-blue-50 cursor-pointer transition-colors border-b last:border-b-0"
-                        onClick={() => addEleve(x)}
+                        onClick={() => ajouterEleve(x)}
                       >
                         {x.nom} {x.prenom}
                       </li>
@@ -235,7 +213,7 @@ export default function NouveauCoursPrivePage() {
               </div>
 
               <div className="flex flex-wrap gap-2 min-h-[2.5rem]">
-                {selectedEleves.map((x) => (
+                {eleves_selectionnes.map((x) => (
                   <span
                     key={x.id}
                     className="px-3 py-1.5 bg-blue-100 rounded-full flex items-center gap-2 text-sm font-medium shadow-sm border border-blue-200 transition-colors hover:bg-blue-200"
@@ -243,7 +221,7 @@ export default function NouveauCoursPrivePage() {
                     {x.nom} {x.prenom}
                     <button
                       type="button"
-                      onClick={() => removeEleve(x.id)}
+                      onClick={() => supprimerEleve(x.id)}
                       className="text-blue-600 hover:text-blue-800 focus:outline-none"
                       aria-label={`Retirer ${x.nom} ${x.prenom}`}
                     >
@@ -251,7 +229,7 @@ export default function NouveauCoursPrivePage() {
                     </button>
                   </span>
                 ))}
-                {selectedEleves.length === 0 && (
+                {eleves_selectionnes.length === 0 && (
                   <p className="text-sm text-muted-foreground p-2">
                     Aucun élève sélectionné
                   </p>
@@ -259,7 +237,6 @@ export default function NouveauCoursPrivePage() {
               </div>
             </div>
 
-            {/* === Sélection enseignant === */}
             <div className="space-y-4">
               <div>
                 <Label htmlFor="enseignantSelect" className="text-base">
@@ -271,11 +248,9 @@ export default function NouveauCoursPrivePage() {
               </div>
 
               <Select
-                value={selectedEnseignant?.id.toString() ?? ""}
-                onValueChange={(val) => {
-                  const e =
-                    enseignants.find((x) => x.id === Number(val)) || null;
-                  setSelectedEnseignant(e);
+                value={id_enseignant?.toString() ?? ""}
+                onValueChange={(value) => {
+                  setIdEnseignant(Number(value));
                 }}
                 required
               >
@@ -292,7 +267,6 @@ export default function NouveauCoursPrivePage() {
               </Select>
             </div>
 
-            {/* === Infos cours privé === */}
             <div className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
@@ -302,8 +276,14 @@ export default function NouveauCoursPrivePage() {
                   <Input
                     id="dateCoursPrive"
                     type="date"
-                    value={dateCoursPrive}
-                    onChange={(e) => setDateCoursPrive(e.target.value)}
+                    value={
+                      date_cours_prive instanceof Date && !isNaN(date_cours_prive.getTime())
+                        ? format(date_cours_prive, "yyyy-MM-dd")
+                        : ""
+                    }
+                    onChange={(e) =>
+                      setDateCoursPrive(new Date(e.target.value))
+                    }
                     required
                     className="w-full font-mono"
                   />
@@ -311,7 +291,7 @@ export default function NouveauCoursPrivePage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="tarif" className="text-base">
-                    Tarif (€)
+                    Tarif (CHF)
                   </Label>
                   <Input
                     id="tarif"
@@ -319,10 +299,11 @@ export default function NouveauCoursPrivePage() {
                     min={0}
                     step="0.01"
                     placeholder="0.00"
-                    value={tarif}
-                    onChange={(e) => setTarif(e.target.value)}
                     onWheel={(e) => e.currentTarget.blur()}
-                    required
+                    {...register("tarif", {
+                      required: "Tarif est obligatoire",
+                      valueAsNumber: true,
+                    })}
                     className="w-full font-mono"
                   />
                 </div>
@@ -334,7 +315,7 @@ export default function NouveauCoursPrivePage() {
                   <Input
                     id="heureDebut"
                     type="time"
-                    value={heureDebut}
+                    value={heure_debut}
                     onChange={(e) => setHeureDebut(e.target.value)}
                     required
                     className="w-full font-mono"
@@ -348,7 +329,7 @@ export default function NouveauCoursPrivePage() {
                   <Input
                     id="heureFin"
                     type="time"
-                    value={heureFin}
+                    value={heure_fin}
                     onChange={(e) => setHeureFin(e.target.value)}
                     required
                     className="w-full font-mono"
@@ -366,12 +347,12 @@ export default function NouveauCoursPrivePage() {
 
                 <RadioGroup
                   value={lieu}
-                  onValueChange={(val) => setLieu(val as "ecole" | "domicile")}
+                  onValueChange={(val) => setLieu(val as "E" | "D")}
                   className="grid grid-cols-2 gap-4"
                 >
                   <div className="flex flex-col space-y-1 rounded-lg border p-4">
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="ecole" id="lieu-ecole" />
+                      <RadioGroupItem value="E" id="lieu-ecole" />
                       <Label htmlFor="lieu-ecole" className="font-medium">
                         À l&apos;école
                       </Label>
@@ -383,7 +364,7 @@ export default function NouveauCoursPrivePage() {
 
                   <div className="flex flex-col space-y-1 rounded-lg border p-4">
                     <div className="flex items-center space-x-2">
-                      <RadioGroupItem value="domicile" id="lieu-domicile" />
+                      <RadioGroupItem value="D" id="lieu-domicile" />
                       <Label htmlFor="lieu-domicile" className="font-medium">
                         À domicile
                       </Label>
@@ -397,10 +378,16 @@ export default function NouveauCoursPrivePage() {
             </div>
           </CardContent>
           <CardFooter>
-            <Button type="submit" className="w-full md:w-auto">
+            <Button
+              type="submit"
+              className="w-full md:w-auto"
+              disabled={isSubmitting}
+            >
               <Save className="mr-2 h-4 w-4" />
-              {selectedEleves.length > 0
-                ? `Créer le cours privé pour ${selectedEleves.length} élève${selectedEleves.length > 1 ? "s" : ""}`
+              {eleves_selectionnes.length > 0
+                ? `Créer le cours privé pour ${
+                    eleves_selectionnes.length
+                  } élève${eleves_selectionnes.length > 1 ? "s" : ""}`
                 : "Créer le cours privé"}
             </Button>
           </CardFooter>

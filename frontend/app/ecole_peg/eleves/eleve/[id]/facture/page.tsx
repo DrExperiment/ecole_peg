@@ -23,7 +23,8 @@ import { ArrowLeft, Save, Trash2, Plus } from "lucide-react";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
 import { Textarea } from "@/components/textarea";
-import axios from "axios";
+import { api } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 
 interface Eleve {
   id: number;
@@ -34,7 +35,7 @@ interface Eleve {
 interface Inscription {
   id: number;
   date_inscription: Date;
-  statut: string;
+  statut: "A" | "I";
   preinscription: boolean;
   frais_inscription: number;
 }
@@ -45,7 +46,7 @@ interface CoursPrive {
   heure_debut: string;
   heure_fin: string;
   tarif: number;
-  lieu: string;
+  lieu: "E" | "D";
   enseignant__nom: string;
   enseignant__prenom: string;
 }
@@ -54,7 +55,7 @@ interface DetailFacture {
   description: string;
   date_debut_periode: Date | undefined;
   date_fin_periode: Date | undefined;
-  montant: string;
+  montant: number;
 }
 
 export default function NouvelleFacturePage({
@@ -70,15 +71,19 @@ export default function NouvelleFacturePage({
   const router = useRouter();
   const resolvedParams = use(params);
 
-  const [total, setTotal] = useState<string>("0");
+  const [total, setTotal] = useState<string>("0.00");
   const [details_facture, setDetailsFacture] = useState<DetailFacture[]>([]);
+
   const [eleve, setEleve] = useState<Eleve | undefined>(undefined);
+
   const [inscriptions, setInscriptions] = useState<Inscription[]>([]);
-  const [coursPrives, setCoursPrives] = useState<CoursPrive[]>([]);
-  const [typeFacturation, setTypeFacturation] = useState<
+  const [cours_prives, setCoursPrives] = useState<CoursPrive[]>([]);
+
+  const [type_facture, setTypeFacture] = useState<
     "inscription" | "cours_prive"
   >("inscription");
-  const [idReference, setIdReference] = useState<number>();
+
+  const [id_reference, setIdReference] = useState<number>();
 
   const ajouterDetail = () => {
     setDetailsFacture([
@@ -87,41 +92,47 @@ export default function NouvelleFacturePage({
         description: "",
         date_debut_periode: undefined,
         date_fin_periode: undefined,
-        montant: "0",
+        montant: 0,
       },
     ]);
   };
 
-  const supprimerDetail = (index: number) => {
-    const nouveauxDetails = [...details_facture];
-    nouveauxDetails.splice(index, 1);
-    setDetailsFacture(nouveauxDetails);
-    calculerTotal(nouveauxDetails);
+  const supprimerDetail = (indice: number) => {
+    const nouveaux_details = [...details_facture];
+
+    nouveaux_details.splice(indice, 1);
+
+    setDetailsFacture(nouveaux_details);
+    calculerTotal(nouveaux_details);
   };
 
   const modifierDetail = (
-    index: number,
+    indice: number,
     champ: keyof DetailFacture,
-    valeur: unknown,
+    valeur: unknown
   ) => {
-    const nouveauxDetails = [...details_facture];
-    nouveauxDetails[index] = {
-      ...nouveauxDetails[index],
+    const nouveaux_details = [...details_facture];
+
+    nouveaux_details[indice] = {
+      ...nouveaux_details[indice],
       [champ]: valeur,
     };
-    setDetailsFacture(nouveauxDetails);
-    if (champ === "montant") calculerTotal(nouveauxDetails);
+
+    setDetailsFacture(nouveaux_details);
+
+    if (champ === "montant") calculerTotal(nouveaux_details);
   };
 
   const calculerTotal = (details: DetailFacture[]) => {
     const total = details.reduce((sum, detail) => {
-      return sum + (Number.parseFloat(detail.montant) || 0);
+      return sum + (detail.montant || 0);
     }, 0);
+
     setTotal(total.toFixed(2));
   };
 
   const onSoumission = useCallback(async () => {
-    const donneesCompletes: {
+    const donnees_completes: {
       details_facture: {
         description: string;
         date_debut_periode: string | undefined;
@@ -130,6 +141,7 @@ export default function NouvelleFacturePage({
       }[];
       id_inscription?: number;
       id_cours_prive?: number;
+      id_eleve?: number;
     } = {
       details_facture: details_facture.map((detail) => ({
         description: detail.description,
@@ -139,64 +151,60 @@ export default function NouvelleFacturePage({
         date_fin_periode: detail.date_fin_periode
           ? format(detail.date_fin_periode, "yyyy-MM-dd")
           : undefined,
-        montant: Number.parseFloat(detail.montant),
+        montant: detail.montant,
       })),
     };
 
-    // Ajoute la bonne clé selon le type de référence
-    if (typeFacturation === "inscription") {
-      donneesCompletes.id_inscription = idReference;
-    } else if (typeFacturation === "cours_prive") {
-      donneesCompletes.id_cours_prive = idReference;
+    if (type_facture === "inscription") {
+      donnees_completes.id_inscription = id_reference;
+    } else if (type_facture === "cours_prive") {
+      donnees_completes.id_cours_prive = id_reference;
+      donnees_completes.id_eleve = Number(resolvedParams.id);
     }
+
     try {
-      await axios.post(
-        `http://localhost:8000/api/factures/facture/`,
-        donneesCompletes,
-      );
+      await api.post(`/factures/facture/`, donnees_completes);
+
       router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
-    } catch (erreur) {
-      console.error("Erreur: ", erreur);
+    } catch (err) {
+      console.error("Erreur: ", err);
     }
-  }, [
-    details_facture,
-    typeFacturation,
-    idReference,
-    router,
-    resolvedParams.id,
-  ]);
+  }, [details_facture, type_facture, id_reference, resolvedParams.id, router]);
 
   useEffect(() => {
     async function fetchEleve() {
       try {
-        const { data } = await axios.get<Eleve>(
-          `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`,
+        const reponse = await api.get<Eleve>(
+          `/eleves/eleve/${resolvedParams.id}/`
         );
-        setEleve(data);
-      } catch (e) {
-        console.error("Erreur fetchEleve:", e);
+
+        setEleve(reponse.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
 
     async function fetchInscriptions() {
       try {
-        const { data } = await axios.get(
-          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`,
+        const reponse = await api.get<Inscription[]>(
+          `/cours/${resolvedParams.id}/inscriptions/`
         );
-        setInscriptions(data);
-      } catch (e) {
-        console.error("Erreur fetchInscriptions:", e);
+
+        setInscriptions(reponse.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
 
     async function fetchCoursPrives() {
       try {
-        const { data } = await axios.get(
-          `http://localhost:8000/api/cours/eleves/${resolvedParams.id}/cours_prives/`,
+        const reponse = await api.get(
+          `/cours/eleves/${resolvedParams.id}/cours_prives/`
         );
-        setCoursPrives(data);
-      } catch (e) {
-        console.error("Erreur fetchCoursPrives:", e);
+
+        setCoursPrives(reponse.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
 
@@ -211,13 +219,15 @@ export default function NouvelleFacturePage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() =>
+            router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)
+          }
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
-          Nouvelle facture pour {eleve?.prenom} {eleve?.nom}
+          Nouvelle facture pour {eleve?.nom} {eleve?.prenom}
         </h1>
       </div>
 
@@ -231,9 +241,10 @@ export default function NouvelleFacturePage({
               <div className="space-y-2">
                 <Label>Type de facturation</Label>
                 <Select
-                  defaultValue={typeFacturation}
-                  onValueChange={(val) => {
-                    setTypeFacturation(val as "inscription" | "cours_prive");
+                  defaultValue={type_facture}
+                  onValueChange={(value) => {
+                    setTypeFacture(value as "inscription" | "cours_prive");
+
                     setIdReference(undefined);
                   }}
                 >
@@ -250,12 +261,12 @@ export default function NouvelleFacturePage({
               </div>
 
               <div className="space-y-2">
-                {typeFacturation === "inscription" ? (
+                {type_facture === "inscription" ? (
                   <>
                     <Label>Inscription</Label>
                     <Select
                       required
-                      onValueChange={(val) => setIdReference(Number(val))}
+                      onValueChange={(value) => setIdReference(Number(value))}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Sélectionner l'inscription" />
@@ -265,7 +276,7 @@ export default function NouvelleFacturePage({
                           .filter((i) => !i.preinscription)
                           .map((i) => (
                             <SelectItem key={i.id} value={i.id.toString()}>
-                              {format(i.date_inscription, "dd-MM-yyyy")} (
+                              {formatDate(i.date_inscription)} (
                               {i.statut === "A" ? "Active" : "Inactive"}) (
                               {i.frais_inscription} CHF)
                             </SelectItem>
@@ -278,15 +289,15 @@ export default function NouvelleFacturePage({
                     <Label>Cours Privé</Label>
                     <Select
                       required
-                      onValueChange={(val) => setIdReference(Number(val))}
+                      onValueChange={(value) => setIdReference(Number(value))}
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Sélectionner un cours privé" />
                       </SelectTrigger>
                       <SelectContent>
-                        {coursPrives.map((c) => (
+                        {cours_prives.map((c) => (
                           <SelectItem key={c.id} value={c.id.toString()}>
-                            {format(c.date_cours_prive, "dd-MM-yyyy")} (
+                            {formatDate(c.date_cours_prive)} (
                             {c.enseignant__prenom} {c.enseignant__nom} -{" "}
                             {c.tarif} CHF)
                           </SelectItem>
@@ -323,9 +334,9 @@ export default function NouvelleFacturePage({
                   </p>
                 </div>
               ) : (
-                details_facture.map((detail, index) => (
+                details_facture.map((detail, indice) => (
                   <div
-                    key={index}
+                    key={indice}
                     className="relative space-y-4 rounded-lg border bg-card p-4 shadow-sm transition-colors hover:bg-accent/5"
                   >
                     {details_facture.length > 1 && (
@@ -334,7 +345,7 @@ export default function NouvelleFacturePage({
                         variant="ghost"
                         size="icon"
                         className="absolute right-2 top-2 h-8 w-8 opacity-70 hover:opacity-100"
-                        onClick={() => supprimerDetail(index)}
+                        onClick={() => supprimerDetail(indice)}
                       >
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
@@ -345,7 +356,7 @@ export default function NouvelleFacturePage({
                       <Textarea
                         value={detail.description}
                         onChange={(e) =>
-                          modifierDetail(index, "description", e.target.value)
+                          modifierDetail(indice, "description", e.target.value)
                         }
                         placeholder="Description de la ligne de facturation"
                         className="min-h-[80px]"
@@ -360,16 +371,18 @@ export default function NouvelleFacturePage({
                           type="date"
                           className="w-full"
                           value={
-                            detail.date_debut_periode
+                            detail.date_debut_periode instanceof Date &&
+                            !isNaN(detail.date_debut_periode.getTime())
                               ? format(detail.date_debut_periode, "yyyy-MM-dd")
                               : ""
                           }
                           onChange={(e) => {
-                            const value = e.target.value;
                             modifierDetail(
-                              index,
+                              indice,
                               "date_debut_periode",
-                              value ? new Date(value) : undefined,
+                              e.target.value
+                                ? new Date(e.target.value)
+                                : undefined
                             );
                           }}
                         />
@@ -381,16 +394,18 @@ export default function NouvelleFacturePage({
                           type="date"
                           className="w-full"
                           value={
-                            detail.date_fin_periode
+                            detail.date_fin_periode instanceof Date &&
+                            !isNaN(detail.date_fin_periode.getTime())
                               ? format(detail.date_fin_periode, "yyyy-MM-dd")
                               : ""
                           }
                           onChange={(e) => {
-                            const value = e.target.value;
                             modifierDetail(
-                              index,
+                              indice,
                               "date_fin_periode",
-                              value ? new Date(value) : undefined,
+                              e.target.value
+                                ? new Date(e.target.value)
+                                : undefined
                             );
                           }}
                         />
@@ -403,10 +418,15 @@ export default function NouvelleFacturePage({
                         type="number"
                         min="0"
                         step="0.01"
-                        value={detail.montant}
-                        onChange={(e) =>
-                          modifierDetail(index, "montant", e.target.value)
-                        }
+                        value={detail.montant.toString()}
+                        onChange={(e) => {
+                          const valeur = parseFloat(e.target.value);
+                          modifierDetail(
+                            indice,
+                            "montant",
+                            isNaN(valeur) ? 0 : valeur
+                          );
+                        }}
                         onWheel={(e) => e.currentTarget.blur()}
                         placeholder="0.00"
                         className="font-mono"

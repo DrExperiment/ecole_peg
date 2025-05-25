@@ -1,9 +1,8 @@
 "use client";
 
-import React, { use, useState } from "react";
+import { use, useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
-import axios, { AxiosError } from "axios";
-
+import { api } from "@/lib/api";
 import { Button } from "@/components/button";
 import { Card, CardContent } from "@/components/card";
 import { Input } from "@/components/input";
@@ -15,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/select";
+import { useForm } from "react-hook-form";
 
 const months = [
   { value: "01", label: "Janvier" },
@@ -31,39 +31,57 @@ const months = [
   { value: "12", label: "Décembre" },
 ];
 
-export default function NouvelleFichePresence({
+export default function NouvelleFichePresencePage({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
-  // 🚩 on "débloque" le promise params
-  const { id: id_session } = use(params);
-
+  const resolvedParams = use(params);
   const router = useRouter();
-  const [mois, setMois] = useState<string>();
-  const [annee, setAnnee] = useState<number>(new Date().getFullYear());
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!mois || !annee) return;
+  const { register, handleSubmit, watch } = useForm<{ annee: number }>({
+    defaultValues: {
+      annee: new Date().getFullYear(),
+    },
+  });
 
-    try {
-      const response = await axios.post(
-        `http://localhost:8000/api/cours/session/${id_session}/fiche_presences/`,
-        { mois, annee },
-      );
-      console.log("Réponse de l'API :", response.data);
-      router.push(`/ecole_peg/sessions/session/${id_session}`);
-    } catch (error: unknown) {
-      if (error instanceof AxiosError) {
-        console.error("Erreur détaillée :", error.response?.data);
-        alert("Erreur : " + JSON.stringify(error.response?.data));
-      } else {
-        console.error("An unexpected error occurred:", error);
-        alert("An unexpected error occurred: " + String(error));
+  const [mois, setMois] = useState<
+    | "01"
+    | "02"
+    | "03"
+    | "04"
+    | "05"
+    | "06"
+    | "07"
+    | "08"
+    | "09"
+    | "10"
+    | "11"
+    | "12"
+  >("01");
+
+  const annee = watch("annee");
+
+  const onSoumission = useCallback(
+    async (donnees: object) => {
+      const donnees_completes = {
+        ...donnees,
+        mois,
+      };
+
+      try {
+        await api.post(
+          `/cours/session/${resolvedParams.id}/fiche_presences/`,
+          donnees_completes
+        );
+
+        router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
-    }
-  };
+    },
+    [mois, resolvedParams.id, router]
+  );
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-2xl">
@@ -79,7 +97,7 @@ export default function NouvelleFichePresence({
             </p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form onSubmit={handleSubmit(onSoumission)} className="space-y-6">
             <div className="grid gap-6">
               <div className="space-y-4">
                 <div className="relative">
@@ -87,7 +105,26 @@ export default function NouvelleFichePresence({
                     <Label htmlFor="mois" className="text-base">
                       Mois
                     </Label>
-                    <Select value={mois} onValueChange={setMois}>
+                    <Select
+                      value={mois}
+                      onValueChange={(value) => {
+                        setMois(
+                          value as
+                            | "01"
+                            | "02"
+                            | "03"
+                            | "04"
+                            | "05"
+                            | "06"
+                            | "07"
+                            | "08"
+                            | "09"
+                            | "10"
+                            | "11"
+                            | "12"
+                        );
+                      }}
+                    >
                       <SelectTrigger className="mt-2">
                         <SelectValue placeholder="Sélectionner un mois" />
                       </SelectTrigger>
@@ -119,11 +156,13 @@ export default function NouvelleFichePresence({
                     type="number"
                     min={2020}
                     max={2050}
-                    value={annee}
-                    onChange={(e) => setAnnee(Number(e.target.value))}
                     onWheel={(e) => e.currentTarget.blur()}
                     className="mt-2 font-mono"
                     placeholder="YYYY"
+                    {...register("annee", {
+                      required: "Année est obligatoire",
+                      valueAsNumber: true,
+                    })}
                   />
                   <p className="mt-2 text-sm text-muted-foreground">
                     Année entre 2020 et 2050
@@ -152,7 +191,9 @@ export default function NouvelleFichePresence({
                   <div className="space-y-1">
                     <p className="text-sm font-medium">
                       {mois
-                        ? `${months.find((m) => m.value === mois)?.label} ${annee}`
+                        ? `${
+                            months.find((m) => m.value === mois)?.label
+                          } ${annee}`
                         : "Sélectionnez un mois et une année"}
                     </p>
                     <p className="text-sm text-muted-foreground">

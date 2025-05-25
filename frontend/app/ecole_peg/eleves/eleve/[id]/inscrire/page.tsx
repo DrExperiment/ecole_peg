@@ -20,10 +20,10 @@ import {
   SelectValue,
 } from "@/components/select";
 import { ArrowLeft, Save } from "lucide-react";
-import { format } from "date-fns";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { useForm } from "react-hook-form";
 import { Checkbox } from "@/components/checkbox";
+import { formatDate } from "@/lib/utils";
 
 interface Eleve {
   id: number;
@@ -63,43 +63,42 @@ export default function InscrirePage({
 
   const onSoumission = useCallback(
     async (donnees: object) => {
-      const donneesCompletes = {
+      const donnees_completes = {
         ...donnees,
         id_session,
         preinscription,
       };
 
       try {
-        await axios.post(
-          `http://localhost:8000/api/cours/${resolvedParams.id}/inscription/`,
-          donneesCompletes,
+        await api.post(
+          `/cours/${resolvedParams.id}/inscription/`,
+          donnees_completes
         );
 
         router.push(`/ecole_peg/eleves/eleve/${resolvedParams?.id}/`);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     },
-    [id_session, preinscription, resolvedParams.id, router],
+    [id_session, preinscription, resolvedParams.id, router]
   );
 
   useEffect(() => {
     async function fetchEleve() {
-      const url = `http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`;
-      console.log("fetchEleve →", url);
       try {
-        const { data } = await axios.get<Eleve>(url);
-        setEleve(data);
-      } catch (e) {
-        console.error("Erreur fetchEleve:", e);
+        const reponse = await api.get<Eleve>(
+          `/eleves/eleve/${resolvedParams.id}/`
+        );
+
+        setEleve(reponse.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
 
     async function fetchSessions() {
       try {
-        const reponse = await axios.get(
-          "http://localhost:8000/api/cours/sessions/",
-        );
+        const reponse = await api.get("/cours/sessions/");
 
         setSessions(reponse.data.sessions);
       } catch (erreur) {
@@ -117,13 +116,13 @@ export default function InscrirePage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
-          Inscription aux cours pour {eleve?.prenom} {eleve?.nom}
+          Inscription aux cours pour {eleve?.nom} {eleve?.prenom}
         </h1>
       </div>
 
@@ -160,8 +159,10 @@ export default function InscrirePage({
                       </span>
                       <br />
                       <span className="text-sm text-muted-foreground">
-                        Du {format(session.date_debut, "dd.MM.yyyy")} au{" "}
-                        {format(session.date_fin, "dd.MM.yyyy")}
+                        Du{" "}
+                        {formatDate(session.date_debut)}{" "}
+                        au{" "}
+                        {formatDate(session.date_fin)}
                       </span>
                     </SelectItem>
                   ))}

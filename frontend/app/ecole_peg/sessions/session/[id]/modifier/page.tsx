@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { use, useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -22,125 +22,129 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
-import axios from "axios";
-import { useToast } from "@/components/use-toast";
+import { api } from "@/lib/api";
 
 interface Cours {
   id: number;
   nom: string;
-  type: string;
-  niveau: string;
+  type_cours: "I" | "S";
+  niveau: "A1" | "A2" | "B1" | "B2" | "C1";
 }
+
 interface Enseignant {
   id: number;
   nom: string;
   prenom: string;
 }
-interface SessionOut {
+
+interface Session {
   id: number;
   cours__nom: string;
-  cours__type: string;
-  cours__niveau: string;
-  date_debut: string; // YYYY-MM-DD
-  date_fin: string;   // YYYY-MM-DD
-  periode_journee: string | null;
-  statut: string;
+  cours__type_cours: "I" | "S";
+  cours__niveau: "A1" | "A2" | "B1" | "B2" | "C1";
+  date_debut: Date;
+  date_fin: Date;
+  periode_journee: "M" | "S";
+  statut: "O" | "F";
   seances_mois: number;
   capacite_max: number;
-  cours: number;
-  enseignant: number;
+  id_cours: number;
+  id_enseignant: number;
 }
 
-export default function ModifierSessionPage() {
-  const { toast } = useToast();
+export default function ModifierSessionPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
   const router = useRouter();
-  const params = useParams();
-  const sessionId = params?.id as string | undefined;
+  const resolvedParams = use(params);
 
-  const { register, handleSubmit, setValue, formState: { isSubmitting } } = useForm();
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { isSubmitting },
+  } = useForm();
 
-  const [date_debut, setDateDebut] = useState<Date | undefined>();
-  const [date_fin, setDateFin] = useState<Date | undefined>();
+  const [date_debut, setDateDebut] = useState<Date | undefined>(undefined);
+  const [date_fin, setDateFin] = useState<Date | undefined>(undefined);
+
   const [cours, setCours] = useState<Cours[]>([]);
   const [id_cours, setIdCours] = useState<number>();
+
   const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
   const [id_enseignant, setIdEnseignant] = useState<number>();
+
   const [periode_journee, setPeriodeJournee] = useState<"M" | "S">("M");
-  const [seances_mois, setSeancesMois] = useState<number>();
-  const [capacite_max, setCapaciteMax] = useState<number>();
 
-  // Préchargement des listes & données de session existante
   useEffect(() => {
-    async function fetchAll() {
+    async function fetchDonnees() {
       try {
-        const [coursRes, ensRes, sessionRes] = await Promise.all([
-          axios.get("http://localhost:8000/api/cours/cours/"),
-          axios.get("http://localhost:8000/api/cours/enseignants/"),
-          axios.get(`http://localhost:8000/api/cours/sessions/${sessionId}/`),
-        ]);
-        setCours(coursRes.data);
-        setEnseignants(Array.isArray(ensRes.data) ? ensRes.data : ensRes.data.enseignants);
+        const [reponse_cours, reponse_enseignants, reponse_session] =
+          await Promise.all([
+            api.get<Cours[]>("/cours/cours/"),
+            api.get<Enseignant[]>("/cours/enseignants/"),
+            api.get<Session>(`/cours/sessions/${resolvedParams.id}/`),
+          ]);
 
-        // Préremplir les champs
-        const session: SessionOut = sessionRes.data;
-        setIdCours(session.cours ?? coursRes.data.find((c: Cours) => c.nom === session.cours__nom)?.id);
-        setIdEnseignant(session.enseignant ?? undefined);
+        setCours(reponse_cours.data);
+
+        setEnseignants(reponse_enseignants.data);
+
+        const session: Session = reponse_session.data;
+
+        setIdCours(session.id_cours);
+        setIdEnseignant(session.id_enseignant);
+
         setDateDebut(new Date(session.date_debut));
         setDateFin(new Date(session.date_fin));
-        setPeriodeJournee((session.periode_journee ?? "M") as "M" | "S");
-        setSeancesMois(session.seances_mois);
-        setCapaciteMax(session.capacite_max ?? 1);
-        // RHF pour valeur initiale sur Input/Select non contrôlés :
-        setValue("seances_mois", session.seances_mois);
-        setValue("capacite_max", session.capacite_max);
-      } catch {
-        toast({ title: "Erreur", description: "Impossible de charger la session." });
-        router.back();
+
+        setPeriodeJournee(session.periode_journee as "M" | "S");
+
+        reset({
+          seances_mois: session.seances_mois,
+          capacite_max: session.capacite_max,
+        });
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
-    if (sessionId) fetchAll();
-    // eslint-disable-next-line
-  }, [sessionId, setValue]);
 
-  // Conversion Input date → Date
-  function parseDateInput(
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: (d: Date | undefined) => void,
-  ) {
-    setter(e.target.value ? new Date(e.target.value) : undefined);
-  }
+    fetchDonnees();
+  }, [reset, resolvedParams.id]);
 
-  // Soumission
   const onSoumission = useCallback(
     async (donnees: object) => {
-      const donneesCompletes = {
+      const donnees_completes = {
         ...donnees,
         date_debut: date_debut ? format(date_debut, "yyyy-MM-dd") : undefined,
         date_fin: date_fin ? format(date_fin, "yyyy-MM-dd") : undefined,
-        seances_mois,
-        capacite_max,
         id_cours,
         id_enseignant,
         periode_journee,
       };
 
       try {
-        await axios.put(
-          `http://localhost:8000/api/cours/sessions/${sessionId}/`,
-          donneesCompletes,
+        await api.put(
+          `/cours/sessions/${resolvedParams.id}/`,
+          donnees_completes
         );
-        toast({ title: "Succès", description: "Session modifiée." });
-        setTimeout(() => router.push("/ecole_peg/sessions/"), 1000);
-      } catch (erreur) {
-        if (axios.isAxiosError(erreur)) {
-          toast({ title: "Erreur", description: JSON.stringify(erreur.response?.data) });
-          console.error("Erreur détaillée :", erreur.response?.data);
-        } else {
-          toast({ title: "Erreur", description: "Erreur inconnue." });
-        }
+
+        router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     },
-    [date_debut, date_fin, id_cours, id_enseignant, seances_mois, capacite_max, periode_journee, router, sessionId, toast],
+    [
+      date_debut,
+      date_fin,
+      id_cours,
+      id_enseignant,
+      periode_journee,
+      resolvedParams.id,
+      router,
+    ]
   );
 
   return (
@@ -149,12 +153,14 @@ export default function ModifierSessionPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`)}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
-        <h1 className="text-3xl font-bold tracking-tight">Modifier la Session</h1>
+        <h1 className="text-3xl font-bold tracking-tight">
+          Modifier la Session
+        </h1>
       </div>
 
       <form onSubmit={handleSubmit(onSoumission)}>
@@ -166,7 +172,6 @@ export default function ModifierSessionPage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Cours et Enseignant */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="cours" className="text-base">
@@ -186,7 +191,8 @@ export default function ModifierSessionPage() {
                       <SelectItem key={c.id} value={c.id.toString()}>
                         {c.nom}{" "}
                         <span className="text-muted-foreground">
-                          ({c.type === "I" ? "intensif" : "semi-intensif"} - {c.niveau})
+                          ({c.type_cours === "I" ? "intensif" : "semi-intensif"}{" "}
+                          - {c.niveau})
                         </span>
                       </SelectItem>
                     ))}
@@ -217,7 +223,6 @@ export default function ModifierSessionPage() {
               </div>
             </div>
 
-            {/* Dates et Période */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="date_debut" className="text-base">
@@ -229,8 +234,12 @@ export default function ModifierSessionPage() {
                   min={format(new Date(), "yyyy-MM-dd")}
                   required
                   className="font-mono"
-                  value={date_debut ? format(date_debut, "yyyy-MM-dd") : ""}
-                  onChange={(e) => parseDateInput(e, setDateDebut)}
+                  value={
+                    date_debut instanceof Date && !isNaN(date_debut.getTime())
+                      ? format(date_debut, "yyyy-MM-dd")
+                      : ""
+                  }
+                  onChange={(e) => setDateDebut(new Date(e.target.value))}
                 />
               </div>
 
@@ -241,16 +250,23 @@ export default function ModifierSessionPage() {
                 <Input
                   id="date_fin"
                   type="date"
-                  min={date_debut ? format(date_debut, "yyyy-MM-dd") : undefined}
+                  min={
+                    date_debut instanceof Date && !isNaN(date_debut.getTime())
+                      ? format(date_debut, "yyyy-MM-dd")
+                      : undefined
+                  }
                   required
                   className="font-mono"
-                  value={date_fin ? format(date_fin, "yyyy-MM-dd") : ""}
-                  onChange={(e) => parseDateInput(e, setDateFin)}
+                  value={
+                    date_fin instanceof Date && !isNaN(date_fin.getTime())
+                      ? format(date_fin, "yyyy-MM-dd")
+                      : ""
+                  }
+                  onChange={(e) => setDateFin(new Date(e.target.value))}
                 />
               </div>
             </div>
 
-            {/* Configuration de la session */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="seances_mois" className="text-base">
@@ -262,8 +278,6 @@ export default function ModifierSessionPage() {
                   min={1}
                   max={31}
                   className="font-mono"
-                  required
-                  value={seances_mois ?? ""}
                   {...register("seances_mois", {
                     required: "Séances par mois est obligatoire",
                     valueAsNumber: true,
@@ -276,7 +290,6 @@ export default function ModifierSessionPage() {
                       message: "Maximum 31 séances par mois",
                     },
                   })}
-                  onChange={(e) => setSeancesMois(Number(e.target.value))}
                   onWheel={(e) => e.currentTarget.blur()}
                 />
               </div>
@@ -291,8 +304,6 @@ export default function ModifierSessionPage() {
                   min={1}
                   className="font-mono"
                   placeholder="Nombre d'élèves max."
-                  required
-                  value={capacite_max ?? ""}
                   {...register("capacite_max", {
                     required: "Capacité maximale est obligatoire",
                     valueAsNumber: true,
@@ -301,7 +312,6 @@ export default function ModifierSessionPage() {
                       message: "La capacité doit être d'au moins 1",
                     },
                   })}
-                  onChange={(e) => setCapaciteMax(Number(e.target.value))}
                   onWheel={(e) => e.currentTarget.blur()}
                 />
               </div>

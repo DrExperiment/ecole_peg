@@ -19,21 +19,30 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/table";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, FileText } from "lucide-react";
 import React, { use, useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { format } from "date-fns";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { Input } from "@/components/input";
 import { Label } from "@/components/label";
+import { formatDate } from "@/lib/utils";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/select";
+import { fr } from "date-fns/locale";
+import { format } from "date-fns";
 
 interface Eleve {
   id: number;
   nom: string;
   prenom: string;
-  date_naissance: string;
+  date_naissance: Date;
   lieu_naissance: string | undefined;
-  sexe: string;
+  sexe: "H" | "F";
   rue: string | undefined;
   numero: string | undefined;
   npa: string | undefined;
@@ -41,16 +50,17 @@ interface Eleve {
   adresse_facturation: string | undefined;
   telephone: string;
   email: string;
-  type_permis: string | undefined;
-  date_permis: string | undefined;
-  niveau: string | undefined;
+  type_permis: "E" | "S" | "B" | "P";
+  date_permis: Date | undefined;
+  niveau: "A1" | "A2" | "B1" | "B2" | "C1";
   langue_maternelle: string | undefined;
   autres_langues: string | undefined;
   src_decouverte: string | undefined;
   commentaires: string | undefined;
   pays__nom: string | undefined;
 }
-interface inscription {
+
+interface Inscription {
   id: number;
   date_inscription: Date;
   but: string;
@@ -58,15 +68,27 @@ interface inscription {
   statut: string;
   date_sortie: Date;
   motif_sortie: string;
-  preinscription: boolean; // <-- Ajout ici
+  preinscription: boolean;
+}
+
+interface CoursPrive {
+  id: number;
+  date_cours_prive: Date;
+  heure_debut: string;
+  heure_fin: string;
+  tarif: number;
+  lieu: "E" | "D";
+  enseignant__nom: string;
+  enseignant__prenom: string;
 }
 
 interface Document {
   id: number;
   nom: string;
   fichier_url: string;
-  date_ajout: string;
+  date_ajout: Date;
 }
+
 interface Garant {
   id: number;
   nom: string;
@@ -78,6 +100,7 @@ interface Garant {
   numero: string;
   npa: string;
 }
+
 interface Test {
   id: number;
   date_test: Date;
@@ -92,8 +115,10 @@ interface Paiement {
   mode_paiement: string;
   methode_paiement: string;
 }
+
 interface Facture {
   id: number;
+  numero_facture: number;
   date_emission: Date;
   montant_total: number;
   montant_restant: number;
@@ -107,31 +132,56 @@ export default function ElevePage({
   const router = useRouter();
 
   const resolvedParams = use(params);
-  const id = resolvedParams.id;
+
   const [eleve, setEleve] = useState<Eleve | undefined>(undefined);
   const [paiements, setPaiements] = useState<Paiement[]>([]);
+  const [nombre_total_paiements, setNombrePaiementsTotal] = useState(0);
+  const [chargement_paiements, setChargementPaiements] = useState(false);
+  const [num_page_paiements, setNumPagePaiements] = useState(1);
+  const taille_page_paiements = 10;
+
   const [factures, setFactures] = useState<Facture[]>([]);
-  const [inscriptions, setInscriptions] = useState<inscription[]>([]);
+  const [nombre_total_factures, setNombreFacturesTotal] = useState(0);
+  const [chargement_factures, setChargementFactures] = useState(false);
+  const [num_page_factures, setNumPageFactures] = useState(1);
+  const [filtre_factures, setFiltreFactures] = useState("tous");
+  const taille_page_factures = 10;
+
+  const [inscriptions, setInscriptions] = useState<Inscription[]>([]);
   const [documents, setDocuments] = useState<Document[]>([]);
   const [tests, setTests] = useState<Test[]>([]);
-  const [garant, setGarant] = useState<Garant | null>(null);
+  const [cours_prives, setCoursPrives] = useState<CoursPrive[]>([]);
+
+  const [garant, setGarant] = useState<Garant | undefined>(undefined);
 
   const fetchDocuments = useCallback(async () => {
     try {
-      const reponse = await axios.get(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/`
+      const reponse = await api.get<Document[]>(
+        `/eleves/eleves/${resolvedParams.id}/documents/`
       );
 
       setDocuments(reponse.data);
-    } catch (erreur) {
-      console.error("Erreur: ", erreur);
+    } catch (err) {
+      console.error("Erreur: ", err);
+    }
+  }, [resolvedParams.id]);
+
+  const fetchInscriptions = useCallback(async () => {
+    try {
+      const reponse = await api.get<Inscription[]>(
+        `/cours/${resolvedParams.id}/inscriptions/`
+      );
+
+      setInscriptions(reponse.data);
+    } catch (err) {
+      console.error("Erreur lors de la récupération des inscriptions", err);
     }
   }, [resolvedParams.id]);
 
   const fetchTests = useCallback(async () => {
     try {
-      const reponse = await axios.get(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/tests/`
+      const reponse = await api.get<Test[]>(
+        `/eleves/eleves/${resolvedParams.id}/tests/`
       );
 
       setTests(reponse.data);
@@ -140,138 +190,191 @@ export default function ElevePage({
     }
   }, [resolvedParams.id]);
 
+  const fetchCoursPrives = useCallback(async () => {
+    try {
+      const reponse = await api.get<CoursPrive[]>(
+        `/cours/eleves/${resolvedParams.id}/cours_prives/`
+      );
+
+      setCoursPrives(reponse.data);
+    } catch (err) {
+      console.error("Erreur: ", err);
+      setCoursPrives([]);
+    }
+  }, [resolvedParams.id]);
+
   useEffect(() => {
     async function fetchEleve() {
       try {
-        const donnees: Eleve = await axios
-          .get(`http://localhost:8000/api/eleves/eleve/${resolvedParams.id}/`)
-          .then((response) => response.data);
-
-        setEleve(donnees);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
-      }
-    }
-    async function fetchInscriptions() {
-      try {
-        const res = await axios.get(
-          `http://localhost:8000/api/cours/${resolvedParams.id}/inscriptions/`
+        const reponse = await api.get<Eleve>(
+          `/eleves/eleve/${resolvedParams.id}/`
         );
-        setInscriptions(res.data);
-      } catch (error) {
-        console.error("Erreur lors de la récupération des inscriptions", error);
+
+        setEleve(reponse.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
-    fetchInscriptions();
-    fetchEleve();
-    fetchDocuments();
-    fetchTests();
+
     async function fetchGarant() {
       try {
-        const res = await axios.get(
-          `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/garant/`
+        const reponse = await api.get<Garant>(
+          `/eleves/eleves/${resolvedParams.id}/garant/`
         );
-        if (res.data?.id) {
-          setGarant(res.data);
+
+        if (reponse.data?.id) {
+          setGarant(reponse.data);
         } else {
-          setGarant(null); // pas de garant
+          setGarant(undefined);
         }
-      } catch (error) {
-        console.error("Erreur lors de la récupération du garant", error);
-        setGarant(null);
+      } catch (err) {
+        console.error("Erreur lors de la récupération du garant", err);
       }
     }
 
-    fetchGarant();
-
     async function fetchPaiements() {
+      setChargementPaiements(true);
       try {
-        const donnees = await axios
-          .get(
-            `http://localhost:8000/api/factures/paiements/eleve/${resolvedParams.id}/`
-          )
-          .then((response) => response.data);
+        const params = {
+          page: num_page_paiements,
+          taille: taille_page_paiements,
+        };
 
-        setPaiements(donnees);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+        const reponse = await api.get(
+          `/factures/paiements/eleve/${resolvedParams.id}/`,
+          { params }
+        );
+
+        setPaiements(reponse.data.paiements);
+        setNombrePaiementsTotal(reponse.data.nombre_total);
+      } catch (err) {
+        console.error("Erreur: ", err);
+        setPaiements([]);
+        setNombrePaiementsTotal(0);
       }
+      setChargementPaiements(false);
     }
 
     async function fetchFactures() {
+      setChargementFactures(true);
       try {
-        const reponse = await axios.get(
-          `http://localhost:8000/api/factures/factures/eleve/${resolvedParams.id}/`
-        );
+        const params = {
+          page: num_page_factures,
+          taille: taille_page_factures,
+        };
 
-        setFactures(reponse.data);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+        let reponse;
+        if (filtre_factures === "impayees") {
+          reponse = await api.get(
+            `/factures/factures/eleve/${resolvedParams.id}/impayees/`,
+            { params }
+          );
+        } else if (filtre_factures === "payees") {
+          reponse = await api.get(
+            `/factures/factures/eleve/${resolvedParams.id}/payees/`,
+            { params }
+          );
+        } else {
+          reponse = await api.get(
+            `/factures/factures/eleve/${resolvedParams.id}/`,
+            { params }
+          );
+        }
+
+        setFactures(reponse.data.factures);
+        setNombreFacturesTotal(reponse.data.nombre_total);
+      } catch (err) {
+        console.error("Erreur: ", err);
+        setFactures([]);
+        setNombreFacturesTotal(0);
       }
+      setChargementFactures(false);
     }
 
-    fetchPaiements();
+    fetchEleve();
+    fetchGarant();
+    fetchInscriptions();
+    fetchDocuments();
+    fetchTests();
+    fetchCoursPrives();
     fetchFactures();
-  }, [fetchDocuments, fetchTests, resolvedParams.id]);
+    fetchPaiements();
+  }, [
+    fetchDocuments,
+    fetchInscriptions,
+    fetchTests,
+    fetchCoursPrives,
+    resolvedParams.id,
+    filtre_factures,
+    num_page_factures,
+    taille_page_factures,
+    num_page_paiements,
+    taille_page_paiements,
+  ]);
 
-  async function supprimerEleve(id_eleve: number | undefined) {
-    if (!id_eleve) return;
+  useEffect(() => {
+    setNumPageFactures(1);
+  }, [filtre_factures]);
 
+  async function supprimerEleve() {
     try {
-      await axios.delete(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/`
-      );
+      await api.delete(`/eleves/eleves/${resolvedParams.id}/`);
 
-      router.push("/ecole_peg/eleves");
-    } catch (erreur) {
-      console.error("Erreur: ", erreur);
+      router.push("/ecole_peg/eleves/");
+    } catch (err) {
+      console.error("Erreur: ", err);
     }
   }
 
   async function supprimerTest(id_test: number) {
     try {
-      await axios.delete(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/tests/${id_test}/`
-      );
+      await api.delete(`/eleves/eleves/${resolvedParams.id}/tests/${id_test}/`);
 
       fetchTests();
-    } catch (erreur) {
-      console.error("Erreur: ", erreur);
+    } catch (err) {
+      console.error("Erreur: ", err);
     }
   }
-  async function handleUpload(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const form = event.currentTarget;
+  async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    const form = e.currentTarget;
+
     const formData = new FormData(form);
 
     try {
-      await axios.post(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/`,
-        formData // ✅ PAS DE headers ici
+      await api.post(
+        `/eleves/eleves/${resolvedParams.id}/documents/`,
+        formData
       );
+
       form.reset();
-      fetchDocuments(); // Recharge la liste
-    } catch (error) {
-      console.error("Erreur d'upload", error);
+
+      fetchDocuments();
+    } catch (err) {
+      console.error("Erreur d'upload", err);
     }
   }
 
-  async function supprimerDocument(documentId: number) {
+  async function supprimerDocument(id_document: number) {
     try {
-      await axios.delete(
-        `http://localhost:8000/api/eleves/eleves/${resolvedParams.id}/documents/${documentId}/`
+      await api.delete(
+        `/eleves/eleves/${resolvedParams.id}/documents/${id_document}/`
       );
+
       fetchDocuments();
-    } catch (error) {
-      console.error("Erreur de suppression", error);
+    } catch (err) {
+      console.error("Erreur de suppression", err);
     }
   }
-  async function supprimerInscription(inscriptionId: number) {
+
+  async function supprimerInscription(id_insription: number) {
     try {
-      await axios.delete(
-        `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionId}/`
+      await api.delete(
+        `/cours/${resolvedParams.id}/inscriptions/${id_insription}/`
       );
-      setInscriptions((old) => old.filter((i) => i.id !== inscriptionId));
+
+      fetchInscriptions();
     } catch (erreur) {
       console.error("Erreur suppression inscription:", erreur);
     }
@@ -283,7 +386,7 @@ export default function ElevePage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push("/ecole_peg/eleves/")}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -296,13 +399,13 @@ export default function ElevePage({
       <Tabs defaultValue="fiche" className="space-y-6">
         <TabsList className="bg-card">
           <TabsTrigger value="fiche">Fiche élève</TabsTrigger>
-          <TabsTrigger value="garants">Garant</TabsTrigger>
-          <TabsTrigger value="paiements">Paiements</TabsTrigger>
-          <TabsTrigger value="presences">Présences</TabsTrigger>
-          <TabsTrigger value="documents">Documents</TabsTrigger>
+          <TabsTrigger value="garant">Garant</TabsTrigger>
           <TabsTrigger value="inscriptions">Inscriptions</TabsTrigger>
-          <TabsTrigger value="factures">Factures</TabsTrigger>
+          <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="tests">Tests</TabsTrigger>
+          <TabsTrigger value="factures">Factures</TabsTrigger>
+          <TabsTrigger value="paiements">Paiements</TabsTrigger>
+          <TabsTrigger value="cours_prives">Cours privés</TabsTrigger>
         </TabsList>
 
         <TabsContent value="fiche">
@@ -315,15 +418,18 @@ export default function ElevePage({
             </CardHeader>
             <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-6 p-6">
               {[
-                { label: "Nom", value: eleve?.nom },
-                { label: "Prénom", value: eleve?.prenom },
+                { label: "Nom", value: eleve?.nom || "-" },
+                { label: "Prénom", value: eleve?.prenom || "-" },
                 {
                   label: "Date de naissance",
                   value: eleve?.date_naissance
-                    ? format(new Date(eleve.date_naissance), "dd/MM/yyyy")
+                    ? formatDate(eleve.date_naissance)
                     : "-",
                 },
-                { label: "Lieu de naissance", value: eleve?.lieu_naissance },
+                {
+                  label: "Lieu de naissance",
+                  value: eleve?.lieu_naissance || "-",
+                },
                 {
                   label: "Sexe",
                   value:
@@ -333,17 +439,17 @@ export default function ElevePage({
                       ? "Femme"
                       : "-",
                 },
-                { label: "Rue", value: eleve?.rue },
-                { label: "Numéro", value: eleve?.numero },
-                { label: "NPA", value: eleve?.npa },
-                { label: "Localité", value: eleve?.localite },
-                { label: "Pays", value: eleve?.pays__nom },
+                { label: "Rue", value: eleve?.rue || "-" },
+                { label: "Numéro", value: eleve?.numero || "-" },
+                { label: "NPA", value: eleve?.npa || "-" },
+                { label: "Localité", value: eleve?.localite || "-" },
+                { label: "Pays", value: eleve?.pays__nom || "-" },
                 {
                   label: "Adresse de facturation",
-                  value: eleve?.adresse_facturation,
+                  value: eleve?.adresse_facturation || "-",
                 },
-                { label: "Téléphone", value: eleve?.telephone },
-                { label: "Email", value: eleve?.email },
+                { label: "Téléphone", value: eleve?.telephone || "-" },
+                { label: "Email", value: eleve?.email || "-" },
                 {
                   label: "Type de permis",
                   value:
@@ -360,14 +466,23 @@ export default function ElevePage({
                 {
                   label: "Date d'expiration permis",
                   value: eleve?.date_permis
-                    ? format(new Date(eleve.date_permis), "dd/MM/yyyy")
+                    ? formatDate(eleve.date_permis)
                     : "-",
                 },
-                { label: "Niveau", value: eleve?.niveau },
-                { label: "Langue maternelle", value: eleve?.langue_maternelle },
-                { label: "Autres langues", value: eleve?.autres_langues },
-                { label: "Source de découverte", value: eleve?.src_decouverte },
-                { label: "Commentaires", value: eleve?.commentaires },
+                { label: "Niveau", value: eleve?.niveau || "-" },
+                {
+                  label: "Langue maternelle",
+                  value: eleve?.langue_maternelle || "-",
+                },
+                {
+                  label: "Autres langues",
+                  value: eleve?.autres_langues || "-",
+                },
+                {
+                  label: "Source de découverte",
+                  value: eleve?.src_decouverte || "-",
+                },
+                { label: "Commentaires", value: eleve?.commentaires || "-" },
               ].map((item, index) => (
                 <div key={index} className="space-y-1.5">
                   <p className="text-sm font-medium text-muted-foreground">
@@ -377,25 +492,36 @@ export default function ElevePage({
                 </div>
               ))}
               <div className="col-span-full mt-4">
-                <Button variant="default" className="w-full">
-                  <Link
-                    href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire`}
-                  >
-                    Inscrire
-                  </Link>
+                <Button
+                  variant="default"
+                  className="w-full"
+                  onClick={() =>
+                    router.push(
+                      `/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/`
+                    )
+                  }
+                  disabled={!resolvedParams.id}
+                >
+                  Inscrire
                 </Button>
               </div>
             </CardContent>
 
             <CardFooter className="justify-between border-t px-6 py-4 bg-muted/50">
-              <Button variant="outline" asChild>
-                <Link href={`/ecole_peg/eleves/eleve/${id}/modifier`}>
-                  Modifier
-                </Link>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  router.push(
+                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/modifier/`
+                  );
+                }}
+                disabled={!resolvedParams.id}
+              >
+                Modifier
               </Button>
               <Button
                 variant="destructive"
-                onClick={() => supprimerEleve(Number(resolvedParams.id))}
+                onClick={() => supprimerEleve()}
                 disabled={!resolvedParams?.id}
               >
                 Supprimer
@@ -421,8 +547,8 @@ export default function ElevePage({
                       <TableHead>But</TableHead>
                       <TableHead>Frais</TableHead>
                       <TableHead>Statut</TableHead>
-                      <TableHead>Date sortie</TableHead>
-                      <TableHead>Motif sortie</TableHead>
+                      <TableHead>Date de sortie</TableHead>
+                      <TableHead>Motif de sortie</TableHead>
                       <TableHead>Type</TableHead>
                       <TableHead className="text-right">Actions</TableHead>
                     </TableRow>
@@ -434,12 +560,9 @@ export default function ElevePage({
                         className="hover:bg-muted/50"
                       >
                         <TableCell>
-                          {format(
-                            new Date(inscription.date_inscription),
-                            "dd/MM/yyyy"
-                          )}
+                          {formatDate(inscription.date_inscription)}
                         </TableCell>
-                        <TableCell>{inscription.but}</TableCell>
+                        <TableCell>{inscription.but || "-"}</TableCell>
                         <TableCell>
                           {inscription.frais_inscription} CHF
                         </TableCell>
@@ -456,10 +579,7 @@ export default function ElevePage({
                         </TableCell>
                         <TableCell>
                           {inscription.date_sortie
-                            ? format(
-                                new Date(inscription.date_sortie),
-                                "dd/MM/yyyy"
-                              )
+                            ? formatDate(inscription.date_sortie)
                             : "-"}
                         </TableCell>
                         <TableCell>{inscription.motif_sortie || "-"}</TableCell>
@@ -477,12 +597,16 @@ export default function ElevePage({
                           </span>
                         </TableCell>
                         <TableCell className="text-right space-x-2">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link
-                              href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/${inscription?.id}/modifier`}
-                            >
-                              Modifier
-                            </Link>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => {
+                              router.push(
+                                `/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/${inscription?.id}/modifier/`
+                              );
+                            }}
+                          >
+                            Modifier
                           </Button>
                           <Button
                             variant="destructive"
@@ -510,84 +634,149 @@ export default function ElevePage({
         <TabsContent value="factures">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
-              <CardTitle>Historique des factures</CardTitle>
+              <CardTitle>Factures</CardTitle>
               <CardDescription>
-                Gestion des factures de l&apos;élève
+                Liste des factures de l&apos;élève
               </CardDescription>
             </CardHeader>
-            <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-muted/50">
-                    <TableHead>Numéro</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Montant</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {factures.length > 0 ? (
-                    factures.map((facture) => (
-                      <TableRow key={facture.id} className="hover:bg-muted/50">
-                        <TableCell className="font-medium">
-                          #{facture.id}
-                        </TableCell>
-                        <TableCell>
-                          {format(
-                            new Date(facture.date_emission),
-                            "dd/MM/yyyy"
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          {facture.montant_total.toFixed(2)} CHF
-                        </TableCell>
-                        <TableCell>
-                          {facture.montant_restant === 0 ? (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                              Payée
+            <CardContent className="p-0 space-y-6">
+              <div className="p-6">
+                <Select
+                  value={filtre_factures}
+                  onValueChange={(value) => setFiltreFactures(value)}
+                >
+                  <SelectTrigger className="w-[180px]">
+                    <SelectValue placeholder="Statut" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="tous">Tous les statuts</SelectItem>
+                    <SelectItem value="payees">Payées</SelectItem>
+                    <SelectItem value="impayees">Impayées</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-medium">Date</TableHead>
+                      <TableHead className="font-medium">Montant</TableHead>
+                      <TableHead className="font-medium">Statut</TableHead>
+                      <TableHead className="text-right font-medium">
+                        Actions
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {factures.length > 0 ? (
+                      factures.map((facture) => (
+                        <TableRow key={facture.id}>
+                          <TableCell className="whitespace-nowrap">
+                            {formatDate(facture.date_emission)}
+                          </TableCell>
+                          <TableCell>
+                            <span className="font-medium">
+                              {facture.montant_total.toLocaleString("fr-CH")}{" "}
+                              CHF
                             </span>
-                          ) : (
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800">
-                              En attente
-                            </span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link
-                              href={`/ecole_peg/factures/facture/${facture.id}`}
+                            {facture.montant_restant > 0 && (
+                              <div className="text-sm text-muted-foreground">
+                                Restant:{" "}
+                                {facture.montant_restant.toLocaleString(
+                                  "fr-CH"
+                                )}{" "}
+                                CHF
+                              </div>
+                            )}
+                          </TableCell>
+                          <TableCell>
+                            {facture.montant_restant === 0 ? (
+                              <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-green-50 text-green-700">
+                                Payée
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center rounded-full px-2 py-1 text-xs font-medium bg-red-50 text-red-700">
+                                Impayée
+                              </span>
+                            )}
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                router.push(
+                                  `/ecole_peg/factures/facture/${facture.id}`
+                                );
+                              }}
                             >
+                              <FileText className="mr-2 h-4 w-4" />
                               Détails
-                            </Link>
-                          </Button>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={4}
+                          className="text-center py-6 text-muted-foreground"
+                        >
+                          {chargement_factures
+                            ? "Chargement..."
+                            : "Aucune facture trouvée."}
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={5}
-                        className="text-center text-muted-foreground h-24"
-                      >
-                        Aucune facture trouvée.
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="flex items-center justify-end space-x-4 p-6">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setNumPageFactures((p) => Math.max(1, p - 1))
+                    }
+                    disabled={num_page_factures === 1}
+                  >
+                    Précédent
+                  </Button>
+
+                  <span className="text-sm text-muted-foreground">
+                    Page {num_page_factures} sur{" "}
+                    {Math.ceil(nombre_total_factures / taille_page_factures) ||
+                      1}
+                  </span>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setNumPageFactures((p) =>
+                        Math.min(
+                          Math.ceil(
+                            nombre_total_factures / taille_page_factures
+                          ),
+                          p + 1
+                        )
+                      )
+                    }
+                    disabled={
+                      num_page_factures ===
+                        Math.ceil(
+                          nombre_total_factures / taille_page_factures
+                        ) || nombre_total_factures === 0
+                    }
+                  >
+                    Suivant
+                  </Button>
+                </div>
+              </div>
             </CardContent>
-            <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50">
-              <Button
-                onClick={() => {
-                  router.push(
-                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`
-                  );
-                }}
-              >
-                Nouvelle facture
-              </Button>
-            </CardFooter>
           </Card>
         </TabsContent>
 
@@ -600,164 +789,117 @@ export default function ElevePage({
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-muted/50">
-                    <TableHead>Date</TableHead>
-                    <TableHead>Description</TableHead>
-                    <TableHead>Méthode</TableHead>
-                    <TableHead>Montant</TableHead>
-                    <TableHead>Mode</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {paiements?.length > 0 ? (
-                    paiements.map((paiement) => (
-                      <TableRow key={paiement.id} className="hover:bg-muted/50">
-                        <TableCell>
-                          {paiement.date_paiement
-                            ? format(
-                                new Date(paiement.date_paiement),
-                                "dd/MM/yyyy"
-                              )
-                            : "-"}
-                        </TableCell>
-                        <TableCell>{eleve?.nom ?? "-"}</TableCell>
-                        <TableCell>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                            {paiement.methode_paiement}
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="font-medium">
-                            {paiement.montant.toFixed(2)} CHF
-                          </span>
-                        </TableCell>
-                        <TableCell>
-                          <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                            {paiement.mode_paiement}
-                          </span>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button variant="outline" size="sm" asChild>
-                            <Link
-                              href={`/ecole_peg/eleves/eleve/${paiement.id}`}
-                            >
-                              Détails
-                            </Link>
-                          </Button>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-medium">Date</TableHead>
+                      <TableHead className="font-medium">Description</TableHead>
+                      <TableHead className="font-medium">Méthode</TableHead>
+                      <TableHead className="font-medium">Montant</TableHead>
+                      <TableHead className="font-medium">Mode</TableHead>
+                      <TableHead className="text-right font-medium">
+                        Actions
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {paiements.length > 0 ? (
+                      paiements.map((paiement) => (
+                        <TableRow key={paiement.id}>
+                          <TableCell className="whitespace-nowrap">
+                            {formatDate(paiement.date_paiement)}
+                          </TableCell>
+                          <TableCell>{eleve?.nom ?? "-"}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                              {paiement.methode_paiement}
+                            </span>
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {paiement.montant.toLocaleString("fr-CH")} CHF
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              {paiement.mode_paiement}
+                            </span>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button variant="ghost" size="sm" asChild>
+                              <Link
+                                href={`/ecole_peg/eleves/eleve/${paiement.id}/`}
+                              >
+                                Détails
+                              </Link>
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="text-center py-6 text-muted-foreground"
+                        >
+                          {chargement_paiements
+                            ? "Chargement..."
+                            : "Aucun paiement trouvé."}
                         </TableCell>
                       </TableRow>
-                    ))
-                  ) : (
-                    <TableRow>
-                      <TableCell
-                        colSpan={6}
-                        className="text-center text-muted-foreground h-24"
-                      >
-                        Aucun paiement trouvé
-                      </TableCell>
-                    </TableRow>
-                  )}
-                </TableBody>
-              </Table>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
+
+              <div className="flex items-center justify-end space-x-4 p-6">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setNumPagePaiements((p) => Math.max(1, p - 1))
+                    }
+                    disabled={num_page_paiements === 1}
+                  >
+                    Précédent
+                  </Button>
+
+                  <span className="text-sm text-muted-foreground">
+                    Page {num_page_paiements} sur{" "}
+                    {Math.ceil(
+                      nombre_total_paiements / taille_page_paiements
+                    ) || 1}
+                  </span>
+
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      setNumPagePaiements((p) =>
+                        Math.min(
+                          Math.ceil(
+                            nombre_total_paiements / taille_page_paiements
+                          ),
+                          p + 1
+                        )
+                      )
+                    }
+                    disabled={
+                      num_page_paiements ===
+                        Math.ceil(
+                          nombre_total_paiements / taille_page_paiements
+                        ) || nombre_total_paiements === 0
+                    }
+                  >
+                    Suivant
+                  </Button>
+                </div>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        <TabsContent value="presences">
-          <Card>
-            <CardHeader>
-              <CardTitle>Suivi des présences</CardTitle>
-              <CardDescription>
-                Historique des présences et absences
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Horaire</TableHead>
-                    <TableHead>Statut</TableHead>
-                    <TableHead>Justification</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  <TableRow>
-                    <TableCell>10-025-2025</TableCell>
-                    <TableCell>9h - 12h</TableCell>
-                    <TableCell>
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                        Présent
-                      </span>
-                    </TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        Modifier
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>11-02-2025</TableCell>
-                    <TableCell>9h - 12h</TableCell>
-                    <TableCell>
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                        Présent
-                      </span>
-                    </TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        Modifier
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>12-02-2025</TableCell>
-                    <TableCell>9h - 12h</TableCell>
-                    <TableCell>
-                      <span className="rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-800">
-                        Absent
-                      </span>
-                    </TableCell>
-                    <TableCell>Maladie (certificat médical)</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        Modifier
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                  <TableRow>
-                    <TableCell>13-02-2025</TableCell>
-                    <TableCell>9h - 12h</TableCell>
-                    <TableCell>
-                      <span className="rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-800">
-                        Présent
-                      </span>
-                    </TableCell>
-                    <TableCell>-</TableCell>
-                    <TableCell className="text-right">
-                      <Button variant="ghost" size="sm">
-                        Modifier
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                </TableBody>
-              </Table>
-            </CardContent>
-            <CardFooter className="justify-between border-t px-6 py-4">
-              <div>
-                <p className="text-sm font-medium">Taux de présence: 85%</p>
-              </div>
-              <Button>Enregistrer présence</Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        <TabsContent value="garants">
+        <TabsContent value="garant">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
               <CardTitle>Informations garant</CardTitle>
@@ -794,12 +936,16 @@ export default function ElevePage({
                   <p className="text-sm text-muted-foreground">
                     Aucun garant n&apos;est associé à cet élève.
                   </p>
-                  <Button className="mt-4" variant="outline" asChild>
-                    <Link
-                      href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/ajouter`}
-                    >
-                      Ajouter un garant
-                    </Link>
+                  <Button
+                    className="mt-4"
+                    variant="outline"
+                    onClick={() => {
+                      router.push(
+                        `/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/`
+                      );
+                    }}
+                  >
+                    Ajouter garant
                   </Button>
                 </div>
               )}
@@ -808,7 +954,7 @@ export default function ElevePage({
               <CardFooter className="justify-end border-t px-6 py-4 bg-muted/50">
                 <Button variant="outline" asChild>
                   <Link
-                    href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/modifier`}
+                    href={`/ecole_peg/eleves/eleve/${resolvedParams.id}/modifier/garant/`}
                   >
                     Modifier le garant
                   </Link>
@@ -844,7 +990,7 @@ export default function ElevePage({
                           {doc.nom}
                         </a>
                         <span className="text-sm text-muted-foreground">
-                          {format(new Date(doc.date_ajout), "dd/MM/yyyy")}
+                          {formatDate(doc.date_ajout)}
                         </span>
                       </div>
                       <Button
@@ -894,6 +1040,7 @@ export default function ElevePage({
             </CardContent>
           </Card>
         </TabsContent>
+
         <TabsContent value="tests">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
@@ -902,6 +1049,7 @@ export default function ElevePage({
                 Résultats des tests de l&apos;élève
               </CardDescription>
             </CardHeader>
+
             <CardContent className="p-0">
               <Table>
                 <TableHeader>
@@ -916,9 +1064,7 @@ export default function ElevePage({
                   {tests.length > 0 ? (
                     tests.map((test) => (
                       <TableRow key={test.id} className="hover:bg-muted/50">
-                        <TableCell>
-                          {format(new Date(test.date_test), "dd/MM/yyyy")}
-                        </TableCell>
+                        <TableCell>{formatDate(test.date_test)}</TableCell>
                         <TableCell>
                           <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                             {test.niveau}
@@ -970,6 +1116,64 @@ export default function ElevePage({
                 Nouveau test
               </Button>
             </CardFooter>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="cours_prives">
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
+              <CardTitle>Cours privés</CardTitle>
+              <CardDescription>
+                Historique des cours privés de l&apos;élève
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-0">
+              {cours_prives.length === 0 ? (
+                <div className="text-center py-4">Aucun cours privé trouvé</div>
+              ) : (
+                <>
+                  <div className="relative overflow-x-auto">
+                    <table className="w-full text-sm text-left rtl:text-right">
+                      <thead className="text-xs uppercase bg-gray-50 dark:bg-gray-700">
+                        <tr>
+                          <th className="px-6 py-3">Date</th>
+                          <th className="px-6 py-3">Horaire</th>
+                          <th className="px-6 py-3">Enseignant</th>
+                          <th className="px-6 py-3">Lieu</th>
+                          <th className="px-6 py-3">Tarif</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {cours_prives.map((cours) => (
+                          <tr
+                            key={cours.id}
+                            className="border-b dark:border-gray-700"
+                          >
+                            <td className="px-6 py-4">
+                              {format(
+                                new Date(cours.date_cours_prive),
+                                "dd MMMM yyyy",
+                                { locale: fr }
+                              )}
+                            </td>
+                            <td className="px-6 py-4">
+                              {cours.heure_debut} - {cours.heure_fin}
+                            </td>
+                            <td className="px-6 py-4">
+                              {cours.enseignant__prenom} {cours.enseignant__nom}
+                            </td>
+                            <td className="px-6 py-4">
+                              {cours.lieu === "E" ? "École" : "Domicile"}
+                            </td>
+                            <td className="px-6 py-4">{cours.tarif}€</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </>
+              )}
+            </CardContent>
           </Card>
         </TabsContent>
       </Tabs>

@@ -1,7 +1,5 @@
 "use client";
 
-import type React from "react";
-
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/button";
@@ -24,7 +22,8 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { useForm } from "react-hook-form";
 import { RadioGroup, RadioGroupItem } from "@/components/radio-group";
-import axios from "axios";
+import { api } from "@/lib/api";
+
 export default function NouveauCoursPage() {
   const {
     register,
@@ -34,29 +33,28 @@ export default function NouveauCoursPage() {
 
   const router = useRouter();
 
-  const [type, setType] = useState<"I" | "S">("I");
+  const [type_cours, setTypeCours] = useState<"I" | "S">("I");
   const [niveau, setNiveau] = useState<"A1" | "A2" | "B1" | "B2" | "C1">("A1");
 
   const onSoumission = useCallback(
     async (donnees: object) => {
-      const donneesCompletes = {
+      const donnees_completes = {
         ...donnees,
-        type,
+        type_cours,
         niveau,
       };
 
+      console.log(donnees_completes);
+
       try {
-        await axios.post(
-          "http://localhost:8000/api/cours/cour/",
-          donneesCompletes,
-        );
+        await api.post("/cours/cour/", donnees_completes);
 
         router.push("/ecole_peg/cours/");
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     },
-    [niveau, router, type],
+    [niveau, router, type_cours]
   );
 
   return (
@@ -65,7 +63,7 @@ export default function NouveauCoursPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push("/ecole_peg/cours/")}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -103,9 +101,9 @@ export default function NouveauCoursPage() {
             <div className="space-y-3">
               <Label className="text-base">Type de cours</Label>
               <RadioGroup
-                defaultValue={type}
+                defaultValue={type_cours}
                 className="grid grid-cols-2 gap-4"
-                onValueChange={(valeur) => setType(valeur as "I" | "S")}
+                onValueChange={(valeur) => setTypeCours(valeur as "I" | "S")}
                 required
                 id="type"
               >
@@ -173,6 +171,7 @@ export default function NouveauCoursPage() {
                   required
                   {...register("duree_semaines", {
                     required: "La durée est obligatoire",
+                    valueAsNumber: true,
                     min: {
                       value: 1,
                       message: "La durée minimum est d'une semaine",
@@ -199,6 +198,7 @@ export default function NouveauCoursPage() {
                   required
                   {...register("heures_par_semaine", {
                     required: "Le nombre d'heures est obligatoire",
+                    valueAsNumber: true,
                     min: {
                       value: 1,
                       message: "Minimum 1 heure par semaine",
@@ -214,7 +214,7 @@ export default function NouveauCoursPage() {
 
             <div className="space-y-2">
               <Label htmlFor="tarif" className="text-base">
-                Tarif (€)
+                Tarif (CHF)
               </Label>
               <Input
                 id="tarif"
@@ -227,6 +227,7 @@ export default function NouveauCoursPage() {
                 required
                 {...register("tarif", {
                   required: "Le tarif est obligatoire",
+                  valueAsNumber: true,
                   min: {
                     value: 0,
                     message: "Le tarif ne peut pas être négatif",

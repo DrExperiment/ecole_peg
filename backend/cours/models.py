@@ -58,7 +58,7 @@ class MoisChoices(models.TextChoices):
 
 class Cours(models.Model):
     nom = models.CharField(max_length=100, validators=[MinLengthValidator(2)])
-    type = models.CharField(max_length=1, choices=TypeCoursChoices.choices)
+    type_cours = models.CharField(max_length=1, choices=TypeCoursChoices.choices)
     niveau = models.CharField(max_length=2, choices=NiveauChoices.choices)
     heures_par_semaine = models.PositiveIntegerField(
         blank=True, null=True, validators=[MinValueValidator(1)]
@@ -73,17 +73,18 @@ class Cours(models.Model):
     def clean(self):
         super().clean()
         if self.heures_par_semaine and self.duree_semaines:
-            max_hours = self.duree_semaines * 40  # Exemple : 40 heures par semaine max
-            if self.heures_par_semaine > max_hours:
+            max_total = self.duree_semaines * 40
+            total = self.heures_par_semaine * self.duree_semaines
+            if total > max_total:
                 raise ValidationError(
                     "Les heures par semaine dépassent la limite raisonnable pour la durée du cours."
                 )
 
     class Meta:
-        ordering = ["type", "niveau"]
+        ordering = ["type_cours", "niveau"]
         indexes = [
             models.Index(fields=["niveau"]),
-            models.Index(fields=["type"]),
+            models.Index(fields=["type_cours"]),
         ]
 
 
@@ -196,21 +197,6 @@ class Presence(models.Model):
     eleve = models.ForeignKey(Eleve, on_delete=models.CASCADE, related_name="presences")
     date_presence = models.DateField()
     statut = models.CharField(max_length=1, choices=StatutPresenceChoices.choices)
-
-    #def clean(self):
-     #   super().clean()
-       # if not (
-       #     self.fiche_presences.session.date_debut
-     #       <= self.date_presence
-      #      <= self.fiche_presences.session.date_fin
-       # ):
-       #     raise ValidationError(
-#"La date de présence doit être dans la plage de dates de la session."
-        #    )
-        #if self.date_presence > timezone.now().date():
-         #   raise ValidationError(
-           #     "Impossible d'enregistrer une présence pour une date future."
-         #   )
 
     class Meta:
         unique_together = (("eleve", "date_presence"),)

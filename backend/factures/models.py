@@ -2,6 +2,7 @@ from django.db import models
 from django.core.exceptions import ValidationError
 from django.db.models import Sum
 from django.core.validators import MinValueValidator
+from django.db import models, transaction
 
 class ModePaiementChoices(models.TextChoices):
     PERSONNEL = "PER", "Personnel"
@@ -22,33 +23,73 @@ class MethodePaiementChoices(models.TextChoices):
 class Facture(models.Model):
     date_emission = models.DateField(auto_now_add=True)
     inscription = models.ForeignKey(
-        "cours.Inscription", on_delete=models.CASCADE, null=True, blank=True, related_name="factures"
+        "cours.Inscription", on_delete=models.CASCADE, 
+        null=True, blank=True, related_name="factures"
     )
     cours_prive = models.ForeignKey(
-        "cours.CoursPrive", on_delete=models.CASCADE, null=True, blank=True, related_name="factures"
+        "cours.CoursPrive", on_delete=models.CASCADE, 
+        null=True, blank=True, related_name="factures"
     )
-    eleve = models.ForeignKey("eleves.Eleve", on_delete=models.CASCADE, blank=True, null=True, related_name="factures")
+    eleve = models.ForeignKey(
+        "eleves.Eleve", on_delete=models.CASCADE, 
+        blank=True, null=True, related_name="factures"
+    )
 
-    _cached_montant_total = None  # Cache pour le montant total
-    _cached_montant_restant = None  # Cache pour le montant restant
+    # --- NOUVEAU CHAMP ---
+    numero_facture = models.PositiveIntegerField(
+        editable=False,
+        help_text="Position de la facture dans l'historique de l'élève"
+    )
+
+    _cached_montant_total = None
+    _cached_montant_restant = None
+
+    class Meta:
+        ordering = ["date_emission"]
+        unique_together = (
+            "eleve", "numero_facture"
+        )
+
+    def save(self, *args, **kwargs):
+        if not self.pk and self.numero_facture is None:
+            with transaction.atomic():
+                # Déterminer l'élève concerné
+                eleve_cible = (
+                    self.inscription.eleve if self.inscription else self.eleve
+                )
+                self.eleve = eleve_cible  # Toujours remplir ce champ pour cohérence
+
+                if eleve_cible:
+                    last_num = (
+                        Facture.objects
+                        .filter(
+                            models.Q(inscription__eleve=eleve_cible) |
+                            models.Q(eleve=eleve_cible)
+                        )
+                        .aggregate(max_num=models.Max("numero_facture"))["max_num"] or 0
+                    )
+                    self.numero_facture = last_num + 1
+        super().save(*args, **kwargs)
+
 
     @property
     def montant_total(self):
-        """Somme des montants des détails de la facture."""
         if self._cached_montant_total is None:
-            self._cached_montant_total = self.details.aggregate(total=Sum("montant"))["total"] or 0
+            self._cached_montant_total = self.details.aggregate(
+                total=Sum("montant")
+            )["total"] or 0
         return self._cached_montant_total
 
     @property
     def montant_restant(self):
-        """Montant total - somme des paiements effectués."""
         if self._cached_montant_restant is None:
-            total_paiements = self.paiements.aggregate(total=Sum("montant"))["total"] or 0
+            total_paiements = self.paiements.aggregate(
+                total=Sum("montant")
+            )["total"] or 0
             self._cached_montant_restant = max(self.montant_total - total_paiements, 0)
         return self._cached_montant_restant
 
     def reset_cache(self):
-        """Réinitialise les caches pour les montants."""
         self._cached_montant_total = None
         self._cached_montant_restant = None
     
@@ -75,8 +116,6 @@ class Facture(models.Model):
         if not self.inscription and not self.cours_prive and not self.eleve:
             raise ValidationError("La facture doit être liée soit à une inscription, soit à un cours privé avec un élève.")
         
-    class Meta:
-        ordering = ["date_emission"]
         
 class DetailFacture(models.Model):
     description = models.CharField(max_length=100)
@@ -85,15 +124,15 @@ class DetailFacture(models.Model):
     montant = models.DecimalField(max_digits=10, decimal_places=2,validators=[MinValueValidator(0.01)])
     facture = models.ForeignKey(Facture, on_delete=models.CASCADE, related_name="details")
     
-def clean(self):
-    super().clean()
-    if self.date_debut_periode and not self.date_fin_periode:
-        raise ValidationError("La date de fin de période doit être définie si la date de début est définie.")
-    if self.date_fin_periode and not self.date_debut_periode:
-        raise ValidationError("La date de début de période doit être définie si la date de fin est définie.")
-    if self.date_debut_periode and self.date_fin_periode:
-        if self.date_debut_periode > self.date_fin_periode:
-            raise ValidationError("La date de début doit être antérieure à la date de fin.")
+    def clean(self):
+        super().clean()
+        if self.date_debut_periode and not self.date_fin_periode:
+            raise ValidationError("La date de fin de période doit être définie si la date de début est définie.")
+        if self.date_fin_periode and not self.date_debut_periode:
+            raise ValidationError("La date de début de période doit être définie si la date de fin est définie.")
+        if self.date_debut_periode and self.date_fin_periode:
+            if self.date_debut_periode > self.date_fin_periode:
+                raise ValidationError("La date de début doit être antérieure à la date de fin.")
         
 class Paiement(models.Model):
     date_paiement = models.DateField(auto_now_add=True)
@@ -114,3 +153,4 @@ class Paiement(models.Model):
                 raise ValidationError(f"Le paiement ne peut pas excéder {self.facture.montant_restant} CHF.")
         if self.montant <= 0:
             raise ValidationError("Le montant du paiement doit être supérieur à 0.")
+        

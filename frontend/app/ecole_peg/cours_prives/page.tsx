@@ -1,11 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useState, useEffect } from "react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { format, parseISO, isValid } from "date-fns";
-import { fr } from "date-fns/locale";
-
 import { Button } from "@/components/button";
 import {
   Card,
@@ -23,54 +20,70 @@ import {
   TableBody,
   TableCell,
 } from "@/components/table";
+import { useRouter } from "next/navigation";
+import { formatDate } from "@/lib/utils";
 
-// votre interface
 interface CoursPrive {
   id: number;
-  date_cours_prive: string;
+  date_cours_prive: Date;
   heure_debut: string;
   heure_fin: string;
-  tarif: number | string;
-  lieu: string;
+  tarif: number;
+  lieu: "E" | "D";
 
-  // plus d'objet enseignant ici
   enseignant__nom: string;
   enseignant__prenom: string;
 
-  // simple tableau de string
   eleves: string[];
 }
 
+interface ReponseCoursPrives {
+  cours_prives: CoursPrive[];
+  nombre_total: number;
+}
+
 export default function CoursPrivesPage() {
-  const [filteredCours, setFilteredCours] = useState<CoursPrive[]>([]);
+  const router = useRouter();
+
+  const [cours_prives, setCoursPrives] = useState<CoursPrive[]>([]);
+  const [nombre_total, setNombreTotal] = useState(0);
+  const [chargement, setChargement] = useState(false);
+  const [num_page, setNumPage] = useState(1);
+  const taille_page = 10;
 
   useEffect(() => {
-    axios
-      .get<{ cours_prives: CoursPrive[] }>(
-        "http://localhost:8000/api/cours/cours_prive/",
-      )
-      .then((res) => {
-        const cours = res.data.cours_prives;
-        setFilteredCours(cours);
-      })
+    async function fetchCoursPrives() {
+      setChargement(true);
+      try {
+        const params: Record<string, string | number> = {
+          page: num_page,
+          taille: taille_page,
+        };
 
-      .catch(console.error);
-  }, []);
+        const reponse = await api.get<ReponseCoursPrives>("/cours/cours_prive/", {
+          params,
+        });
 
-  // formateur de date sécurisé
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "";
-    const parsed = parseISO(dateString);
+        setCoursPrives(reponse.data.cours_prives);
+        setNombreTotal(reponse.data.nombre_total);
+      } catch (err) {
+        console.error("Erreur: ", err);
+        setCoursPrives([]);
+        setNombreTotal(0);
+      }
+      setChargement(false);
+    }
+
+    fetchCoursPrives();
+  }, [num_page, taille_page]);
+
+  const formatTime = (string_temps: string) => {
+    if (!string_temps) return "";
+
+    const parsed = parseISO(`1970-01-01T${string_temps}`);
+
     if (!isValid(parsed)) return "";
-    return format(parsed, "dd/MM/yyyy", { locale: fr });
-  };
 
-  // formateur d'heure sécurisé
-  const formatTime = (timeString?: string) => {
-    if (!timeString) return "";
-    // on crée une date ISO arbitraire pour l'heure
-    const parsed = parseISO(`1970-01-01T${timeString}`);
-    if (!isValid(parsed)) return "";
     return format(parsed, "HH:mm");
   };
 
@@ -83,11 +96,13 @@ export default function CoursPrivesPage() {
             Gérez les cours privés de l&apos;école
           </p>
         </div>
-        <Button asChild>
-          <Link href="/ecole_peg/cours_prives/cours_prive">
-            <Plus className="mr-2 h-4 w-4" />
-            Nouveau cours privé
-          </Link>
+        <Button
+          onClick={() => {
+            router.push("/ecole_peg/cours_prives/cours_prive");
+          }}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Nouveau cours privé
         </Button>
       </div>
 
@@ -105,8 +120,8 @@ export default function CoursPrivesPage() {
                 <TableRow>
                   <TableHead className="font-medium">Date</TableHead>
                   <TableHead className="font-medium">Horaire</TableHead>
-                  <TableHead className="font-medium">Étudiant(s)</TableHead>
-                  <TableHead className="font-medium">Professeur</TableHead>
+                  <TableHead className="font-medium">Élève(s)</TableHead>
+                  <TableHead className="font-medium">Enseignant</TableHead>
                   <TableHead className="font-medium">Tarif</TableHead>
                   <TableHead className="font-medium">Lieu</TableHead>
                   <TableHead className="text-right font-medium">
@@ -115,8 +130,8 @@ export default function CoursPrivesPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filteredCours.length > 0 ? (
-                  filteredCours.map((cours) => (
+                {cours_prives.length > 0 ? (
+                  cours_prives.map((cours) => (
                     <TableRow key={cours.id}>
                       <TableCell className="whitespace-nowrap">
                         {formatDate(cours.date_cours_prive)}
@@ -139,7 +154,7 @@ export default function CoursPrivesPage() {
                           </div>
                         ) : (
                           <span className="text-sm text-muted-foreground">
-                            Aucun étudiant
+                            Aucun élève
                           </span>
                         )}
                       </TableCell>
@@ -157,17 +172,21 @@ export default function CoursPrivesPage() {
                           {cours.lieu === "E"
                             ? "École"
                             : cours.lieu === "D"
-                              ? "Domicile"
-                              : cours.lieu}
+                            ? "Domicile"
+                            : cours.lieu}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link
-                            href={`/ecole_peg/cours_prives/cours_prive/${cours.id}`}
-                          >
-                            Détails
-                          </Link>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => {
+                            router.push(
+                              `/ecole_peg/cours_prives/cours_prive/${cours.id}`
+                            );
+                          }}
+                        >
+                          Détails
                         </Button>
                       </TableCell>
                     </TableRow>
@@ -178,12 +197,42 @@ export default function CoursPrivesPage() {
                       colSpan={7}
                       className="text-center py-6 text-muted-foreground"
                     >
-                      Aucun cours privé trouvé.
+                      {chargement ? (
+                        "Chargement..."
+                      ) : (
+                        "Aucun cours privé trouvé."
+                      )}
                     </TableCell>
                   </TableRow>
                 )}
               </TableBody>
             </Table>
+          </div>
+
+          <div className="flex items-center justify-end space-x-4 py-4">
+            <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNumPage((p) => Math.max(1, p - 1))}
+                disabled={num_page === 1}
+              >
+                Précédent
+              </Button>
+
+              <span className="text-sm text-muted-foreground">
+                Page {num_page} sur {Math.ceil(nombre_total / taille_page) || 1}
+              </span>
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setNumPage((p) => Math.min(Math.ceil(nombre_total / taille_page), p + 1))}
+                disabled={num_page === Math.ceil(nombre_total / taille_page) || nombre_total === 0}
+              >
+                Suivant
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

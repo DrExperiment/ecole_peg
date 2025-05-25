@@ -12,156 +12,146 @@ import {
   TableRow,
 } from "@/components/table";
 import { ArrowLeft, Save } from "lucide-react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { format } from "date-fns";
 import { fr } from "date-fns/locale";
 import { useRouter } from "next/navigation";
 
-// Typages back-end
 interface Eleve {
   id: number;
   nom: string;
   prenom: string;
 }
 
-interface PresenceOut {
+interface Presence {
   id: number;
   id_eleve: number;
-  date_presence: string; // ISO date
+  date_presence: Date;
   statut: "P" | "A";
 }
 
-interface FichePresencesOut {
+interface FichePresences {
   id: number;
-  mois: string; // "01" à "12"
+  mois:
+    | "01"
+    | "02"
+    | "03"
+    | "04"
+    | "05"
+    | "06"
+    | "07"
+    | "08"
+    | "09"
+    | "10"
+    | "11"
+    | "12";
   annee: number;
-  presences: PresenceOut[]; // ici 31 × #élèves instances
+  presences: Presence[];
 }
 
-// Map 2D : eleveId → ( jour → PresenceOut )
-type PresenceMap = Record<number, Record<number, PresenceOut>>;
+type MapPresences = Record<number, Record<number, Presence>>;
 
-export default function PresenceDetailPage({
+export default function FichePresencePage({
   params,
 }: {
-  params: Promise<{ id: string; presenceid: string }>;
+  params: Promise<{ id: string; id_fiche: string }>;
 }) {
-  const { id: sessionId, presenceid: ficheId } = use(params);
+  const resolvedParams = use(params);
 
   const [eleves, setEleves] = useState<Eleve[]>([]);
-  const [fiche, setFiche] = useState<FichePresencesOut>();
-  const [presenceMap, setPresenceMap] = useState<PresenceMap>({});
-  const [loading, setLoading] = useState(true);
+  const [fiche, setFiche] = useState<FichePresences>();
+
+  const [map_presences, setMapPresences] = useState<MapPresences>({});
+  const [chargement, setChargement] = useState(true);
 
   const router = useRouter();
 
   useEffect(() => {
-    async function loadAll() {
-      setLoading(true);
+    async function fetchDonnees() {
+      setChargement(true);
+
       try {
-        // 1️⃣ Charger les élèves
-        const elevesRes = await axios.get<Eleve[]>(
-          `http://localhost:8000/api/cours/session/${sessionId}/eleves/`,
-        );
-        setEleves(elevesRes.data);
+        const [reponse_eleves, reponse_fiche] = await Promise.all([
+          api.get<Eleve[]>(`/cours/session/${resolvedParams.id}/eleves/`),
+          api.get<FichePresences>(
+            `/cours/fiche_presences/${resolvedParams.id_fiche}/`
+          ),
+        ]);
 
-        // 2️⃣ Charger la fiche + toutes les présences (31×#élèves)
-        const ficheRes = await axios.get<FichePresencesOut>(
-          `http://localhost:8000/api/cours/fiche_presences/${ficheId}/`,
-        );
-        setFiche(ficheRes.data);
+        setEleves(reponse_eleves.data);
+        setFiche(reponse_fiche.data);
 
-        // 3️⃣ Construire la map jour→presence pour chaque élève
-        const map2d: PresenceMap = {};
-        ficheRes.data.presences.forEach((p) => {
+        const map2d: MapPresences = {};
+
+        reponse_fiche.data.presences.forEach((p) => {
           const jour = new Date(p.date_presence).getUTCDate();
+
           if (!map2d[p.id_eleve]) map2d[p.id_eleve] = {};
+
           map2d[p.id_eleve][jour] = p;
         });
-        setPresenceMap(map2d);
+
+        setMapPresences(map2d);
       } catch (err) {
-        console.error("Erreur chargement :", err);
-        alert("Impossible de charger les données.");
+        console.error("Erreur: ", err);
       } finally {
-        setLoading(false);
+        setChargement(false);
       }
     }
-    loadAll();
-  }, [sessionId, ficheId]);
 
-  if (loading || !fiche) {
+    fetchDonnees();
+  }, [resolvedParams.id, resolvedParams.id_fiche]);
+
+  if (chargement || !fiche) {
     return <div>Chargement…</div>;
   }
 
-  // Génération des jours du mois (taille = 28–31)
-  const monthIndex = parseInt(fiche.mois, 10) - 1;
-  const lastDay = new Date(fiche.annee, monthIndex + 1, 0).getDate();
-  const joursDuMois = Array.from({ length: lastDay }, (_, i) => i + 1);
+  const indiceMois = parseInt(fiche.mois, 10) - 1;
+  const dernierJour = new Date(fiche.annee, indiceMois + 1, 0).getDate();
+  const joursDuMois = Array.from({ length: dernierJour }, (_, i) => i + 1);
 
-  // Compte des présents pour un élève
-  function totalPresences(eleveId: number) {
-    return Object.values(presenceMap[eleveId] || {}).filter(
-      (p) => p.statut === "P",
+  function totalPresences(id_eleve: number) {
+    return Object.values(map_presences[id_eleve] || {}).filter(
+      (p) => p.statut === "P"
     ).length;
   }
 
-  // Inverse uniquement le statut d'une instance existante
-  function togglePresence(eleveId: number, jour: number) {
-    setPresenceMap((prev) => {
-      const next = { ...prev };
-      const studentMap = { ...(next[eleveId] || {}) };
-      const existing = studentMap[jour];
+  function togglePresence(id_eleve: number, jour: number) {
+    setMapPresences((prec) => {
+      const suiv = { ...prec };
+      const map_eleves = { ...(suiv[id_eleve] || {}) };
+      const existant = map_eleves[jour];
 
-      if (!existing) {
-        // ne devrait pas arriver si tu as bien 31 instances en base
-        return prev;
-      }
-
-      // On inverse
-      studentMap[jour] = {
-        ...existing,
-        statut: existing.statut === "P" ? "A" : "P",
+      map_eleves[jour] = {
+        ...existant,
+        statut: existant.statut === "P" ? "A" : "P",
       };
-      next[eleveId] = studentMap;
-      return next;
+
+      suiv[id_eleve] = map_eleves;
+
+      return suiv;
     });
   }
 
-  // Enregistrement de TOUTES les présences (un bulk PUT)
   async function handleSave() {
-    // 1) Aplatir toutes les instances
-    const allPresences = Object.values(presenceMap).flatMap((byJour) =>
-      Object.values(byJour),
+    const toutes_presences = Object.values(map_presences).flatMap((par_jour) =>
+      Object.values(par_jour)
     );
 
-    // 2) Préparer le payload : uniquement {id, statut}
-    const toUpdate = allPresences.map((p) => ({
+    const a_modifier = toutes_presences.map((p) => ({
       id: p.id,
       statut: p.statut === "P" ? "P" : "A",
     }));
 
     try {
-      // 3) Bulk PUT
-      await axios.put(
-        `http://localhost:8000/api/cours/fiche_presences/${ficheId}/`,
-        toUpdate,
+      await api.put(
+        `/cours/fiche_presences/${resolvedParams.id_fiche}/`,
+        a_modifier
       );
-      alert("Mise à jour réussie ✅");
 
-      // 4) Re-fetch pour resynchroniser la grille
-      const { data } = await axios.get<FichePresencesOut>(
-        `http://localhost:8000/api/cours/fiche_presences/${ficheId}/`,
-      );
-      const map2d: PresenceMap = {};
-      data.presences.forEach((p) => {
-        const jour = new Date(p.date_presence).getUTCDate();
-        if (!map2d[p.id_eleve]) map2d[p.id_eleve] = {};
-        map2d[p.id_eleve][jour] = p;
-      });
-      setPresenceMap(map2d);
+      router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`);
     } catch (err) {
-      console.error("Erreur save :", err);
-      alert("Échec de l’enregistrement.");
+      console.error("Erreur :", err);
     }
   }
 
@@ -172,7 +162,7 @@ export default function PresenceDetailPage({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.back()}
+            onClick={() => router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`)}
             aria-label="Retourner à la page précédente"
           >
             <ArrowLeft className="h-4 w-4" />
@@ -182,7 +172,7 @@ export default function PresenceDetailPage({
               Fiche de présence
             </h1>
             <p className="text-muted-foreground">
-              {format(new Date(fiche.annee, monthIndex), "MMMM yyyy", {
+              {format(new Date(fiche.annee, indiceMois), "MMMM yyyy", {
                 locale: fr,
               })}
             </p>
@@ -193,7 +183,7 @@ export default function PresenceDetailPage({
         </Button>
       </div>
 
-      {loading ? (
+      {chargement ? (
         <Card className="w-full max-w-md mx-auto shadow-sm">
           <CardHeader>
             <CardTitle className="text-center">Chargement...</CardTitle>
@@ -210,7 +200,7 @@ export default function PresenceDetailPage({
                 <TableHeader>
                   <TableRow className="hover:bg-muted/50">
                     <TableHead className="w-[200px] bg-muted/50 left-0 sticky z-10">
-                      Étudiant
+                      Élève
                     </TableHead>
                     {joursDuMois.map((j) => (
                       <TableHead
@@ -226,13 +216,14 @@ export default function PresenceDetailPage({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {eleves.map((etu) => (
-                    <TableRow key={etu.id} className="hover:bg-muted/50">
+                  {eleves.map((e) => (
+                    <TableRow key={e.id} className="hover:bg-muted/50">
                       <TableCell className="font-medium bg-white/80 left-0 sticky z-10">
-                        {etu.prenom} {etu.nom}
+                        {e.nom} {e.prenom}
                       </TableCell>
                       {joursDuMois.map((j) => {
-                        const p = presenceMap[etu.id]?.[j];
+                        const p = map_presences[e.id]?.[j];
+
                         return (
                           <TableCell key={j} className="text-center p-0">
                             <button
@@ -241,7 +232,7 @@ export default function PresenceDetailPage({
                                   ? "bg-primary/10 hover:bg-primary/20 text-primary font-medium"
                                   : "hover:bg-muted"
                               }`}
-                              onClick={() => togglePresence(etu.id, j)}
+                              onClick={() => togglePresence(e.id, j)}
                             >
                               {p?.statut === "P" ? "✓" : "–"}
                             </button>
@@ -249,7 +240,7 @@ export default function PresenceDetailPage({
                         );
                       })}
                       <TableCell className="text-right font-medium bg-white/80 right-0 sticky z-10">
-                        {totalPresences(etu.id)}
+                        {totalPresences(e.id)}
                       </TableCell>
                     </TableRow>
                   ))}

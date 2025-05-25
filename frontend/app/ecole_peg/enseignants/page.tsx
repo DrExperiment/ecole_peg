@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -18,8 +17,10 @@ import {
   TableRow,
 } from "@/components/table";
 import { Plus } from "lucide-react";
-import { useEffect, useState } from "react";
-import axios from "axios";
+import { useCallback, useEffect, useState } from "react";
+import { api } from "@/lib/api";
+import { useRouter } from "next/navigation";
+
 interface Enseignant {
   id: number;
   nom: string;
@@ -29,33 +30,29 @@ interface Enseignant {
 export default function EnseignantsPage() {
   const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
 
-  useEffect(() => {
-    async function fetchEnseignants() {
-      try {
-        const reponse = await axios.get(
-          "http://localhost:8000/api/cours/enseignants/",
-        );
+  const router = useRouter();
 
-        setEnseignants(reponse.data.enseignants); // c'est ici que sont vraiment les enseignants
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
-      }
+  const fetchEnseignants = useCallback(async () => {
+    try {
+      const reponse = await api.get<Enseignant[]>("/cours/enseignants/");
+
+      setEnseignants(reponse.data);
+    } catch (err) {
+      console.error("Erreur: ", err);
     }
-
-    fetchEnseignants();
   }, []);
+
+  useEffect(() => {
+    fetchEnseignants();
+  }, [fetchEnseignants]);
 
   async function supprimerEnseignant(id_enseignant: number) {
     try {
-      await axios.delete(
-        `http://localhost:8000/api/cours/enseignants/${id_enseignant}/`,
-      );
+      await api.delete(`/cours/enseignants/${id_enseignant}/`);
 
-      setEnseignants((enseignantsPrec) =>
-        enseignantsPrec.filter((enseignant) => enseignant.id !== id_enseignant),
-      );
-    } catch (erreur) {
-      console.error("Erreur: ", erreur);
+      fetchEnseignants();
+    } catch (err) {
+      console.error("Erreur: ", err);
     }
   }
 
@@ -68,11 +65,11 @@ export default function EnseignantsPage() {
             Gérez les enseignants de l&apos;école
           </p>
         </div>
-        <Button asChild>
-          <Link href="/ecole_peg/enseignants/enseignant">
-            <Plus className="mr-2 h-4 w-4" />
-            Nouveau enseignant
-          </Link>
+        <Button
+          onClick={() => router.push("/ecole_peg/enseignants/enseignant")}
+        >
+          <Plus className="mr-2 h-4 w-4" />
+          Nouveau enseignant
         </Button>
       </div>
 
@@ -103,14 +100,7 @@ export default function EnseignantsPage() {
                         {enseignant.nom}
                       </TableCell>
                       <TableCell>{enseignant.prenom}</TableCell>
-                      <TableCell className="text-right space-x-2">
-                        <Button variant="ghost" size="sm" asChild>
-                          <Link
-                            href={`/ecole_peg/enseignants/enseignant/${enseignant.id}`}
-                          >
-                            Détails
-                          </Link>
-                        </Button>
+                      <TableCell className="text-right">
                         <Button
                           variant="destructive"
                           size="sm"

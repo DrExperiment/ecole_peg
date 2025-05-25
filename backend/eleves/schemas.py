@@ -48,8 +48,6 @@ class TestOut(Schema):
 
 
 # ------------------- DOCUMENT -------------------
-
-
 class DocumentOut(Schema):
     id: int
     nom: str
@@ -87,7 +85,7 @@ class EleveIn(Schema):
     adresse_facturation: str | None = None
     type_permis: str | None = None
     date_permis: date | None = None
-    niveau: str
+    niveau: str | None = None
     langue_maternelle: str | None = None
     autres_langues: str | None = None
     src_decouverte: str | None = None
@@ -106,6 +104,7 @@ class ElevesOut(Schema):
 
 
 class EleveOut(Schema, from_attributes=True):
+    id: int 
     nom: str
     prenom: str
     date_naissance: date
@@ -120,11 +119,12 @@ class EleveOut(Schema, from_attributes=True):
     adresse_facturation: str | None = None
     type_permis: str | None = None
     date_permis: date | None = None
-    niveau: str
+    niveau: str | None = None
     langue_maternelle: str | None = None
     autres_langues: str | None = None
     src_decouverte: str | None = None
     commentaires: str | None = None
+    pays_id: int  
     pays__nom: str
 
 

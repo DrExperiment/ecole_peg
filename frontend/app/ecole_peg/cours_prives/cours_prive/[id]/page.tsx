@@ -1,47 +1,43 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
   CardFooter,
 } from "@/components/card";
 import { Button } from "@/components/button";
 import { format, parseISO, isValid } from "date-fns";
-import { fr } from "date-fns/locale";
 import { ArrowLeft, Clock, Users, User, CreditCard } from "lucide-react";
-import axios from "axios";
+import { api } from "@/lib/api";
+import { formatDate } from "@/lib/utils";
 
 interface CoursPrive {
   id: number;
-  date_cours_prive: string;
+  date_cours_prive: Date;
   heure_debut: string;
   heure_fin: string;
-  tarif: number | string;
-  lieu: string;
+  tarif: number;
+  lieu: "D" | "E";
   enseignant__nom: string;
   enseignant__prenom: string;
   eleves: string[];
 }
 
-export default function CoursPriveDetailsPage() {
-  const params = useParams();
+export default function DetailsCoursPrivePage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const resolvedParams = use(params);
   const router = useRouter();
-  const id = params.id as string;
 
-  const [coursPrive, setCoursPrive] = useState<CoursPrive | null>(null);
-
-  // Fonctions pour formater date/heure
-  const formatDate = (dateString?: string) => {
-    if (!dateString) return "";
-    const parsed = parseISO(dateString);
-    if (!isValid(parsed)) return "";
-    return format(parsed, "EEEE d MMMM yyyy", { locale: fr });
-  };
+  const [cours_prive, setCoursPrive] = useState<CoursPrive | undefined>(
+    undefined
+  );
 
   const formatTime = (timeString?: string) => {
     if (!timeString) return "";
@@ -51,16 +47,22 @@ export default function CoursPriveDetailsPage() {
   };
 
   useEffect(() => {
-    if (!id) return;
-    axios
-      .get<CoursPrive>(`http://localhost:8000/api/cours/cours_prive/${id}/`)
-      .then((res) => setCoursPrive(res.data))
-      .catch(() => {
-        setCoursPrive(null);
-      });
-  }, [id]);
+    async function fetchCoursPrive() {
+      try {
+        const reponse = await api.get<CoursPrive>(
+          `/cours/cours_prive/${resolvedParams.id}/`
+        );
 
-  if (!coursPrive) {
+        setCoursPrive(reponse.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
+      }
+    }
+
+    fetchCoursPrive();
+  }, [resolvedParams.id]);
+
+  if (!cours_prive) {
     return (
       <div className="container mx-auto py-6">
         <Card className="w-full max-w-md mx-auto shadow-sm">
@@ -72,13 +74,23 @@ export default function CoursPriveDetailsPage() {
     );
   }
 
+  async function supprimerCoursPrive() {
+    try {
+      await api.delete(`/cours/cours_prive/${resolvedParams.id}/`);
+
+      router.push("/ecole_peg/cours_prives/");
+    } catch (err) {
+      console.error("Erreur: ", err);
+    }
+  }
+
   return (
     <div className="container mx-auto py-6 space-y-6">
       <div className="flex items-center gap-4 mb-6">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push("/ecole_peg/cours_prives/")}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -92,19 +104,16 @@ export default function CoursPriveDetailsPage() {
         <CardHeader className="border-b">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Cours privé #{coursPrive.id}</CardTitle>
-              <CardDescription className="mt-1.5">
-                {formatDate(coursPrive.date_cours_prive)}
-              </CardDescription>
+              <CardTitle>Cours privé {formatDate(cours_prive.date_cours_prive)}</CardTitle>
             </div>
             <span
               className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
-                coursPrive.lieu === "E"
+                cours_prive.lieu === "E"
                   ? "bg-blue-100 text-blue-800"
                   : "bg-emerald-100 text-emerald-800"
               }`}
             >
-              {coursPrive.lieu === "E" ? "À l'école" : "À domicile"}
+              {cours_prive.lieu === "E" ? "À l'école" : "À domicile"}
             </span>
           </div>
         </CardHeader>
@@ -119,8 +128,8 @@ export default function CoursPriveDetailsPage() {
                     Horaire
                   </p>
                   <p className="text-sm">
-                    {formatTime(coursPrive.heure_debut)} –{" "}
-                    {formatTime(coursPrive.heure_fin)}
+                    {formatTime(cours_prive.heure_debut)} –{" "}
+                    {formatTime(cours_prive.heure_fin)}
                   </p>
                 </div>
               </div>
@@ -131,7 +140,7 @@ export default function CoursPriveDetailsPage() {
                   <p className="text-sm font-medium text-muted-foreground">
                     Tarif
                   </p>
-                  <p className="text-sm">{coursPrive.tarif} CHF</p>
+                  <p className="text-sm">{cours_prive.tarif} CHF</p>
                 </div>
               </div>
             </div>
@@ -144,7 +153,8 @@ export default function CoursPriveDetailsPage() {
                     Enseignant
                   </p>
                   <p className="text-sm">
-                    {coursPrive.enseignant__prenom} {coursPrive.enseignant__nom}
+                    {cours_prive.enseignant__nom}{" "}
+                    {cours_prive.enseignant__prenom}
                   </p>
                 </div>
               </div>
@@ -156,8 +166,8 @@ export default function CoursPriveDetailsPage() {
                     Élèves
                   </p>
                   <p className="text-sm">
-                    {coursPrive.eleves.length > 0
-                      ? coursPrive.eleves.join(", ")
+                    {cours_prive.eleves.length > 0
+                      ? cours_prive.eleves.join(", ")
                       : "Aucun élève inscrit"}
                   </p>
                 </div>
@@ -170,10 +180,20 @@ export default function CoursPriveDetailsPage() {
           <Button
             variant="outline"
             onClick={() =>
-              router.push(`/ecole_peg/cours_prives/cours_prive/${id}/modifier`)
+              router.push(
+                `/ecole_peg/cours_prives/cours_prive/${resolvedParams.id}/modifier/`
+              )
             }
           >
             Modifier
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={() =>
+              supprimerCoursPrive()
+            }
+          >
+            Supprimer
           </Button>
         </CardFooter>
       </Card>

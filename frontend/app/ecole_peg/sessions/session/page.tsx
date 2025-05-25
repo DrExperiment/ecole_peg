@@ -1,6 +1,5 @@
 "use client";
 
-import type React from "react";
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/button";
@@ -23,13 +22,13 @@ import {
 import { ArrowLeft } from "lucide-react";
 import { format } from "date-fns";
 import { useForm } from "react-hook-form";
-import axios from "axios";
+import { api } from "@/lib/api";
 
 interface Cours {
   id: number;
   nom: string;
-  type: string;
-  niveau: string;
+  type_cours: "I" | "S";
+  niveau: "A1" | "A2" | "B1" | "B2" | "C1";
 }
 
 interface Enseignant {
@@ -55,17 +54,14 @@ export default function NouvelleSessionPage() {
 
   const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
   const [id_enseignant, setIdEnseignant] = useState<number>();
+
   const [periode_journee, setPeriodeJournee] = useState<"M" | "S">("M");
-  const [seances_mois, setSeancesMois] = useState<number | undefined>(
-    undefined,
-  );
 
   const onSoumission = useCallback(
     async (donnees: object) => {
-      const donneesCompletes = {
+      const donnees_completes = {
         ...donnees,
         date_debut: date_debut ? format(date_debut, "yyyy-MM-dd") : undefined,
-        seances_mois,
         date_fin: date_fin ? format(date_fin, "yyyy-MM-dd") : undefined,
         id_cours,
         id_enseignant,
@@ -73,50 +69,34 @@ export default function NouvelleSessionPage() {
       };
 
       try {
-        await axios.post(
-          "http://localhost:8000/api/cours/session/",
-          donneesCompletes,
-        );
+        await api.post("/cours/session/", donnees_completes);
+
         router.push("/ecole_peg/sessions/");
-      } catch (erreur) {
-        if (axios.isAxiosError(erreur)) {
-          console.error("Erreur détaillée :", erreur.response?.data);
-        } else {
-          console.error("Erreur inconnue :", erreur);
-        }
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     },
-    [
-      date_debut,
-      date_fin,
-      id_cours,
-      id_enseignant,
-      seances_mois,
-      periode_journee,
-      router,
-    ],
+    [date_debut, date_fin, id_cours, id_enseignant, periode_journee, router]
   );
 
   useEffect(() => {
     async function fetchCours() {
       try {
-        const reponse = await axios.get(
-          "http://localhost:8000/api/cours/cours/",
-        );
+        const reponse = await api.get<Cours[]>("/cours/cours/");
+
         setCours(reponse.data);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
 
     async function fetchEnseignants() {
       try {
-        const reponse = await axios.get(
-          "http://localhost:8000/api/cours/enseignants/",
-        );
-        setEnseignants(reponse.data.enseignants);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+        const reponse = await api.get<Enseignant[]>("/cours/enseignants/");
+
+        setEnseignants(reponse.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
 
@@ -124,21 +104,13 @@ export default function NouvelleSessionPage() {
     fetchEnseignants();
   }, []);
 
-  // Pour convertir l'input type="date" en Date JS
-  function parseDateInput(
-    e: React.ChangeEvent<HTMLInputElement>,
-    setter: (d: Date | undefined) => void,
-  ) {
-    setter(e.target.value ? new Date(e.target.value) : undefined);
-  }
-
   return (
     <div className="container mx-auto px-4 py-6 max-w-3xl">
       <div className="flex items-center gap-4 mb-8">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push("/ecole_peg/sessions/")}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -156,7 +128,6 @@ export default function NouvelleSessionPage() {
             </p>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Cours et Enseignant */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="cours" className="text-base">
@@ -175,8 +146,11 @@ export default function NouvelleSessionPage() {
                       <SelectItem key={cours.id} value={cours.id.toString()}>
                         {cours.nom}{" "}
                         <span className="text-muted-foreground">
-                          ({cours.type === "I" ? "intensif" : "semi-intensif"} -{" "}
-                          {cours.niveau})
+                          (
+                          {cours.type_cours === "I"
+                            ? "intensif"
+                            : "semi-intensif"}{" "}
+                          - {cours.niveau})
                         </span>
                       </SelectItem>
                     ))}
@@ -210,7 +184,6 @@ export default function NouvelleSessionPage() {
               </div>
             </div>
 
-            {/* Dates et Période */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="date_debut" className="text-base">
@@ -222,7 +195,10 @@ export default function NouvelleSessionPage() {
                   min={format(new Date(), "yyyy-MM-dd")}
                   required
                   className="font-mono"
-                  onChange={(e) => parseDateInput(e, setDateDebut)}
+                  value={date_debut instanceof Date && !isNaN(date_debut.getTime()) ? format(date_debut, "yyyy-MM-dd") : ""}
+                  onChange={(e) => {
+                    setDateDebut(new Date(e.target.value));
+                  }}
                 />
               </div>
 
@@ -238,12 +214,12 @@ export default function NouvelleSessionPage() {
                   }
                   required
                   className="font-mono"
-                  onChange={(e) => parseDateInput(e, setDateFin)}
+                  value={date_fin instanceof Date && !isNaN(date_fin.getTime()) ? format(date_fin, "yyyy-MM-dd") : ""}
+                  onChange={(e) => setDateFin(new Date(e.target.value))}
                 />
               </div>
             </div>
 
-            {/* Configuration de la session */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div className="space-y-2">
                 <Label htmlFor="seances_mois" className="text-base">
@@ -268,7 +244,6 @@ export default function NouvelleSessionPage() {
                       message: "Maximum 31 séances par mois",
                     },
                   })}
-                  onChange={(e) => setSeancesMois(Number(e.target.value))}
                   onWheel={(e) => e.currentTarget.blur()}
                 />
               </div>

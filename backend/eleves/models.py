@@ -46,7 +46,6 @@ class Personne(models.Model):
     localite = models.CharField(max_length=100, blank=True, null=True)
     telephone = models.CharField(
         max_length=15,
-        unique=True,
         validators=[RegexValidator(r'^\+?\d{9,15}$', message="Numéro de téléphone invalide.")]
     )
     email = models.EmailField(unique=True)
@@ -77,7 +76,7 @@ class Eleve(Personne):
     adresse_facturation = models.CharField(max_length=200, blank=True, null=True)
     type_permis = models.CharField(max_length=1, choices=TypePermisChoices.choices)
     date_permis = models.DateField(blank=True, null=True)
-    niveau = models.CharField(max_length=2, choices=NiveauChoices.choices)
+    niveau = models.CharField(blank=True, null=True, max_length=2, choices=NiveauChoices.choices)
     langue_maternelle = models.CharField(max_length=100, blank=True, null=True)
     autres_langues = models.CharField(max_length=200, blank=True, null=True)
     src_decouverte = models.CharField(max_length=200, blank=True, null=True)

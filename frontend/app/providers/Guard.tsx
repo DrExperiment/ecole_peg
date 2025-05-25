@@ -12,7 +12,7 @@ export function Guard({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!authentifie && pathname !== "/ecole_peg/login/") {
-      router.replace("/ecole_peg/login/");
+      router.push("/ecole_peg/login/");
     }
   }, [authentifie, pathname, router]);
 

@@ -1,56 +1,256 @@
 from django.shortcuts import get_object_or_404
 from django.db import transaction, models
-from django.db.models import F, Value, DecimalField
+from django.db.models import F, Sum, Value, DecimalField,OuterRef, Subquery, Sum, F
 from django.db.models.functions import Coalesce
-from django.db.models import Sum
+from django.db.models.functions import Coalesce
 from django.core.exceptions import ValidationError
 from ninja import Router
 from .models import Facture, DetailFacture, Paiement
 from cours.models import Inscription, CoursPrive
 from eleves.models import Eleve
-from .schemas import FactureIn, FacturesOut, FactureOut, DetailFactureOut, PaiementIn, PaiementOut
+from .schemas import (
+    FactureIn, FacturesOut, FactureOut,
+    PaiementIn, PaiementOut,DetailFactureOut
+)
+from django.core.paginator import Paginator
 
 router = Router()
 
+
 # ------------------- FACTURES -------------------
-@router.get("/factures/")
-def factures(request):
-    qs = Facture.objects.select_related("eleve")  # Précharger la relation eleve
-    return [
+
+@router.get("/factures/", response=dict)
+def factures(
+    request,
+    page: int = 1,
+    taille: int = 10,
+):
+    """
+    Liste toutes les factures, paginées.
+    """
+    qs = (
+        Facture.objects
+        .select_related("eleve", "inscription__eleve")
+        .prefetch_related("details", "paiements")
+    )
+    
+    paginator = Paginator(qs, taille)
+    page_obj = paginator.get_page(page)
+    
+    return {
+        "factures": [
+            FactureOut(
+                id=f.id,
+                numero_facture=f.numero_facture,
+                date_emission=f.date_emission,
+                montant_total=float(f.montant_total),
+                montant_restant=float(f.montant_restant),
+                eleve_nom=f.eleve.nom if f.eleve else f.inscription.eleve.nom,
+                eleve_prenom=f.eleve.prenom if f.eleve else f.inscription.eleve.prenom,
+            )
+            for f in page_obj.object_list
+        ],
+        "nombre_total": paginator.count,
+    }
+
+
+@router.get("/factures/payees/", response=dict)
+def get_factures_payees(
+    request,
+    page: int = 1,
+    taille: int = 10,
+):
+    """
+    Liste les factures entièrement payées (montant_restant = 0).
+    """
+    qs = (
+        Facture.objects
+        .select_related("eleve", "inscription__eleve")
+        .prefetch_related("details", "paiements")
+    )
+    
+    factures_soldees = [f for f in qs if f.montant_restant == 0]
+    
+    paginator = Paginator(factures_soldees, taille)
+    page_obj = paginator.get_page(page)
+
+    result = [
         FactureOut(
-            id=facture.id,
-            date_emission=facture.date_emission,
-            montant_total=facture.montant_total,
-            montant_restant=facture.montant_restant,
-            eleve_nom=facture.eleve.nom,
-            eleve_prenom=facture.eleve.prenom,
+            id=f.id,
+            numero_facture=f.numero_facture,
+            date_emission=f.date_emission,
+            montant_total=float(f.montant_total),
+            montant_restant=0.0,
+            eleve_nom=f.eleve.nom if f.eleve else f.inscription.eleve.nom,
+            eleve_prenom=f.eleve.prenom if f.eleve else f.inscription.eleve.prenom,
         )
-        for facture in qs
+        for f in page_obj.object_list
     ]
 
-
-@router.get("/factures/eleve/{id_eleve}/")
-def factures_eleve(request, id_eleve: int):
-    eleve = get_object_or_404(Eleve, id=id_eleve)
-    factures = Facture.objects.filter(
-        models.Q(inscription__eleve=eleve) | models.Q(cours_prive__eleves=eleve)
-    ).distinct()
-    return [FacturesOut.from_orm(f) for f in factures]
+    return {"factures": result, "nombre_total": paginator.count}
 
 
-@router.get("/facture/{facture_id}/")
-def rechercher_facture(request, facture_id: int):
+@router.get("/factures/impayees/", response=dict)
+def get_factures_impayees(
+    request,
+    page: int = 1,
+    taille: int = 10,
+):
+    """
+    Liste les factures partiellement ou totalement impayées (montant_restant > 0).
+    """
+    qs = (
+        Facture.objects
+        .select_related("eleve", "inscription__eleve")
+        .prefetch_related("details", "paiements")
+    )
+    
+    factures_impayees = [f for f in qs if f.montant_restant > 0]
+    
+    paginator = Paginator(factures_impayees, taille)
+    page_obj = paginator.get_page(page)
+
+    result = [
+        FactureOut(
+            id=f.id,
+            numero_facture=f.numero_facture,
+            date_emission=f.date_emission,
+            montant_total=float(f.montant_total),
+            montant_restant=float(f.montant_restant),
+            eleve_nom=f.eleve.nom if f.eleve else f.inscription.eleve.nom,
+            eleve_prenom=f.eleve.prenom if f.eleve else f.inscription.eleve.prenom,
+        )
+        for f in page_obj.object_list
+    ]
+
+    return {"factures": result, "nombre_total": paginator.count}
+
+@router.get("/factures/eleve/{eleve_id}/", response=dict)
+def factures_eleve(
+    request,
+    eleve_id: int,
+    page: int = 1,
+    taille: int = 10,
+):
+    _ = get_object_or_404(Eleve, id=eleve_id)
+    qs = (
+        Facture.objects
+        .filter(
+            models.Q(eleve_id=eleve_id) |
+            models.Q(inscription__eleve_id=eleve_id)
+        )
+        .select_related("eleve", "inscription__eleve")
+    )
+    paginator = Paginator(qs, taille)
+    page_obj = paginator.get_page(page)
+
+    return {
+        "factures": [
+            FacturesOut(
+                id=f.id,
+                numero_facture=f.numero_facture,
+                date_emission=f.date_emission,
+                montant_total=f.montant_total,
+                montant_restant=f.montant_restant,
+            )
+            for f in page_obj.object_list
+        ],
+        "nombre_total": paginator.count,
+    }
+
+
+@router.get("/factures/eleve/{eleve_id}/payees/", response=dict)
+def factures_eleve_payees(
+    request,
+    eleve_id: int,
+    page: int = 1,
+    taille: int = 10,
+):
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+
+    qs = (
+        Facture.objects
+        .filter(
+            models.Q(eleve_id=eleve_id) |
+            models.Q(inscription__eleve_id=eleve_id)
+        )
+        .select_related("eleve", "inscription__eleve")
+        .prefetch_related("details", "paiements")
+    )
+    
+    factures_payees = [f for f in qs if f.montant_restant == 0]
+    
+    paginator = Paginator(factures_payees, taille)
+    page_obj = paginator.get_page(page)
+
+    return {
+        "factures": [
+            FacturesOut(
+                id=f.id,
+                numero_facture=f.numero_facture,
+                date_emission=f.date_emission,
+                montant_total=float(f.montant_total),
+                montant_restant=0.0,
+            )
+            for f in page_obj.object_list
+        ],
+        "nombre_total": paginator.count,
+    }
+
+
+@router.get("/factures/eleve/{eleve_id}/impayees/", response=dict)
+def factures_eleve_impayees(
+    request,
+    eleve_id: int,
+    page: int = 1,
+    taille: int = 10,
+):
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+
+    qs = (
+        Facture.objects
+        .filter(
+            models.Q(eleve_id=eleve_id) |
+            models.Q(inscription__eleve_id=eleve_id)
+        )
+        .select_related("eleve", "inscription__eleve")
+        .prefetch_related("details", "paiements")
+    )
+    
+    factures_impayees = [f for f in qs if f.montant_restant > 0]
+
+    paginator = Paginator(factures_impayees, taille)
+    page_obj = paginator.get_page(page)
+
+    return {
+        "factures": [
+            FacturesOut(
+                id=f.id,
+                numero_facture=f.numero_facture,
+                date_emission=f.date_emission,
+                montant_total=float(f.montant_total),
+                montant_restant=float(f.montant_restant),
+            )
+            for f in page_obj.object_list
+        ],
+        "nombre_total": paginator.count,
+    }
+
+
+@router.get("/facture/{facture_id}/", response=FactureOut)
+def get_facture(request, facture_id: int):
     facture = get_object_or_404(
-        Facture.objects.select_related("eleve"),  # Précharger la relation eleve
+        Facture.objects.select_related("eleve", "inscription__eleve").prefetch_related("details", "paiements"),
         id=facture_id
     )
     return FactureOut(
         id=facture.id,
+        numero_facture=facture.numero_facture,
         date_emission=facture.date_emission,
-        montant_total=facture.montant_total,
-        montant_restant=facture.montant_restant,
-        eleve_nom=facture.eleve.nom,
-        eleve_prenom=facture.eleve.prenom
+        montant_total=float(facture.montant_total),
+        montant_restant=float(facture.montant_restant),
+        eleve_nom=facture.eleve.nom if facture.eleve else facture.inscription.eleve.nom,
+        eleve_prenom=facture.eleve.prenom if facture.eleve else facture.inscription.eleve.prenom
     )
 
 @router.get("/facture/{id_facture}/details/")
@@ -59,113 +259,130 @@ def rechercher_details_facture(request, id_facture: int):
     details = facture.details.all()
     return [DetailFactureOut.from_orm(detail) for detail in details]
 
-@router.post("/facture/")
-@transaction.atomic
-def creer_facture(request, payload: FactureIn):
-    donnees = payload.dict()
-    donnees_details = donnees.pop("details_facture")
+@router.post("/facture/", response={201: int, 400: dict})
+def create_facture(request, payload: FactureIn):
+    try:
+        with transaction.atomic():
+            data = payload.dict()
 
-    inscription = None
-    cours_prive = None
-    eleve = None
+            details_data = data.pop("details_facture")
 
-    # Charger l'inscription avec l'élève lié
-    if donnees.get("id_inscription"):
-        inscription = get_object_or_404(
-            Inscription.objects.select_related("eleve"),  # Précharger la relation eleve
-            id=donnees.pop("id_inscription")
-        )
-        eleve = inscription.eleve
+            if data.get("id_eleve"):
+                eleve = get_object_or_404(Eleve, id=data.pop("id_eleve"))
+            else:
+                eleve=None
 
-    # Charger le cours privé avec les élèves liés
-    elif donnees.get("id_cours_prive"):
-        cours_prive = get_object_or_404(
-            CoursPrive.objects.prefetch_related("eleves"),  # Précharger la relation eleves
-            id=donnees.pop("id_cours_prive")
-        )
-        # Associer le premier élève du cours privé
-        if not cours_prive.eleves.exists():
-            raise ValidationError("Le cours privé doit avoir au moins un élève associé.")
-        eleve = cours_prive.eleves.first()
+            inscription = None
+            cours_prive = None
 
-    else:
-        return {"message": "La facture doit être liée soit à une inscription, soit à un cours privé."}
+            if data.get("id_inscription"):
+                inscription = get_object_or_404(
+                    Inscription,
+                    id=data.pop("id_inscription")
+                )
 
-    # Créer la facture
-    facture = Facture.objects.create(
-        inscription=inscription,
-        cours_prive=cours_prive,
-        eleve=eleve,
-    )
+            elif data.get("id_cours_prive"):
+                cours_prive = get_object_or_404(
+                    CoursPrive.objects.prefetch_related("eleves"),
+                    id=data.pop("id_cours_prive")
+                )
+                if not cours_prive.eleves.exists():
+                    raise ValidationError("Le cours privé doit avoir au moins un élève.")
 
-    # Créer les détails de la facture
-    details_facture = [
-        DetailFacture(facture=facture, **detail) for detail in donnees_details
-    ]
-    DetailFacture.objects.bulk_create(details_facture)
+            else:
+                return 400, {"message": "Liaison inscription ou cours_prive requise."}
 
-    return {"id": facture.id}
+            facture = Facture.objects.create(
+                inscription=inscription,
+                cours_prive=cours_prive,
+                eleve=eleve
+            )
 
-    
-@router.delete("/facture/{facture_id}/")
-@transaction.atomic
-def supprimer_facture(request, facture_id: int):
+            details = [
+                DetailFacture(facture=facture, **d) for d in details_data
+            ]
+            DetailFacture.objects.bulk_create(details)
+
+            return 201, facture.id
+
+    except ValidationError as e:
+        return 400, {"message": "Erreurs de validation.", "erreurs": e.message_dict}
+
+
+@router.delete("/facture/{facture_id}/", response={204: None, 404: dict})
+def delete_facture(request, facture_id: int):
     facture = get_object_or_404(Facture, id=facture_id)
-    facture.delete()
+    with transaction.atomic():
+        facture.delete()
+    return 204, None
+
 
 # ------------------- PAIEMENTS -------------------
 
-@router.post("/paiements/")
-@transaction.atomic
-def create_paiement(request, data: PaiementIn):
+@router.post("/paiement/", response={201: int, 400: dict})
+def create_paiement(request, payload: PaiementIn):
     try:
-        facture = get_object_or_404(Facture, id=data.id_facture)
-        paiement = Paiement.objects.create(
-            montant=data.montant,
-            mode_paiement=data.mode_paiement,
-            methode_paiement=data.methode_paiement,
-            facture=facture
-        )
-        return {"id": paiement.id}
+        with transaction.atomic():
+            facture = get_object_or_404(Facture, id=payload.id_facture)
+            paiement = Paiement.objects.create(
+                montant=payload.montant,
+                mode_paiement=payload.mode_paiement,
+                methode_paiement=payload.methode_paiement,
+                facture=facture
+            )
+            return 201, paiement.id
     except ValidationError as e:
-        return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
+        return 400, {"message": "Erreurs de validation.", "erreurs": e.message_dict}
 
 
-@router.get("/paiements/{paiement_id}/")
+@router.get("/paiement/{paiement_id}/", response=PaiementOut)
 def get_paiement(request, paiement_id: int):
     paiement = get_object_or_404(Paiement.objects.select_related("facture"), id=paiement_id)
     return PaiementOut.from_orm(paiement)
 
-@router.delete("/paiements/{paiement_id}/")
-@transaction.atomic
+@router.delete("/paiement/{paiement_id}/", response={204: None, 404: dict})
 def delete_paiement(request, paiement_id: int):
     paiement = get_object_or_404(Paiement, id=paiement_id)
-    facture = paiement.facture
-    paiement.delete()
+    with transaction.atomic():
+        paiement.delete()
+    return 204, None
 
 
-
-@router.put("/paiements/{paiement_id}/")
-@transaction.atomic
-def update_paiement(request, paiement_id: int, data: PaiementIn):
-    try:
-        paiement = get_object_or_404(Paiement, id=paiement_id)
-        for attr, value in data.dict().items():
-            setattr(paiement, attr, value)
-        paiement.full_clean()
-        paiement.save()
-        return {"id": paiement.id}
-    except ValidationError as e:
-        return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
+@router.get("/facture/{facture_id}/paiements/", response=list[PaiementOut])
+def list_paiements_for_facture(request, facture_id: int):
+    _ = get_object_or_404(Facture, id=facture_id)
+    qs = Paiement.objects.filter(facture_id=facture_id)
+    return [PaiementOut.from_orm(p) for p in qs]
 
 
-@router.get("/factures/{facture_id}/paiements/")
-def get_paiements_facture(request, facture_id: int):
-    paiements = Paiement.objects.filter(facture_id=facture_id)
-    if not paiements.exists():
-        return {"message": "Aucun paiement trouvé pour cette facture"}
-    return [PaiementOut.from_orm(p) for p in paiements]
-
+@router.get("/paiements/eleve/{eleve_id}/", response=dict)
+def paiements_eleve(
+    request,
+    eleve_id: int,
+    page: int = 1,
+    taille: int = 10,
+):
+    """
+    Liste paginée des paiements pour un élève donné.
+    """
+    _ = get_object_or_404(Eleve, id=eleve_id)
+    qs = (
+        Paiement.objects
+        .filter(
+            models.Q(facture__eleve_id=eleve_id) |
+            models.Q(facture__inscription__eleve_id=eleve_id)
+        )
+        .distinct()
+        .order_by("-date_paiement")
+    )
+    paginator = Paginator(qs, taille)
+    page_obj = paginator.get_page(page)
+    return {
+        "paiements": [
+            PaiementOut.from_orm(p) for p in page_obj.object_list
+        ],
+        "nombre_total": paginator.count,
+    }
 
 @router.get("/factures/{facture_id}/paiements/total/")
 def get_total_paiements_facture(request, facture_id: int):
@@ -173,33 +390,5 @@ def get_total_paiements_facture(request, facture_id: int):
     if not paiements.exists():
         return {"message": "Aucun paiement trouvé pour cette facture"}
     total = paiements.aggregate(total_amount=models.Sum('montant'))['total_amount'] or 0
-    return total
+    return {"total": float(total)}
 
-@router.get("/paiements/eleve/{eleve_id}/")
-def get_paiements_eleve(request, eleve_id: int):
-    paiements = Paiement.objects.filter(
-        models.Q(facture__inscription__eleve_id=eleve_id) |
-        models.Q(facture__eleve_id=eleve_id)
-    ).distinct()
-    return [PaiementOut.from_orm(p) for p in paiements]
-
-
-@router.get("/eleves/{id_eleve}/factures/impayees/")
-def get_factures_impayees_eleve(request, id_eleve: int):
-    factures = (
-        Facture.objects.filter(eleve_id=id_eleve)
-        .annotate(
-            montant_total_annote=Coalesce(Sum("details__montant"), Value(0), output_field=DecimalField()),  # Calculer le montant total
-            total_paye=Coalesce(Sum("paiements__montant"), Value(0), output_field=DecimalField()),  # Calculer le total payé
-        )
-        .filter(total_paye__lt=F("montant_total_annote"))  # Comparer total payé et montant total
-    )
-    return [
-        FacturesOut(
-            id=facture.id,
-            date_emission=facture.date_emission,
-            montant_total=facture.montant_total_annote,
-            montant_restant=facture.montant_total_annote - facture.total_paye,
-        )
-        for facture in factures
-    ]

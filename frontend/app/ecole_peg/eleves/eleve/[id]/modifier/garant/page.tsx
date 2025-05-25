@@ -22,7 +22,18 @@ interface Eleve {
   prenom: string;
 }
 
-export default function NouveauGarantPage({
+interface Garant {
+  nom: string;
+  prenom: string;
+  telephone: string;
+  email: string;
+  rue: string;
+  numero: string;
+  npa: string;
+  localite: string;
+}
+
+export default function ModifierGarantPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -30,42 +41,61 @@ export default function NouveauGarantPage({
   const {
     register,
     handleSubmit,
+    reset,
     formState: { isSubmitting },
-  } = useForm();
+  } = useForm<Garant>();
 
   const router = useRouter();
   const resolvedParams = use(params);
 
   const [eleve, setEleve] = useState<Eleve | undefined>(undefined);
 
-  const onSoumission = useCallback(
-    async (donnees: object) => {
+  useEffect(() => {
+    async function fetchDonnees() {
       try {
-        await api.post(`/eleves/eleves/${resolvedParams.id}/garant/`, donnees);
+        const [reponse_eleve, reponse_garant] = await Promise.all([
+          api.get<Eleve>(`/eleves/eleve/${resolvedParams.id}/`),
+          api.get<Garant>(`/eleves/eleves/${resolvedParams.id}/garant/`),
+        ]);
+
+        setEleve(reponse_eleve.data);
+
+        const garant = reponse_garant.data;
+
+        reset({
+          nom: garant.nom,
+          prenom: garant.prenom,
+          telephone: garant.telephone,
+          email: garant.email,
+          rue: garant.rue,
+          numero: garant.numero,
+          npa: garant.npa,
+          localite: garant.localite,
+        });
+      } catch (err) {
+        console.error("Erreur: ", err);
+      }
+    }
+
+    fetchDonnees();
+  }, [reset, resolvedParams.id]);
+
+  const onSoumission = useCallback(
+    async (donnees: Garant) => {
+      try {
+        await api.put(`/eleves/eleves/${resolvedParams.id}/garant/`, donnees);
 
         router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
       } catch (err) {
-        console.error("Erreur lors de l'ajout du garant :", err);
+        console.error("Erreur lors de la modification du garant :", err);
       }
     },
     [resolvedParams.id, router]
   );
 
-  useEffect(() => {
-    async function fetchEleve() {
-      try {
-        const reponse = await api.get<Eleve>(
-          `/eleves/eleve/${resolvedParams.id}/`
-        );
-
-        setEleve(reponse.data);
-      } catch (err) {
-        console.error("Erreur lors du chargement de l'élève :", err);
-      }
-    }
-
-    fetchEleve();
-  }, [resolvedParams.id]);
+  if (!eleve) {
+    return <div>Chargement...</div>;
+  }
 
   return (
     <div className="container mx-auto py-6 max-w-3xl">
@@ -73,13 +103,15 @@ export default function NouveauGarantPage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)}
+          onClick={() =>
+            router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)
+          }
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <h1 className="text-3xl font-bold tracking-tight">
-          Ajouter un garant pour {eleve?.nom} {eleve?.prenom}
+          Modifier le garant de {eleve.nom} {eleve.prenom}
         </h1>
       </div>
 
@@ -190,7 +222,14 @@ export default function NouveauGarantPage({
               </div>
             </div>
           </CardContent>
-          <CardFooter className="flex justify-end">
+          <CardFooter className="flex justify-between">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => router.back()}
+            >
+              Annuler
+            </Button>
             <Button
               type="submit"
               className="min-w-[150px]"
@@ -200,7 +239,7 @@ export default function NouveauGarantPage({
                 <>Sauvegarde en cours...</>
               ) : (
                 <>
-                  <Save className="h-4 w-4" />
+                  <Save className="mr-2 h-4 w-4" />
                   Enregistrer
                 </>
               )}

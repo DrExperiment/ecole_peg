@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-
 import { Button } from "@/components/button";
 import {
   Card,
@@ -22,12 +21,12 @@ import {
 import { Checkbox } from "@/components/checkbox";
 import { RadioGroup, RadioGroupItem } from "@/components/radio-group";
 import { ArrowLeft, Save } from "lucide-react";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { format } from "date-fns";
-
 import { useForm } from "react-hook-form";
 import { useRouter } from "next/navigation";
 import { Textarea } from "@/components/textarea";
+import { isAxiosError } from "axios";
 
 interface Pays {
   id: number;
@@ -46,9 +45,11 @@ export default function NouveauElevePage() {
 
   const [sexe, setSexe] = useState<"H" | "F">("H");
   const [date_naissance, setDateNaissance] = useState<Date | undefined>(
-    undefined,
+    undefined
   );
-  const [niveau, setNiveau] = useState<"A1" | "A2" | "B1" | "B2" | "C1">("A1");
+  const [niveau, setNiveau] = useState<
+    "A1" | "A2" | "B1" | "B2" | "C1" | undefined
+  >(undefined);
   const [type_permis, setTypePermis] = useState<"E" | "S" | "B" | "P">("P");
   const [date_permis, setDatePermis] = useState<Date | undefined>(undefined);
   const [pays, setPays] = useState<Pays[]>([]);
@@ -67,7 +68,7 @@ export default function NouveauElevePage() {
         return;
       }
 
-      const donneesCompletes = {
+      const donnees_completes = {
         ...donnees,
         sexe,
         date_naissance: date_naissance
@@ -81,32 +82,19 @@ export default function NouveauElevePage() {
         pays_id: id_pays,
       };
 
-      console.log(donneesCompletes);
-
       try {
-        console.log(
-          "Données envoyées : ",
-          JSON.stringify(donneesCompletes, null, 2),
-        );
-
-        const reponse = await axios.post(
-          "http://localhost:8000/api/eleves/eleve/",
-          donneesCompletes, // Ajoutez les données ici
-        );
-        console.log("Réponse complète backend :", reponse.data);
+        const reponse = await api.post("/eleves/eleve/", donnees_completes);
 
         if (a_garant)
           router.push(`/ecole_peg/eleves/eleve/${reponse.data.id}/garant/`);
         else router.push(`/ecole_peg/eleves/eleve/${reponse.data.id}/`);
-      } catch (error: Error | unknown) {
-        if (axios.isAxiosError(error) && error.response) {
-          console.error(
-            "🛑 Erreurs de validation :",
-            error.response.data.erreurs,
-          );
-          alert("Erreur de validation : vérifie tous les champs.");
+      } catch (err) {
+        if (isAxiosError(err) && err.response) {
+          console.error("Erreurs de validation: ", err.response.data.erreurs);
+
+          alert("Erreur de validation: vérifie tous les champs.");
         } else {
-          console.error("🛑 Erreur inconnue :", error);
+          console.error("Erreur inconnue: ", err);
         }
       }
     },
@@ -120,19 +108,17 @@ export default function NouveauElevePage() {
       setError,
       sexe,
       type_permis,
-    ],
+    ]
   );
 
   useEffect(() => {
     async function fetchPays() {
       try {
-        const donnees: Pays[] = (
-          await axios.get("http://localhost:8000/api/eleves/pays/")
-        ).data;
+        const reponse = await api.get<Pays[]>("/eleves/pays/");
 
-        setPays(donnees);
-      } catch (erreur) {
-        console.error("Erreur: ", erreur);
+        setPays(reponse.data);
+      } catch (err) {
+        console.error("Erreur: ", err);
       }
     }
 
@@ -145,7 +131,7 @@ export default function NouveauElevePage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() => router.push("/ecole_peg/eleves/")}
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -228,7 +214,10 @@ export default function NouveauElevePage() {
                   name="date_naissance"
                   required
                   value={
-                    date_naissance ? format(date_naissance, "yyyy-MM-dd") : ""
+                    date_naissance instanceof Date &&
+                    !isNaN(date_naissance.getTime())
+                      ? format(date_naissance, "yyyy-MM-dd")
+                      : ""
                   }
                   onChange={(e) => {
                     const value = e.target.value;
@@ -331,7 +320,11 @@ export default function NouveauElevePage() {
                   type="date"
                   id="date_permis"
                   name="date_permis"
-                  value={date_permis ? format(date_permis, "yyyy-MM-dd") : ""}
+                  value={
+                    date_permis instanceof Date && !isNaN(date_permis.getTime())
+                      ? format(date_permis, "yyyy-MM-dd")
+                      : ""
+                  }
                   onChange={(e) => {
                     const value = e.target.value;
                     setDatePermis(value ? new Date(value) : undefined);
@@ -382,7 +375,7 @@ export default function NouveauElevePage() {
                     {...register("telephone", {
                       required: "Numéro de téléphone est obligatoire",
                       pattern: {
-                        value:/^\+?\d{7,15}$/,
+                        value: /^\+?\d{7,15}$/,
                         message:
                           "Le numéro de téléphone doit être au format suisse.",
                       },

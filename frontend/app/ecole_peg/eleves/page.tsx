@@ -1,10 +1,9 @@
 "use client";
 
-import { useEffect, useState, ChangeEvent, useCallback } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import axios from "axios";
+import { api } from "@/lib/api";
 import { format } from "date-fns";
-
 import { Button } from "@/components/button";
 import {
   Card,
@@ -30,12 +29,13 @@ import {
   SelectValue,
 } from "@/components/select";
 import { Plus, Search } from "lucide-react";
+import { formatDate } from "@/lib/utils";
 
 interface Eleve {
   id: number;
   nom: string;
   prenom: string;
-  date_naissance: string;
+  date_naissance: Date;
   telephone: string;
   email: string;
   pays__nom: string;
@@ -47,62 +47,55 @@ interface ReponseEleves {
 }
 
 export default function ElevesPage() {
-  const [dateNaissance, setDateNaissance] = useState<Date | undefined>(
-    undefined,
+  const [date_naissance, setDateNaissance] = useState<Date | undefined>(
+    undefined
   );
   const [eleves, setEleves] = useState<Eleve[]>([]);
-  const [nombreTotal, setNombreTotal] = useState<number>(0);
-  const [valeurRecherche, setValeurRecherche] = useState<string>("");
-  const [loading, setLoading] = useState<boolean>(false);
-  const [numPage, setNumPage] = useState<number>(1);
-  const [statut, setStatut] = useState<string>("actifs");
-  const taillePage = 10;
-
-  const fetchEleves = useCallback(async () => {
-    setLoading(true);
-    try {
-      const params: Record<string, string | number | undefined> = {
-        page: numPage,
-        taille: taillePage,
-      };
-
-      if (valeurRecherche) {
-        params.recherche = valeurRecherche;
-      }
-      if (dateNaissance) {
-        params.date_naissance = format(dateNaissance, "yyyy-MM-dd");
-      }
-
-      let url = "http://localhost:8000/api/eleves/eleves/";
-      if (statut === "actifs") {
-        url += "actifs/";
-      } else if (statut === "inactifs") {
-        url += "inactifs/";
-      }
-
-      const reponse = await axios.get<ReponseEleves>(url, { params });
-      setEleves(reponse.data.eleves ?? []);
-      setNombreTotal(reponse.data.nombre_total ?? 0);
-    } catch (erreur) {
-      console.error("Erreur:", erreur);
-    } finally {
-      setLoading(false);
-    }
-  }, [numPage, valeurRecherche, dateNaissance, statut]);
-
-  useEffect(() => {
-    fetchEleves();
-  }, [numPage, valeurRecherche, dateNaissance, statut, fetchEleves]);
+  const [nombre_total, setNombreTotal] = useState(0);
+  const [recherche, setRecherche] = useState("");
+  const [chargement, setChargement] = useState(false);
+  const [num_page, setNumPage] = useState(1);
+  const [statut, setStatut] = useState<"A" | "I" | "P" | "tous">("A");
+  const taille_page = 10;
 
   useEffect(() => {
     setNumPage(1);
-  }, [dateNaissance, statut]);
+  }, [date_naissance, statut]);
 
-  const handleInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setValeurRecherche(e.target.value);
-  };
+  useEffect(() => {
+    async function fetchData() {
+      setChargement(true);
 
-  const pagesTotales = Math.ceil(nombreTotal / taillePage);
+      try {
+        const params: Record<string, string | number | undefined> = {
+          page: num_page,
+          taille: taille_page,
+          statut: statut,
+        };
+
+        if (recherche) params.recherche = recherche;
+
+        if (date_naissance)
+          params.date_naissance = format(date_naissance, "yyyy-MM-dd");
+
+        const response = await api.get<ReponseEleves>("/eleves/eleves/", {
+          params,
+        });
+
+        setEleves(response.data.eleves ?? []);
+
+        setNombreTotal(response.data.nombre_total ?? 0);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setChargement(false);
+      }
+    }
+
+    fetchData();
+  }, [num_page, date_naissance, statut, recherche]);
+
+  const pages_totales = Math.ceil(nombre_total / taille_page);
 
   return (
     <div className="container mx-auto py-8 space-y-6">
@@ -137,32 +130,44 @@ export default function ElevesPage() {
                   type="search"
                   placeholder="Rechercher un élève..."
                   className="pl-8"
-                  value={valeurRecherche}
-                  onChange={handleInputChange}
+                  value={recherche}
+                  onChange={(e) => {
+                    setRecherche(e.target.value);
+                  }}
                 />
               </div>
               <Input
                 type="date"
                 className="w-[200px]"
-                value={dateNaissance ? format(dateNaissance, "yyyy-MM-dd") : ""}
+                value={
+                  date_naissance instanceof Date &&
+                  !isNaN(date_naissance.getTime())
+                    ? format(date_naissance, "yyyy-MM-dd")
+                    : ""
+                }
                 onChange={(e) => {
                   const value = e.target.value;
+
                   setDateNaissance(value ? new Date(value) : undefined);
                 }}
               />
-              <Select value={statut} onValueChange={setStatut}>
+              <Select
+                value={statut}
+                onValueChange={(e) => setStatut(e as "A" | "I" | "P" | "tous")}
+              >
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Statut des élèves" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="actifs">Élèves actifs</SelectItem>
-                  <SelectItem value="inactifs">Élèves inactifs</SelectItem>
+                  <SelectItem value="A">Actifs</SelectItem>
+                  <SelectItem value="I">Inactifs</SelectItem>
+                  <SelectItem value="P">Préinscripts</SelectItem>
                   <SelectItem value="tous">Tous les élèves</SelectItem>
                 </SelectContent>
               </Select>
             </div>
 
-            {loading && (
+            {chargement && (
               <div className="flex justify-center p-4">
                 <div className="text-sm text-muted-foreground">
                   Chargement...
@@ -195,7 +200,11 @@ export default function ElevesPage() {
                           {eleve.nom ?? "-"}
                         </TableCell>
                         <TableCell>{eleve.prenom ?? "-"}</TableCell>
-                        <TableCell>{eleve.date_naissance ?? "-"}</TableCell>
+                        <TableCell>
+                          {eleve.date_naissance
+                            ? formatDate(eleve.date_naissance)
+                            : "-"}
+                        </TableCell>
                         <TableCell>{eleve.telephone ?? "-"}</TableCell>
                         <TableCell>{eleve.email ?? "-"}</TableCell>
                         <TableCell>{eleve.pays__nom ?? "-"}</TableCell>
@@ -227,20 +236,20 @@ export default function ElevesPage() {
                 variant="outline"
                 size="sm"
                 onClick={() => setNumPage((prec) => Math.max(prec - 1, 1))}
-                disabled={numPage === 1}
+                disabled={num_page === 1}
               >
                 Précédent
               </Button>
 
               <span className="text-sm text-muted-foreground">
-                Page {numPage} sur {pagesTotales}
+                Page {num_page} sur {pages_totales}
               </span>
 
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setNumPage((prec) => prec + 1)}
-                disabled={numPage === pagesTotales}
+                disabled={num_page === pages_totales}
               >
                 Suivant
               </Button>

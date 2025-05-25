@@ -6,16 +6,16 @@ from datetime import date, time
 class CoursOut(Schema):
     id: int
     nom: str
-    type: str
+    type_cours: str
     niveau: str
-    heures_par_semaine: int
-    duree_semaines: int
+    heures_par_semaine: int | None = None
+    duree_semaines: int | None = None
     tarif: float
 
 
 class CoursIn(Schema):
     nom: str
-    type: str
+    type_cours: str
     niveau: str
     heures_par_semaine: int | None = None
     duree_semaines: int | None = None
@@ -47,15 +47,19 @@ class SessionIn(Schema):
 
 class SessionOut(Schema):
     id: int
+    id_cours: int
+    id_enseignant: int | None = None
+    enseignant__nom: str | None = None
+    enseignant__prenom: str | None = None
     cours__nom: str
-    cours__type: str
+    cours__type_cours: str
     cours__niveau: str
     date_debut: date
     date_fin: date
     periode_journee: str | None = None
     statut: str
-    seances_mois: int
     capacite_max: int
+    seances_mois: int
 
 
 # ------------------- COURS PRIVES -------------------
@@ -76,9 +80,11 @@ class CoursPriveOut(Schema):
     heure_fin: time
     tarif: float
     lieu: str
+    enseignant: int
     enseignant__nom: str
     enseignant__prenom: str
     eleves: list[str] = []
+    eleves_ids: list[int] = []  
 
 
 # ------------------- INSCRIPTION -------------------
@@ -98,14 +104,14 @@ class InscriptionOut(Schema):
     date_sortie: date | None = None
     motif_sortie: str | None = None
     preinscription: bool
+    id_session: int
 
 
 class InscriptionUpdateIn(Schema):
-    date_inscription: date | None = None
     frais_inscription: float | None = None
     but: str | None = None
     statut: str | None = None
-    date_sortie: str | None = None
+    date_sortie: date | None = None
     motif_sortie: str | None = None
     preinscription: bool | None = None
     id_session: int | None = None

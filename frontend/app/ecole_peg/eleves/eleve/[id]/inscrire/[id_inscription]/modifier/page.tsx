@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useParams } from "next/navigation";
+import { use, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Button } from "@/components/button";
 import {
   Card,
@@ -20,91 +20,106 @@ import {
   SelectValue,
 } from "@/components/select";
 import { ArrowLeft, Save } from "lucide-react";
-import { format, parseISO } from "date-fns";
-import axios from "axios";
+import { format } from "date-fns";
+import { api } from "@/lib/api";
 import { useForm } from "react-hook-form";
 import { Checkbox } from "@/components/checkbox";
+import { formatDate } from "@/lib/utils";
 
 interface Session {
   id: number;
   cours__nom: string;
-  cours__type: string;
-  cours__niveau: string;
-  date_debut: string;
-  date_fin: string;
+  cours__type: "I" | "S";
+  cours__niveau: "A1" | "A2" | "B1" | "B2" | "C1";
+  date_debut: Date;
+  date_fin: Date;
 }
 
 interface Inscription {
   id: number;
-  session: number;
-  date_inscription: string;
+  id_session: number;
+  date_inscription: Date;
   but: string;
   frais_inscription: number;
   preinscription: boolean;
+  date_sortie: Date | undefined;
+  motif_sortie: string | undefined;
 }
 
-export default function EditInscriptionPage() {
+export default function ModifierInscriptionPage({
+  params,
+}: {
+  params: Promise<{ id: string; id_inscription: string }>;
+}) {
   const router = useRouter();
-  const params = useParams();
-  const id = params.id as string;
-  const inscriptionid = params.inscriptionid as string;
+  const resolvedParams = use(params);
 
   const {
     register,
-    setValue,
+    reset,
     handleSubmit,
     formState: { isSubmitting },
   } = useForm();
 
   const [sessions, setSessions] = useState<Session[]>([]);
-  const [date, setDate] = useState<Date | undefined>();
-  const [idSession, setIdSession] = useState<number>();
-  const [preinscription, setPreinscription] = useState(false);
+  const [id_session, setIdSession] = useState<number>();
+  const [preinscription, setPreinscription] = useState<boolean>(false);
+  const [date_sortie, setDateSortie] = useState<Date | undefined>(undefined);
 
   useEffect(() => {
-    if (!id || !inscriptionid) return;
-    async function fetchData() {
+    async function fetchDonnees() {
       try {
-        const [inscRes, sessionsRes] = await Promise.all([
-          axios.get<Inscription>(
-            `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionid}/`,
+        const [reponse_inscription, reponse_sessions] = await Promise.all([
+          api.get<Inscription>(
+            `/cours/${resolvedParams.id}/inscriptions/${resolvedParams.id_inscription}/`
           ),
-          axios.get<{ sessions: Session[] }>(
-            `http://localhost:8000/api/cours/sessions/`,
-          ),
+          api.get(`/cours/sessions/`),
         ]);
-        const insc = inscRes.data;
-        setSessions(sessionsRes.data.sessions);
 
-        setIdSession(insc.session);
-        setValue("but", insc.but);
-        setValue("frais_inscription", insc.frais_inscription);
-        setDate(
-          insc.date_inscription ? parseISO(insc.date_inscription) : undefined,
+        const inscription = reponse_inscription.data;
+
+        setSessions(reponse_sessions.data.sessions);
+
+        setIdSession(inscription.id_session);
+
+        setPreinscription(inscription.preinscription ?? false);
+
+        setDateSortie(
+          inscription.date_sortie
+            ? new Date(inscription.date_sortie)
+            : undefined
         );
-        setPreinscription(insc.preinscription ?? false);
+
+        reset({
+          but: inscription.but,
+          frais_inscription: inscription.frais_inscription,
+          motif_sortie: inscription.motif_sortie || "",
+        });
       } catch (err) {
         console.error(err);
       }
     }
-    fetchData();
-  }, [id, inscriptionid, setValue]);
+
+    fetchDonnees();
+  }, [reset, resolvedParams.id, resolvedParams.id_inscription]);
 
   const onSoumission = async (donnees: object) => {
-    const donneesCompletes = {
+    const donnees_completes = {
       ...donnees,
-      date: date ? format(date, "yyyy-MM-dd") : undefined,
-      id_session: idSession,
+      id_session,
       preinscription,
+      date_sortie,
     };
+
     try {
-      await axios.put(
-        `http://localhost:8000/api/cours/${id}/inscriptions/${inscriptionid}/`,
-        donneesCompletes,
+      await api.put(
+        `/cours/${resolvedParams.id}/inscriptions/${resolvedParams.id_inscription}/`,
+        donnees_completes
       );
-      router.push(`/ecole_peg/eleves/eleve/${id}/`);
-    } catch (erreur) {
-      console.error("Erreur: ", erreur);
+
+      router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
+    } catch (err) {
+      console.error("Erreur: ", err);
     }
   };
 
@@ -114,7 +129,9 @@ export default function EditInscriptionPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.back()}
+          onClick={() =>
+            router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)
+          }
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -145,9 +162,7 @@ export default function EditInscriptionPage() {
                 </p>
                 <Select
                   name="session"
-                  value={
-                    idSession !== undefined ? String(idSession) : undefined
-                  }
+                  value={id_session?.toString()}
                   onValueChange={(valeur) => setIdSession(Number(valeur))}
                 >
                   <SelectTrigger id="session">
@@ -157,7 +172,7 @@ export default function EditInscriptionPage() {
                     {sessions.map((session) => (
                       <SelectItem
                         key={session.id}
-                        value={String(session.id)}
+                        value={session.id.toString()}
                         className="py-3"
                       >
                         <div className="space-y-1">
@@ -172,10 +187,8 @@ export default function EditInscriptionPage() {
                             </span>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            Du{" "}
-                            {format(new Date(session.date_debut), "dd/MM/yyyy")}{" "}
-                            au{" "}
-                            {format(new Date(session.date_fin), "dd/MM/yyyy")}
+                            Du {formatDate(session.date_debut)} au{" "}
+                            {formatDate(session.date_fin)}
                           </div>
                         </div>
                       </SelectItem>
@@ -207,9 +220,6 @@ export default function EditInscriptionPage() {
                         },
                       })}
                     />
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
-                      CHF
-                    </span>
                   </div>
                 </div>
               </div>
@@ -224,6 +234,46 @@ export default function EditInscriptionPage() {
                   className="w-full"
                   {...register("but")}
                 />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <Label htmlFor="date_sortie" className="text-base">
+                    Date de sortie
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="date_sortie"
+                      type="date"
+                      className="w-full"
+                      value={
+                        date_sortie instanceof Date &&
+                        !isNaN(date_sortie.getTime())
+                          ? format(date_sortie, "yyyy-MM-dd")
+                          : ""
+                      }
+                      onChange={(e) => setDateSortie(new Date(e.target.value))}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Optionnel - Laissez vide si l&apos;élève est toujours
+                    inscrit
+                  </p>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="motif_sortie" className="text-base">
+                    Motif de sortie
+                  </Label>
+                  <Input
+                    id="motif_sortie"
+                    placeholder="Ex: Déménagement, niveau atteint..."
+                    className="w-full"
+                    {...register("motif_sortie")}
+                  />
+                  <p className="text-sm text-muted-foreground">
+                    Optionnel - Raison de la fin de l&apos;inscription
+                  </p>
+                </div>
               </div>
 
               <div className="rounded-lg border p-4 space-y-3">
