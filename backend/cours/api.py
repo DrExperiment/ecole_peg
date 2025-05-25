@@ -26,7 +26,6 @@ from .schemas import (
     FichePresencesOut,
     FichesPresencesOut,
     PresenceIn,
-    PresenceOut,
     SessionIn,
     SessionOut,
     CoursPriveIn,
@@ -36,9 +35,9 @@ from .schemas import (
     FichePresencesIn,
 )
 from django.db import transaction
+from django.core.paginator import Paginator
 
 router = Router()
-from django.core.paginator import Paginator
 
 # ------------------- COURS -------------------
 
@@ -138,9 +137,9 @@ def sessions(
     request,
     page: int = 1,
     taille: int = 10,
-    type: str = None,
-    niveau: str = None,
-    statut: str = None,
+    type: str | None = None,
+    niveau: str | None = None,
+    statut: str | None = None,
 ):
     sessions_qs = (
         Session.objects.select_related("cours", "enseignant")

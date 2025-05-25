@@ -1,6 +1,7 @@
 from django.core.exceptions import ValidationError
 from django.conf import settings
 
+
 def file_size_validator(value):
     if value.size > settings.MAX_UPLOAD_SIZE:
         raise ValidationError(

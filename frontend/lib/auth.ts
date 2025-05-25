@@ -27,3 +27,13 @@ export async function est_authentifie() {
     return false;
   }
 }
+
+export async function refreshToken() {
+  try {
+    await api.post("/auth/refresh/");
+    
+    return true;
+  } catch {
+    return false;
+  }
+}

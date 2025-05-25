@@ -4,6 +4,7 @@ from django.dispatch import receiver
 from django.utils import timezone
 from .models import Inscription, Session, StatutInscriptionChoices, StatutSessionChoices
 
+
 # 1) À chaque création ou suppression d'inscription → re-évalue le statut de la session
 @receiver([post_save, post_delete], sender=Inscription)
 def maj_statut_session_apres_inscription(sender, instance, **kwargs):
@@ -21,7 +22,7 @@ def maj_statut_session_apres_inscription(sender, instance, **kwargs):
 
         if session.statut != nouveau:
             session.statut = nouveau
-            session.save(update_fields=['statut'])
+            session.save(update_fields=["statut"])
 
     transaction.on_commit(_update_session_status)
 
@@ -44,7 +45,7 @@ def maj_statut_session_apres_modif(sender, instance, **kwargs):
 
         if session.statut != nouveau:
             session.statut = nouveau
-            session.save(update_fields=['statut'])
+            session.save(update_fields=["statut"])
 
     transaction.on_commit(_update_session_status)
 
@@ -55,8 +56,8 @@ def maj_statut_session_apres_modif(sender, instance, **kwargs):
 def fermer_inscriptions_expirees(sender, instance, **kwargs):
     def _close_inscriptions():
         if instance.date_fin < timezone.now().date():
-            instance.inscriptions.filter(
-                statut=StatutInscriptionChoices.ACTIF
-            ).update(statut=StatutInscriptionChoices.INACTIF)
+            instance.inscriptions.filter(statut=StatutInscriptionChoices.ACTIF).update(
+                statut=StatutInscriptionChoices.INACTIF
+            )
 
     transaction.on_commit(_close_inscriptions)

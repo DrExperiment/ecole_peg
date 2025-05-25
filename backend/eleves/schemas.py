@@ -104,7 +104,7 @@ class ElevesOut(Schema):
 
 
 class EleveOut(Schema, from_attributes=True):
-    id: int 
+    id: int
     nom: str
     prenom: str
     date_naissance: date
@@ -124,7 +124,7 @@ class EleveOut(Schema, from_attributes=True):
     autres_langues: str | None = None
     src_decouverte: str | None = None
     commentaires: str | None = None
-    pays_id: int  
+    pays_id: int
     pays__nom: str
 
 

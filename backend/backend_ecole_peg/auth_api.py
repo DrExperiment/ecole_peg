@@ -74,3 +74,19 @@ def logout(request):
     reponse.delete_cookie("access_token")
 
     return reponse
+
+
+@router.post("/refresh/")
+def refresh_token(request):
+    try:
+        jwt_auth(request)
+
+        token = generer_token()
+
+        response = HttpResponse(status=200)
+
+        response.set_cookie("access_token", token, httponly=True, secure=True)
+        
+        return response
+    except PermissionDenied:
+        return HttpResponse("Non autorisé", status=401)

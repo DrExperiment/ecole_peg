@@ -65,9 +65,9 @@ def eleves(
             distinct=True,
         ),
         preinsc_count=Count(
-        "inscriptions",
-        filter=Q(inscriptions__preinscription=True),
-        distinct=True,
+            "inscriptions",
+            filter=Q(inscriptions__preinscription=True),
+            distinct=True,
         ),
     )
 

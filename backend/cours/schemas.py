@@ -84,7 +84,7 @@ class CoursPriveOut(Schema):
     enseignant__nom: str
     enseignant__prenom: str
     eleves: list[str] = []
-    eleves_ids: list[int] = []  
+    eleves_ids: list[int] = []
 
 
 # ------------------- INSCRIPTION -------------------

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useContext, FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import { Input } from "@/components/input";
 import { Button } from "@/components/button";
 import { login, est_authentifie } from "@/lib/auth";
@@ -37,24 +38,15 @@ export default function Login() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-6 text-center">
-          <div className="relative w-24 h-24 mx-auto">
-            <div className="absolute inset-0 bg-primary/10 rounded-xl rotate-6"></div>
-            <div className="absolute inset-0 bg-primary/20 rounded-xl rotate-3"></div>
-            <div className="relative bg-white rounded-xl shadow-2xl p-6">
-              {/* You can add your logo here */}
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="w-full h-full"
-              >
-                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-              </svg>
+          <div className="relative size-28 mx-auto">
+            <div className="bg-white rounded-md shadow p-4 h-full">
+              <Image
+                src="/logo/ecole_peg.png"
+                alt="École PEG Logo"
+                fill
+                className="object-contain"
+                priority
+              />
             </div>
           </div>
           <div className="space-y-2">

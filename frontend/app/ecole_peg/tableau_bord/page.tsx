@@ -26,6 +26,14 @@ import {
 } from "@/components/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/tabs";
 import { AlertBox } from "@/components/alert";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/table";
 
 interface Anniversaire {
   id: number;
@@ -55,8 +63,20 @@ interface ElevePreinscription {
 
 type Niveau = "A1" | "A2" | "B1" | "B2" | "C1";
 
-interface RepartitionNiveau {
-  niveau: Niveau;
+interface FactureDetail {
+  id: number;
+  date_emission: Date;
+  numero_facture: number;
+  montant_total: number;
+  montant_restant: number;
+  eleve_nom: string;
+  eleve_prenom: string;
+}
+
+interface RepartitionCours {
+  inscriptions__session__cours__nom: string;
+  inscriptions__session__cours__type_cours: string;
+  inscriptions__session__cours__niveau: Niveau;
   total: number;
 }
 
@@ -65,6 +85,7 @@ interface Stats {
     nombre_factures_impayees: number;
     montant_total_paiements_mois: number;
     montant_total_factures_impayees: number;
+    factures_impayees_plus_5j: FactureDetail[];
   };
   cours: {
     total_cours: number;
@@ -72,7 +93,7 @@ interface Stats {
     cours_prives_programmes_mois: number;
     sessions_ouvertes: SessionOuverte[];
     nombre_enseignants: number;
-    repartition_eleves_actifs: RepartitionNiveau[];
+    repartition_eleves_actifs: RepartitionCours[];
   };
   eleves: {
     total_eleves: number;
@@ -201,7 +222,7 @@ export default function TableauBordPage() {
                   {stats.cours.total_cours}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  dont {stats.cours.sessions_actives} sessions actives
+                  dont {stats.cours.sessions_actives} sessions ouvertes
                 </p>
               </CardContent>
             </Card>
@@ -225,44 +246,37 @@ export default function TableauBordPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between pb-2">
                 <CardTitle className="text-base font-medium">
-                  Répartition des niveaux
+                  Répartition des cours
                 </CardTitle>
                 <PieChart className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {stats.cours.repartition_eleves_actifs.map(
-                    (niveau, index) => {
-                      const pourcentage =
-                        stats.eleves.eleves_actifs > 0
-                          ? (niveau.total / stats.eleves.eleves_actifs) * 100
-                          : 0;
-                      return (
-                        <div
-                          key={`${niveau.niveau}-${index}`}
-                          className="flex items-center space-x-4"
-                        >
-                          <div className="flex-1 space-y-1">
-                            <p className="text-sm font-medium leading-none">
-                              Niveau {niveau.niveau}
-                            </p>
-                            <div className="flex items-center">
-                              <div className="h-2 w-full rounded-full bg-secondary">
-                                <div
-                                  className="h-2 rounded-full bg-primary"
-                                  style={{ width: `${pourcentage}%` }}
-                                />
-                              </div>
-                              <span className="ml-2 text-sm text-muted-foreground">
-                                {niveau.total}
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    },
-                  )}
-                </div>
+                <Table className="w-full text-sm">
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Cours</TableHead>
+                      <TableHead>Type</TableHead>
+                      <TableHead>Niveau</TableHead>
+                      <TableHead>Élèves</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stats.cours.repartition_eleves_actifs.map((r, i) => (
+                      <TableRow key={i}>
+                        <TableCell>
+                          {r["inscriptions__session__cours__nom"]}
+                        </TableCell>
+                        <TableCell>
+                          {r["inscriptions__session__cours__type_cours"] === "I" ? "Intensif" : "Semi-intensif"}
+                        </TableCell>
+                        <TableCell>
+                          {r["inscriptions__session__cours__niveau"]}
+                        </TableCell>
+                        <TableCell>{r.total}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
               </CardContent>
             </Card>
 
@@ -286,7 +300,7 @@ export default function TableauBordPage() {
                           {
                             style: "currency",
                             currency: "CHF",
-                          },
+                          }
                         )}
                       </span>
                     </div>
@@ -302,7 +316,7 @@ export default function TableauBordPage() {
                           {
                             style: "currency",
                             currency: "CHF",
-                          },
+                          }
                         )}
                       </span>
                     </div>
@@ -423,7 +437,7 @@ export default function TableauBordPage() {
                       pour un montant total de{" "}
                       {stats.factures.montant_total_factures_impayees.toLocaleString(
                         "fr-FR",
-                        { style: "currency", currency: "CHF" },
+                        { style: "currency", currency: "CHF" }
                       )}
                     </p>
                     <span className="text-2xl font-bold">
@@ -431,6 +445,41 @@ export default function TableauBordPage() {
                     </span>
                   </div>
                 </AlertBox>
+              )}
+
+              {stats.factures.factures_impayees_plus_5j.length > 0 && (
+                <Card className="p-4">
+                  <h3 className="font-semibold mb-2">
+                    Factures impayées depuis 5 jours
+                  </h3>
+                  <ul className="space-y-1">
+                    {stats.factures.factures_impayees_plus_5j.map((inv) => (
+                      <li key={inv.id} className="flex justify-between">
+                        <div>
+                          <strong>
+                            {inv.eleve_prenom} {inv.eleve_nom}
+                          </strong>
+                          <br />
+                          N° {inv.numero_facture} — émis le{" "}
+                          {format(new Date(inv.date_emission), "dd/MM/yyyy")}
+                        </div>
+                        <div className="text-right">
+                          Total :{" "}
+                          {inv.montant_total.toLocaleString("fr-FR", {
+                            style: "currency",
+                            currency: "CHF",
+                          })}
+                          <br />
+                          Restant :{" "}
+                          {inv.montant_restant.toLocaleString("fr-FR", {
+                            style: "currency",
+                            currency: "CHF",
+                          })}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </Card>
               )}
 
               {eleves_absence > 0 && (
@@ -460,11 +509,11 @@ export default function TableauBordPage() {
                                 {eleve.prenom} {eleve.nom}
                               </p>
                               <p className="text-sm text-muted-foreground">
-                                Taux : {(eleve.taux_presence * 100).toFixed(1)}%
+                                Taux : {eleve.taux_presence.toFixed(1)}%
                               </p>
                             </div>
                           </div>
-                        ),
+                        )
                       )}
                     </div>
                   </Card>
@@ -501,12 +550,12 @@ export default function TableauBordPage() {
                                 Né(e) le{" "}
                                 {format(
                                   new Date(eleve.date_naissance),
-                                  "dd/MM/yyyy",
+                                  "dd/MM/yyyy"
                                 )}
                               </p>
                             </div>
                           </div>
-                        ),
+                        )
                       )}
                     </div>
                   </Card>
