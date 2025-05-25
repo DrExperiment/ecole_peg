@@ -39,7 +39,7 @@ export default function Login() {
       <div className="w-full max-w-md space-y-8">
         <div className="space-y-6 text-center">
           <div className="relative size-28 mx-auto">
-            <div className="bg-white rounded-md shadow p-4 h-full">
+            <div className="rounded-md shadow p-4 h-full">
               <Image
                 src="/logo/ecole_peg.png"
                 alt="École PEG Logo"

@@ -487,7 +487,7 @@ def anniversaires_mois(request):
 
     qs = (
         Eleve.objects.filter(
-            date_naissance__month=mois_actuel, inscriptions__statut="A"
+            date_naissance__month=mois_actuel, inscriptions__statut="A", inscriptions__preinscription=False,
         )
         .distinct()
         .order_by("date_naissance__day")

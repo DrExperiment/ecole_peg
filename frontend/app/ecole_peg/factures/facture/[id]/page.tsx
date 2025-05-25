@@ -134,22 +134,25 @@ export default function FacturePage({
 
       <div
         ref={factureRef}
-        className="bg-white rounded-xl shadow-md print:shadow-none mx-auto"
+        className="bg-background rounded-xl shadow-md print:shadow-none mx-auto"
         style={{
           width: "210mm",
-          minHeight: "297mm",
+          height: "297mm",
+          backgroundColor: "var(--background)",
+          display: "flex",
+          flexDirection: "column"
         }}
       >
-        <Card className="border-none">
-          <CardContent className="p-8 space-y-8">
+        <Card className="border-none flex-1 flex flex-col h-full">
+          <CardContent className="p-8 space-y-8 flex-1">
             <div className="flex flex-col md:flex-row md:justify-between gap-6">
               <div className="space-y-4">
                 <div>
                   <Image
                     src="/logo/ecole_peg.png"
                     alt="École PEG"
-                    width={200}
-                    height={100}
+                    width={150}
+                    height={75}
                     className="object-contain"
                   />
                 </div>
