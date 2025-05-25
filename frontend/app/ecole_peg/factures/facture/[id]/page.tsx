@@ -10,6 +10,7 @@ import { Button } from "@/components/button";
 import { Card, CardContent, CardFooter } from "@/components/card";
 import { ArrowLeft, Download } from "lucide-react";
 import { formatDate } from "@/lib/utils";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/table";
 
 type Html2CanvasOptions = Parameters<typeof html2canvas>[1];
 
@@ -207,25 +208,25 @@ export default function FacturePage({
             </div>
 
             <div className="rounded-lg border overflow-hidden">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-muted/50">
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+              <Table className="w-full">
+                <TableHeader>
+                  <TableRow className="bg-muted/50">
+                    <TableHead className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
                       Description
-                    </th>
-                    <th className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
+                    </TableHead>
+                    <TableHead className="px-4 py-3 text-left text-sm font-medium text-muted-foreground">
                       Période
-                    </th>
-                    <th className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
+                    </TableHead>
+                    <TableHead className="px-4 py-3 text-right text-sm font-medium text-muted-foreground">
                       Montant
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y">
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody className="divide-y">
                   {details_facture.map((detail) => (
-                    <tr key={detail.id} className="hover:bg-muted/30">
-                      <td className="px-4 py-3">{detail.description}</td>
-                      <td className="px-4 py-3">
+                    <TableRow key={detail.id} className="hover:bg-muted/30">
+                      <TableCell className="px-4 py-3">{detail.description}</TableCell>
+                      <TableCell className="px-4 py-3">
                         {detail.date_debut_periode && (
                           <>
                             Du {formatDate(detail.date_debut_periode)}
@@ -234,22 +235,22 @@ export default function FacturePage({
                             )}
                           </>
                         )}
-                      </td>
-                      <td className="px-4 py-3 text-right font-medium">
+                      </TableCell>
+                      <TableCell className="px-4 py-3 text-right font-medium">
                         {detail.montant.toFixed(2)} CHF
-                      </td>
-                    </tr>
+                      </TableCell>
+                    </TableRow>
                   ))}
-                  <tr className="bg-muted/50">
-                    <td colSpan={2} className="px-4 py-4 text-right font-bold">
+                  <TableRow className="bg-muted/50">
+                    <TableCell colSpan={2} className="px-4 py-4 text-right font-bold">
                       Total
-                    </td>
-                    <td className="px-4 py-4 text-right font-bold text-primary">
+                    </TableCell>
+                    <TableCell className="px-4 py-4 text-right font-bold text-primary">
                       {facture?.montant_total.toFixed(2)} CHF
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
+                    </TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
             </div>
 
             <div className="rounded-lg border bg-muted/30 p-6 space-y-4">
