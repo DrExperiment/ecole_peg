@@ -33,8 +33,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/select";
-import { fr } from "date-fns/locale";
-import { format } from "date-fns";
 
 interface Eleve {
   id: number;
@@ -124,6 +122,24 @@ interface Facture {
   montant_restant: number;
 }
 
+const ModePaiementChoices = {
+  PER: "Personnel",
+  BPA: "Bon de formation",
+  CAF: "Chèque de formation",
+  HOS: "Hospices général",
+  AUT: "Autre",
+} as const;
+
+const MethodePaiementChoices = {
+  ESP: "Espèce",
+  CAR: "Carte bancaire",
+  VIR: "Virement",
+  TWI: "Twint",
+  TEL: "Téléphone",
+  PAY: "PayPal",
+  AUT: "Autre",
+} as const;
+
 export default function ElevePage({
   params,
 }: {
@@ -157,7 +173,7 @@ export default function ElevePage({
   const fetchDocuments = useCallback(async () => {
     try {
       const reponse = await api.get<Document[]>(
-        `/eleves/eleves/${resolvedParams.id}/documents/`
+        `/eleves/eleves/${resolvedParams.id}/documents/`,
       );
 
       setDocuments(reponse.data);
@@ -169,7 +185,7 @@ export default function ElevePage({
   const fetchInscriptions = useCallback(async () => {
     try {
       const reponse = await api.get<Inscription[]>(
-        `/cours/${resolvedParams.id}/inscriptions/`
+        `/cours/${resolvedParams.id}/inscriptions/`,
       );
 
       setInscriptions(reponse.data);
@@ -181,7 +197,7 @@ export default function ElevePage({
   const fetchTests = useCallback(async () => {
     try {
       const reponse = await api.get<Test[]>(
-        `/eleves/eleves/${resolvedParams.id}/tests/`
+        `/eleves/eleves/${resolvedParams.id}/tests/`,
       );
 
       setTests(reponse.data);
@@ -193,7 +209,7 @@ export default function ElevePage({
   const fetchCoursPrives = useCallback(async () => {
     try {
       const reponse = await api.get<CoursPrive[]>(
-        `/cours/eleves/${resolvedParams.id}/cours_prives/`
+        `/cours/eleves/${resolvedParams.id}/cours_prives/`,
       );
 
       setCoursPrives(reponse.data);
@@ -207,7 +223,7 @@ export default function ElevePage({
     async function fetchEleve() {
       try {
         const reponse = await api.get<Eleve>(
-          `/eleves/eleve/${resolvedParams.id}/`
+          `/eleves/eleve/${resolvedParams.id}/`,
         );
 
         setEleve(reponse.data);
@@ -219,7 +235,7 @@ export default function ElevePage({
     async function fetchGarant() {
       try {
         const reponse = await api.get<Garant>(
-          `/eleves/eleves/${resolvedParams.id}/garant/`
+          `/eleves/eleves/${resolvedParams.id}/garant/`,
         );
 
         if (reponse.data?.id) {
@@ -242,7 +258,7 @@ export default function ElevePage({
 
         const reponse = await api.get(
           `/factures/paiements/eleve/${resolvedParams.id}/`,
-          { params }
+          { params },
         );
 
         setPaiements(reponse.data.paiements);
@@ -267,17 +283,17 @@ export default function ElevePage({
         if (filtre_factures === "impayees") {
           reponse = await api.get(
             `/factures/factures/eleve/${resolvedParams.id}/impayees/`,
-            { params }
+            { params },
           );
         } else if (filtre_factures === "payees") {
           reponse = await api.get(
             `/factures/factures/eleve/${resolvedParams.id}/payees/`,
-            { params }
+            { params },
           );
         } else {
           reponse = await api.get(
             `/factures/factures/eleve/${resolvedParams.id}/`,
-            { params }
+            { params },
           );
         }
 
@@ -345,7 +361,7 @@ export default function ElevePage({
     try {
       await api.post(
         `/eleves/eleves/${resolvedParams.id}/documents/`,
-        formData
+        formData,
       );
 
       form.reset();
@@ -359,7 +375,7 @@ export default function ElevePage({
   async function supprimerDocument(id_document: number) {
     try {
       await api.delete(
-        `/eleves/eleves/${resolvedParams.id}/documents/${id_document}/`
+        `/eleves/eleves/${resolvedParams.id}/documents/${id_document}/`,
       );
 
       fetchDocuments();
@@ -371,7 +387,7 @@ export default function ElevePage({
   async function supprimerInscription(id_insription: number) {
     try {
       await api.delete(
-        `/cours/${resolvedParams.id}/inscriptions/${id_insription}/`
+        `/cours/${resolvedParams.id}/inscriptions/${id_insription}/`,
       );
 
       fetchInscriptions();
@@ -436,8 +452,8 @@ export default function ElevePage({
                     eleve?.sexe === "H"
                       ? "Homme"
                       : eleve?.sexe === "F"
-                      ? "Femme"
-                      : "-",
+                        ? "Femme"
+                        : "-",
                 },
                 { label: "Rue", value: eleve?.rue || "-" },
                 { label: "Numéro", value: eleve?.numero || "-" },
@@ -456,12 +472,12 @@ export default function ElevePage({
                     eleve?.type_permis === "E"
                       ? "Étudiant"
                       : eleve?.type_permis === "P"
-                      ? "Pas de permis"
-                      : eleve?.type_permis === "S"
-                      ? "Permis S"
-                      : eleve?.type_permis === "B"
-                      ? "Permis B"
-                      : "-",
+                        ? "Pas de permis"
+                        : eleve?.type_permis === "S"
+                          ? "Permis S"
+                          : eleve?.type_permis === "B"
+                            ? "Permis B"
+                            : "-",
                 },
                 {
                   label: "Date d'expiration permis",
@@ -497,7 +513,7 @@ export default function ElevePage({
                   className="w-full"
                   onClick={() =>
                     router.push(
-                      `/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/`
+                      `/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/`,
                     )
                   }
                   disabled={!resolvedParams.id}
@@ -512,7 +528,7 @@ export default function ElevePage({
                 variant="outline"
                 onClick={() => {
                   router.push(
-                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/modifier/`
+                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/modifier/`,
                   );
                 }}
                 disabled={!resolvedParams.id}
@@ -602,7 +618,7 @@ export default function ElevePage({
                             size="sm"
                             onClick={() => {
                               router.push(
-                                `/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/${inscription?.id}/modifier/`
+                                `/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/${inscription?.id}/modifier/`,
                               );
                             }}
                           >
@@ -684,7 +700,7 @@ export default function ElevePage({
                               <div className="text-sm text-muted-foreground">
                                 Restant:{" "}
                                 {facture.montant_restant.toLocaleString(
-                                  "fr-CH"
+                                  "fr-CH",
                                 )}{" "}
                                 CHF
                               </div>
@@ -707,7 +723,7 @@ export default function ElevePage({
                               size="sm"
                               onClick={() => {
                                 router.push(
-                                  `/ecole_peg/factures/facture/${facture.id}`
+                                  `/ecole_peg/factures/facture/${facture.id}`,
                                 );
                               }}
                             >
@@ -759,16 +775,16 @@ export default function ElevePage({
                       setNumPageFactures((p) =>
                         Math.min(
                           Math.ceil(
-                            nombre_total_factures / taille_page_factures
+                            nombre_total_factures / taille_page_factures,
                           ),
-                          p + 1
-                        )
+                          p + 1,
+                        ),
                       )
                     }
                     disabled={
                       num_page_factures ===
                         Math.ceil(
-                          nombre_total_factures / taille_page_factures
+                          nombre_total_factures / taille_page_factures,
                         ) || nombre_total_factures === 0
                     }
                   >
@@ -794,13 +810,9 @@ export default function ElevePage({
                   <TableHeader>
                     <TableRow>
                       <TableHead className="font-medium">Date</TableHead>
-                      <TableHead className="font-medium">Description</TableHead>
+                      <TableHead className="font-medium">Mode</TableHead>
                       <TableHead className="font-medium">Méthode</TableHead>
                       <TableHead className="font-medium">Montant</TableHead>
-                      <TableHead className="font-medium">Mode</TableHead>
-                      <TableHead className="text-right font-medium">
-                        Actions
-                      </TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -810,35 +822,33 @@ export default function ElevePage({
                           <TableCell className="whitespace-nowrap">
                             {formatDate(paiement.date_paiement)}
                           </TableCell>
-                          <TableCell>{eleve?.nom ?? "-"}</TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                              {
+                                ModePaiementChoices[
+                                  paiement.mode_paiement as keyof typeof ModePaiementChoices
+                                ]
+                              }
+                            </span>
+                          </TableCell>
                           <TableCell>
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {paiement.methode_paiement}
+                              {
+                                MethodePaiementChoices[
+                                  paiement.methode_paiement as keyof typeof MethodePaiementChoices
+                                ]
+                              }
                             </span>
                           </TableCell>
                           <TableCell className="font-medium">
                             {paiement.montant.toLocaleString("fr-CH")} CHF
-                          </TableCell>
-                          <TableCell>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                              {paiement.mode_paiement}
-                            </span>
-                          </TableCell>
-                          <TableCell className="text-right">
-                            <Button variant="ghost" size="sm" asChild>
-                              <Link
-                                href={`/ecole_peg/eleves/eleve/${paiement.id}/`}
-                              >
-                                Détails
-                              </Link>
-                            </Button>
                           </TableCell>
                         </TableRow>
                       ))
                     ) : (
                       <TableRow>
                         <TableCell
-                          colSpan={6}
+                          colSpan={4}
                           className="text-center py-6 text-muted-foreground"
                         >
                           {chargement_paiements
@@ -867,7 +877,7 @@ export default function ElevePage({
                   <span className="text-sm text-muted-foreground">
                     Page {num_page_paiements} sur{" "}
                     {Math.ceil(
-                      nombre_total_paiements / taille_page_paiements
+                      nombre_total_paiements / taille_page_paiements,
                     ) || 1}
                   </span>
 
@@ -878,16 +888,16 @@ export default function ElevePage({
                       setNumPagePaiements((p) =>
                         Math.min(
                           Math.ceil(
-                            nombre_total_paiements / taille_page_paiements
+                            nombre_total_paiements / taille_page_paiements,
                           ),
-                          p + 1
-                        )
+                          p + 1,
+                        ),
                       )
                     }
                     disabled={
                       num_page_paiements ===
                         Math.ceil(
-                          nombre_total_paiements / taille_page_paiements
+                          nombre_total_paiements / taille_page_paiements,
                         ) || nombre_total_paiements === 0
                     }
                   >
@@ -941,7 +951,7 @@ export default function ElevePage({
                     variant="outline"
                     onClick={() => {
                       router.push(
-                        `/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/`
+                        `/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/`,
                       );
                     }}
                   >
@@ -1109,7 +1119,7 @@ export default function ElevePage({
               <Button
                 onClick={() => {
                   router.push(
-                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`
+                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`,
                   );
                 }}
               >
@@ -1150,22 +1160,18 @@ export default function ElevePage({
                             className="border-b dark:border-gray-700"
                           >
                             <td className="px-6 py-4">
-                              {format(
-                                new Date(cours.date_cours_prive),
-                                "dd MMMM yyyy",
-                                { locale: fr }
-                              )}
+                              {formatDate(cours.date_cours_prive)}
                             </td>
                             <td className="px-6 py-4">
                               {cours.heure_debut} - {cours.heure_fin}
                             </td>
                             <td className="px-6 py-4">
-                              {cours.enseignant__prenom} {cours.enseignant__nom}
+                              {cours.enseignant__nom} {cours.enseignant__prenom}
                             </td>
                             <td className="px-6 py-4">
                               {cours.lieu === "E" ? "École" : "Domicile"}
                             </td>
-                            <td className="px-6 py-4">{cours.tarif}€</td>
+                            <td className="px-6 py-4">{cours.tarif} CHF</td>
                           </tr>
                         ))}
                       </tbody>

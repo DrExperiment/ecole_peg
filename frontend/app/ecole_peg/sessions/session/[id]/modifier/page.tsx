@@ -128,7 +128,7 @@ export default function ModifierSessionPage({
       try {
         await api.put(
           `/cours/sessions/${resolvedParams.id}/`,
-          donnees_completes
+          donnees_completes,
         );
 
         router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`);
@@ -144,7 +144,7 @@ export default function ModifierSessionPage({
       periode_journee,
       resolvedParams.id,
       router,
-    ]
+    ],
   );
 
   return (
@@ -153,7 +153,9 @@ export default function ModifierSessionPage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`)}
+          onClick={() =>
+            router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`)
+          }
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />

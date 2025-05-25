@@ -16,9 +16,7 @@ export default function Login() {
   const { setAuthentifie } = useContext(AuthContext);
 
   useEffect(() => {
-    est_authentifie().then(
-      (ok) => ok && router.back(),
-    );
+    est_authentifie().then((ok) => ok && router.back());
   }, [router]);
 
   async function handleSoumission(e: FormEvent) {

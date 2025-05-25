@@ -35,7 +35,7 @@ export default function NouveauEnseignantPage() {
         console.error("Erreur: ", err);
       }
     },
-    [router]
+    [router],
   );
 
   return (

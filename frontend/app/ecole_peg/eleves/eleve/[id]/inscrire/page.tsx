@@ -72,7 +72,7 @@ export default function InscrirePage({
       try {
         await api.post(
           `/cours/${resolvedParams.id}/inscription/`,
-          donnees_completes
+          donnees_completes,
         );
 
         router.push(`/ecole_peg/eleves/eleve/${resolvedParams?.id}/`);
@@ -80,14 +80,14 @@ export default function InscrirePage({
         console.error("Erreur: ", err);
       }
     },
-    [id_session, preinscription, resolvedParams.id, router]
+    [id_session, preinscription, resolvedParams.id, router],
   );
 
   useEffect(() => {
     async function fetchEleve() {
       try {
         const reponse = await api.get<Eleve>(
-          `/eleves/eleve/${resolvedParams.id}/`
+          `/eleves/eleve/${resolvedParams.id}/`,
         );
 
         setEleve(reponse.data);
@@ -98,7 +98,11 @@ export default function InscrirePage({
 
     async function fetchSessions() {
       try {
-        const reponse = await api.get("/cours/sessions/");
+        const params = {
+          statut: "O",
+        };
+
+        const reponse = await api.get("/cours/sessions/", { params });
 
         setSessions(reponse.data.sessions);
       } catch (erreur) {
@@ -116,7 +120,9 @@ export default function InscrirePage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)}
+          onClick={() =>
+            router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)
+          }
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -159,9 +165,7 @@ export default function InscrirePage({
                       </span>
                       <br />
                       <span className="text-sm text-muted-foreground">
-                        Du{" "}
-                        {formatDate(session.date_debut)}{" "}
-                        au{" "}
+                        Du {formatDate(session.date_debut)} au{" "}
                         {formatDate(session.date_fin)}
                       </span>
                     </SelectItem>

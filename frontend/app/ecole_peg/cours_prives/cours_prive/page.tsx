@@ -54,11 +54,11 @@ export default function NouveauCoursPrivePage() {
 
   const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
   const [id_enseignant, setIdEnseignant] = useState<number | undefined>(
-    undefined
+    undefined,
   );
 
   const [date_cours_prive, setDateCoursPrive] = useState<Date | undefined>(
-    undefined
+    undefined,
   );
   const [heure_debut, setHeureDebut] = useState<string>("");
   const [heure_fin, setHeureFin] = useState<string>("");
@@ -149,7 +149,7 @@ export default function NouveauCoursPrivePage() {
       id_enseignant,
       lieu,
       router,
-    ]
+    ],
   );
 
   return (
@@ -277,7 +277,8 @@ export default function NouveauCoursPrivePage() {
                     id="dateCoursPrive"
                     type="date"
                     value={
-                      date_cours_prive instanceof Date && !isNaN(date_cours_prive.getTime())
+                      date_cours_prive instanceof Date &&
+                      !isNaN(date_cours_prive.getTime())
                         ? format(date_cours_prive, "yyyy-MM-dd")
                         : ""
                     }

@@ -48,7 +48,7 @@ export default function ModifierCoursPage({
     async function fetchCours() {
       try {
         const reponse = await api.get<Cours>(
-          `/cours/cours/${resolvedParams.id}/`
+          `/cours/cours/${resolvedParams.id}/`,
         );
 
         const cours = reponse.data;
@@ -87,7 +87,7 @@ export default function ModifierCoursPage({
         console.error("Erreur: ", err);
       }
     },
-    [niveau, resolvedParams.id, router, type_cours]
+    [niveau, resolvedParams.id, router, type_cours],
   );
 
   return (
@@ -96,7 +96,9 @@ export default function ModifierCoursPage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/ecole_peg/cours/cours/${resolvedParams.id}/`)}
+          onClick={() =>
+            router.push(`/ecole_peg/cours/cours/${resolvedParams.id}/`)
+          }
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />

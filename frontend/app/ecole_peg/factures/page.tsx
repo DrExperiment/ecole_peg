@@ -71,12 +71,12 @@ export default function FacturesPage() {
         if (filtre_statut === "impayees") {
           reponse = await api.get<ReponseFactures>(
             "/factures/factures/impayees/",
-            { params }
+            { params },
           );
         } else if (filtre_statut === "payees") {
           reponse = await api.get<ReponseFactures>(
             "/factures/factures/payees/",
-            { params }
+            { params },
           );
         } else {
           reponse = await api.get<ReponseFactures>("/factures/factures/", {
@@ -182,7 +182,7 @@ export default function FacturesPage() {
                           size="sm"
                           onClick={() => {
                             router.push(
-                              `/ecole_peg/factures/facture/${facture.id}`
+                              `/ecole_peg/factures/facture/${facture.id}`,
                             );
                           }}
                         >
@@ -226,7 +226,7 @@ export default function FacturesPage() {
                 size="sm"
                 onClick={() =>
                   setNumPage((p) =>
-                    Math.min(Math.ceil(nombre_total / taille_page), p + 1)
+                    Math.min(Math.ceil(nombre_total / taille_page), p + 1),
                   )
                 }
                 disabled={

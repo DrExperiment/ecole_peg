@@ -74,11 +74,11 @@ export default function ModifierCoursPrivePage({
 
   const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
   const [id_enseignant, setIdEnseignant] = useState<number | undefined>(
-    undefined
+    undefined,
   );
 
   const [date_cours_prive, setDateCoursPrive] = useState<Date | undefined>(
-    undefined
+    undefined,
   );
   const [heure_debut, setHeureDebut] = useState<string>("");
   const [heure_fin, setHeureFin] = useState<string>("");
@@ -194,10 +194,12 @@ export default function ModifierCoursPrivePage({
       try {
         await api.put(
           `/cours/cours_prive/${resolvedParams.id}/`,
-          donnees_completes
+          donnees_completes,
         );
 
-        router.push(`/ecole_peg/cours_prives/cours_prive/${resolvedParams.id}/`);
+        router.push(
+          `/ecole_peg/cours_prives/cours_prive/${resolvedParams.id}/`,
+        );
       } catch (err) {
         console.error("Erreur: ", err);
       }
@@ -211,7 +213,7 @@ export default function ModifierCoursPrivePage({
       lieu,
       resolvedParams.id,
       router,
-    ]
+    ],
   );
 
   if (chargement) return <div>Chargement...</div>;
@@ -222,7 +224,11 @@ export default function ModifierCoursPrivePage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/ecole_peg/cours_prives/cours_prive/${resolvedParams.id}/`)}
+          onClick={() =>
+            router.push(
+              `/ecole_peg/cours_prives/cours_prive/${resolvedParams.id}/`,
+            )
+          }
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -334,7 +340,8 @@ export default function ModifierCoursPrivePage({
                     id="dateCoursPrive"
                     type="date"
                     value={
-                      date_cours_prive instanceof Date && !isNaN(date_cours_prive.getTime())
+                      date_cours_prive instanceof Date &&
+                      !isNaN(date_cours_prive.getTime())
                         ? format(date_cours_prive, "yyyy-MM-dd")
                         : ""
                     }

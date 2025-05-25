@@ -71,7 +71,7 @@ export default function ModifierInscriptionPage({
       try {
         const [reponse_inscription, reponse_sessions] = await Promise.all([
           api.get<Inscription>(
-            `/cours/${resolvedParams.id}/inscriptions/${resolvedParams.id_inscription}/`
+            `/cours/${resolvedParams.id}/inscriptions/${resolvedParams.id_inscription}/`,
           ),
           api.get(`/cours/sessions/`),
         ]);
@@ -87,7 +87,7 @@ export default function ModifierInscriptionPage({
         setDateSortie(
           inscription.date_sortie
             ? new Date(inscription.date_sortie)
-            : undefined
+            : undefined,
         );
 
         reset({
@@ -114,7 +114,7 @@ export default function ModifierInscriptionPage({
     try {
       await api.put(
         `/cours/${resolvedParams.id}/inscriptions/${resolvedParams.id_inscription}/`,
-        donnees_completes
+        donnees_completes,
       );
 
       router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);

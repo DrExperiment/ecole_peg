@@ -231,32 +231,37 @@ export default function TableauBordPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {stats.cours.repartition_eleves_actifs.map((niveau, index) => {
-                    const pourcentage =
-                      stats.eleves.eleves_actifs > 0
-                        ? (niveau.total / stats.eleves.eleves_actifs) * 100
-                        : 0;
-                    return (
-                      <div key={`${niveau.niveau}-${index}`} className="flex items-center space-x-4">
-                        <div className="flex-1 space-y-1">
-                          <p className="text-sm font-medium leading-none">
-                            Niveau {niveau.niveau}
-                          </p>
-                          <div className="flex items-center">
-                            <div className="h-2 w-full rounded-full bg-secondary">
-                              <div
-                                className="h-2 rounded-full bg-primary"
-                                style={{ width: `${pourcentage}%` }}
-                              />
+                  {stats.cours.repartition_eleves_actifs.map(
+                    (niveau, index) => {
+                      const pourcentage =
+                        stats.eleves.eleves_actifs > 0
+                          ? (niveau.total / stats.eleves.eleves_actifs) * 100
+                          : 0;
+                      return (
+                        <div
+                          key={`${niveau.niveau}-${index}`}
+                          className="flex items-center space-x-4"
+                        >
+                          <div className="flex-1 space-y-1">
+                            <p className="text-sm font-medium leading-none">
+                              Niveau {niveau.niveau}
+                            </p>
+                            <div className="flex items-center">
+                              <div className="h-2 w-full rounded-full bg-secondary">
+                                <div
+                                  className="h-2 rounded-full bg-primary"
+                                  style={{ width: `${pourcentage}%` }}
+                                />
+                              </div>
+                              <span className="ml-2 text-sm text-muted-foreground">
+                                {niveau.total}
+                              </span>
                             </div>
-                            <span className="ml-2 text-sm text-muted-foreground">
-                              {niveau.total}
-                            </span>
                           </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    },
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -276,10 +281,13 @@ export default function TableauBordPage() {
                     </p>
                     <div className="flex items-center">
                       <span className="text-2xl font-bold">
-                        {stats.factures.montant_total_paiements_mois.toLocaleString('fr-FR', {
-                          style: 'currency',
-                          currency: 'CHF'
-                        })}
+                        {stats.factures.montant_total_paiements_mois.toLocaleString(
+                          "fr-FR",
+                          {
+                            style: "currency",
+                            currency: "CHF",
+                          },
+                        )}
                       </span>
                     </div>
                   </div>
@@ -289,10 +297,13 @@ export default function TableauBordPage() {
                     </p>
                     <div className="flex items-center">
                       <span className="text-2xl font-bold">
-                        {stats.factures.montant_total_factures_impayees.toLocaleString('fr-FR', {
-                          style: 'currency',
-                          currency: 'CHF'
-                        })}
+                        {stats.factures.montant_total_factures_impayees.toLocaleString(
+                          "fr-FR",
+                          {
+                            style: "currency",
+                            currency: "CHF",
+                          },
+                        )}
                       </span>
                     </div>
                   </div>
@@ -302,7 +313,7 @@ export default function TableauBordPage() {
                     Pays principal
                   </span>
                   <span className="font-medium">
-                    {stats.eleves.pays_plus_eleves || 'Non défini'}
+                    {stats.eleves.pays_plus_eleves || "Non défini"}
                   </span>
                 </div>
               </CardContent>
@@ -321,10 +332,15 @@ export default function TableauBordPage() {
                 {stats.cours.sessions_ouvertes.length > 0 ? (
                   <div className="space-y-4">
                     {stats.cours.sessions_ouvertes.map((s) => (
-                      <div key={new Date(s.date_debut).toISOString()} className="flex items-center justify-between">
+                      <div
+                        key={new Date(s.date_debut).toISOString()}
+                        className="flex items-center justify-between"
+                      >
                         <div className="space-y-1">
                           <p className="text-sm font-medium leading-none">
-                            {format(new Date(s.date_debut), 'dd MMMM yyyy', { locale: fr })}
+                            {format(new Date(s.date_debut), "dd MMMM yyyy", {
+                              locale: fr,
+                            })}
                           </p>
                           <p className="text-sm text-muted-foreground">
                             {s.eleves_restants} places disponibles
@@ -370,7 +386,8 @@ export default function TableauBordPage() {
                             {anniv.prenom} {anniv.nom}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(anniv.date_naissance), 'dd MMMM')} - {anniv.age} ans
+                            {format(new Date(anniv.date_naissance), "dd MMMM")}{" "}
+                            - {anniv.age} ans
                           </p>
                         </div>
                       </div>
@@ -400,10 +417,13 @@ export default function TableauBordPage() {
                   <div className="flex items-center justify-between">
                     <p className="text-sm">
                       {factures_impayees}{" "}
-                      {factures_impayees > 1 ? "factures impayées" : "facture impayée"} pour un montant total de{" "}
+                      {factures_impayees > 1
+                        ? "factures impayées"
+                        : "facture impayée"}{" "}
+                      pour un montant total de{" "}
                       {stats.factures.montant_total_factures_impayees.toLocaleString(
                         "fr-FR",
-                        { style: "currency", currency: "CHF" }
+                        { style: "currency", currency: "CHF" },
                       )}
                     </p>
                     <span className="text-2xl font-bold">
@@ -422,30 +442,30 @@ export default function TableauBordPage() {
                   >
                     <p className="text-sm">
                       {eleves_absence}{" "}
-                      {eleves_absence > 1
-                        ? "élèves ont"
-                        : "élève a"}{" "}
-                      un taux de présence inférieur à 80%
+                      {eleves_absence > 1 ? "élèves ont" : "élève a"} un taux de
+                      présence inférieur à 80%
                     </p>
                   </AlertBox>
 
                   <Card className="p-4">
                     <div className="space-y-4">
-                      {stats.eleves.eleves_presence_inferieur_80.map((eleve, index) => (
-                        <div
-                          key={`presence-${eleve.nom}-${eleve.prenom}-${index}`}
-                          className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
-                        >
-                          <div>
-                            <p className="font-medium">
-                              {eleve.prenom} {eleve.nom}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Taux : {(eleve.taux_presence * 100).toFixed(1)}%
-                            </p>
+                      {stats.eleves.eleves_presence_inferieur_80.map(
+                        (eleve, index) => (
+                          <div
+                            key={`presence-${eleve.nom}-${eleve.prenom}-${index}`}
+                            className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
+                          >
+                            <div>
+                              <p className="font-medium">
+                                {eleve.prenom} {eleve.nom}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Taux : {(eleve.taux_presence * 100).toFixed(1)}%
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ),
+                      )}
                     </div>
                   </Card>
                 </div>
@@ -460,30 +480,34 @@ export default function TableauBordPage() {
                   >
                     <p className="text-sm">
                       {eleves_preinscription}{" "}
-                      {eleves_preinscription > 1
-                        ? "élèves sont"
-                        : "élève est"}{" "}
+                      {eleves_preinscription > 1 ? "élèves sont" : "élève est"}{" "}
                       en attente de confirmation depuis plus de 3 jours
                     </p>
                   </AlertBox>
 
                   <Card className="p-4">
                     <div className="space-y-4">
-                      {stats.eleves.eleves_preinscription_plus_3j.map((eleve, index) => (
-                        <div
-                          key={`preinscription-${eleve.nom}-${eleve.prenom}-${index}`}
-                          className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
-                        >
-                          <div>
-                            <p className="font-medium">
-                              {eleve.prenom} {eleve.nom}
-                            </p>
-                            <p className="text-sm text-muted-foreground">
-                              Né(e) le {format(new Date(eleve.date_naissance), "dd/MM/yyyy")}
-                            </p>
+                      {stats.eleves.eleves_preinscription_plus_3j.map(
+                        (eleve, index) => (
+                          <div
+                            key={`preinscription-${eleve.nom}-${eleve.prenom}-${index}`}
+                            className="flex items-center justify-between border-b pb-2 last:border-0 last:pb-0"
+                          >
+                            <div>
+                              <p className="font-medium">
+                                {eleve.prenom} {eleve.nom}
+                              </p>
+                              <p className="text-sm text-muted-foreground">
+                                Né(e) le{" "}
+                                {format(
+                                  new Date(eleve.date_naissance),
+                                  "dd/MM/yyyy",
+                                )}
+                              </p>
+                            </div>
                           </div>
-                        </div>
-                      ))}
+                        ),
+                      )}
                     </div>
                   </Card>
                 </div>

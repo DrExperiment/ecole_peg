@@ -48,14 +48,14 @@ export default function NouveauGarantPage({
         console.error("Erreur lors de l'ajout du garant :", err);
       }
     },
-    [resolvedParams.id, router]
+    [resolvedParams.id, router],
   );
 
   useEffect(() => {
     async function fetchEleve() {
       try {
         const reponse = await api.get<Eleve>(
-          `/eleves/eleve/${resolvedParams.id}/`
+          `/eleves/eleve/${resolvedParams.id}/`,
         );
 
         setEleve(reponse.data);
@@ -73,7 +73,9 @@ export default function NouveauGarantPage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)}
+          onClick={() =>
+            router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)
+          }
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />

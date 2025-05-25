@@ -48,7 +48,7 @@ interface ReponseEleves {
 
 export default function ElevesPage() {
   const [date_naissance, setDateNaissance] = useState<Date | undefined>(
-    undefined
+    undefined,
   );
   const [eleves, setEleves] = useState<Eleve[]>([]);
   const [nombre_total, setNombreTotal] = useState(0);
@@ -161,7 +161,7 @@ export default function ElevesPage() {
                 <SelectContent>
                   <SelectItem value="A">Actifs</SelectItem>
                   <SelectItem value="I">Inactifs</SelectItem>
-                  <SelectItem value="P">Préinscripts</SelectItem>
+                  <SelectItem value="P">Préinscrits</SelectItem>
                   <SelectItem value="tous">Tous les élèves</SelectItem>
                 </SelectContent>
               </Select>

@@ -36,7 +36,7 @@ export default function DetailsCoursPrivePage({
   const router = useRouter();
 
   const [cours_prive, setCoursPrive] = useState<CoursPrive | undefined>(
-    undefined
+    undefined,
   );
 
   const formatTime = (timeString?: string) => {
@@ -50,7 +50,7 @@ export default function DetailsCoursPrivePage({
     async function fetchCoursPrive() {
       try {
         const reponse = await api.get<CoursPrive>(
-          `/cours/cours_prive/${resolvedParams.id}/`
+          `/cours/cours_prive/${resolvedParams.id}/`,
         );
 
         setCoursPrive(reponse.data);
@@ -104,7 +104,9 @@ export default function DetailsCoursPrivePage({
         <CardHeader className="border-b">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Cours privé {formatDate(cours_prive.date_cours_prive)}</CardTitle>
+              <CardTitle>
+                Cours privé {formatDate(cours_prive.date_cours_prive)}
+              </CardTitle>
             </div>
             <span
               className={`inline-flex items-center px-3 py-1 rounded-full text-sm font-medium ${
@@ -181,18 +183,13 @@ export default function DetailsCoursPrivePage({
             variant="outline"
             onClick={() =>
               router.push(
-                `/ecole_peg/cours_prives/cours_prive/${resolvedParams.id}/modifier/`
+                `/ecole_peg/cours_prives/cours_prive/${resolvedParams.id}/modifier/`,
               )
             }
           >
             Modifier
           </Button>
-          <Button
-            variant="destructive"
-            onClick={() =>
-              supprimerCoursPrive()
-            }
-          >
+          <Button variant="destructive" onClick={() => supprimerCoursPrive()}>
             Supprimer
           </Button>
         </CardFooter>

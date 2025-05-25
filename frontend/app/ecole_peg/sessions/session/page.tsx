@@ -76,7 +76,7 @@ export default function NouvelleSessionPage() {
         console.error("Erreur: ", err);
       }
     },
-    [date_debut, date_fin, id_cours, id_enseignant, periode_journee, router]
+    [date_debut, date_fin, id_cours, id_enseignant, periode_journee, router],
   );
 
   useEffect(() => {
@@ -195,7 +195,11 @@ export default function NouvelleSessionPage() {
                   min={format(new Date(), "yyyy-MM-dd")}
                   required
                   className="font-mono"
-                  value={date_debut instanceof Date && !isNaN(date_debut.getTime()) ? format(date_debut, "yyyy-MM-dd") : ""}
+                  value={
+                    date_debut instanceof Date && !isNaN(date_debut.getTime())
+                      ? format(date_debut, "yyyy-MM-dd")
+                      : ""
+                  }
                   onChange={(e) => {
                     setDateDebut(new Date(e.target.value));
                   }}
@@ -214,7 +218,11 @@ export default function NouvelleSessionPage() {
                   }
                   required
                   className="font-mono"
-                  value={date_fin instanceof Date && !isNaN(date_fin.getTime()) ? format(date_fin, "yyyy-MM-dd") : ""}
+                  value={
+                    date_fin instanceof Date && !isNaN(date_fin.getTime())
+                      ? format(date_fin, "yyyy-MM-dd")
+                      : ""
+                  }
                   onChange={(e) => setDateFin(new Date(e.target.value))}
                 />
               </div>

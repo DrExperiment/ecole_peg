@@ -73,7 +73,7 @@ export default function FacturePage({
     async function fetchFacture() {
       try {
         const reponse = await api.get<Facture>(
-          `/factures/facture/${resolvedParams.id}/`
+          `/factures/facture/${resolvedParams.id}/`,
         );
 
         setFacture(reponse.data);
@@ -85,7 +85,7 @@ export default function FacturePage({
     async function fetchDetailsFacture() {
       try {
         const reponse = await api.get<DetailFacture[]>(
-          `/factures/facture/${resolvedParams.id}/details/`
+          `/factures/facture/${resolvedParams.id}/details/`,
         );
 
         setDetailsFacture(reponse.data);
@@ -295,7 +295,7 @@ export default function FacturePage({
           className="bg-green-600 hover:bg-green-700 text-white px-8 shadow-sm transition-all duration-200 hover:shadow-md"
           onClick={() =>
             router.push(
-              `/ecole_peg/factures/facture/${resolvedParams.id}/payer`
+              `/ecole_peg/factures/facture/${resolvedParams.id}/payer`,
             )
           }
         >

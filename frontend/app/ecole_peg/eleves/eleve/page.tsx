@@ -45,7 +45,7 @@ export default function NouveauElevePage() {
 
   const [sexe, setSexe] = useState<"H" | "F">("H");
   const [date_naissance, setDateNaissance] = useState<Date | undefined>(
-    undefined
+    undefined,
   );
   const [niveau, setNiveau] = useState<
     "A1" | "A2" | "B1" | "B2" | "C1" | undefined
@@ -108,7 +108,7 @@ export default function NouveauElevePage() {
       setError,
       sexe,
       type_permis,
-    ]
+    ],
   );
 
   useEffect(() => {

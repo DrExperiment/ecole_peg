@@ -90,7 +90,7 @@ export default function ModifierGarantPage({
         console.error("Erreur lors de la modification du garant :", err);
       }
     },
-    [resolvedParams.id, router]
+    [resolvedParams.id, router],
   );
 
   if (!eleve) {

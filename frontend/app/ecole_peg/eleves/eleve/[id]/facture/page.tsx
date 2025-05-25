@@ -109,7 +109,7 @@ export default function NouvelleFacturePage({
   const modifierDetail = (
     indice: number,
     champ: keyof DetailFacture,
-    valeur: unknown
+    valeur: unknown,
   ) => {
     const nouveaux_details = [...details_facture];
 
@@ -175,7 +175,7 @@ export default function NouvelleFacturePage({
     async function fetchEleve() {
       try {
         const reponse = await api.get<Eleve>(
-          `/eleves/eleve/${resolvedParams.id}/`
+          `/eleves/eleve/${resolvedParams.id}/`,
         );
 
         setEleve(reponse.data);
@@ -187,7 +187,7 @@ export default function NouvelleFacturePage({
     async function fetchInscriptions() {
       try {
         const reponse = await api.get<Inscription[]>(
-          `/cours/${resolvedParams.id}/inscriptions/`
+          `/cours/${resolvedParams.id}/inscriptions/`,
         );
 
         setInscriptions(reponse.data);
@@ -199,7 +199,7 @@ export default function NouvelleFacturePage({
     async function fetchCoursPrives() {
       try {
         const reponse = await api.get(
-          `/cours/eleves/${resolvedParams.id}/cours_prives/`
+          `/cours/eleves/${resolvedParams.id}/cours_prives/`,
         );
 
         setCoursPrives(reponse.data);
@@ -382,7 +382,7 @@ export default function NouvelleFacturePage({
                               "date_debut_periode",
                               e.target.value
                                 ? new Date(e.target.value)
-                                : undefined
+                                : undefined,
                             );
                           }}
                         />
@@ -405,7 +405,7 @@ export default function NouvelleFacturePage({
                               "date_fin_periode",
                               e.target.value
                                 ? new Date(e.target.value)
-                                : undefined
+                                : undefined,
                             );
                           }}
                         />
@@ -424,7 +424,7 @@ export default function NouvelleFacturePage({
                           modifierDetail(
                             indice,
                             "montant",
-                            isNaN(valeur) ? 0 : valeur
+                            isNaN(valeur) ? 0 : valeur,
                           );
                         }}
                         onWheel={(e) => e.currentTarget.blur()}

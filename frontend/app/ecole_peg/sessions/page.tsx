@@ -131,7 +131,7 @@ export default function SessionsPage() {
               value={filtre_niveau}
               onValueChange={(value) =>
                 setFiltreNiveau(
-                  value as "tous" | "A1" | "A2" | "B1" | "B2" | "C1"
+                  value as "tous" | "A1" | "A2" | "B1" | "B2" | "C1",
                 )
               }
             >
@@ -260,7 +260,9 @@ export default function SessionsPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setNumPage((p) => Math.min(pages_totales, p + 1))}
+                onClick={() =>
+                  setNumPage((p) => Math.min(pages_totales, p + 1))
+                }
                 disabled={num_page === pages_totales || pages_totales === 0}
               >
                 Suivant

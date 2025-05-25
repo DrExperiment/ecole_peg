@@ -174,7 +174,9 @@ export default function CoursPage() {
                           variant="ghost"
                           size="sm"
                           onClick={() => {
-                            router.push(`/ecole_peg/cours/cours/${cours.id}/modifier/`);
+                            router.push(
+                              `/ecole_peg/cours/cours/${cours.id}/modifier/`,
+                            );
                           }}
                         >
                           Modifier

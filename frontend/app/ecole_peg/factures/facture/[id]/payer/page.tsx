@@ -61,7 +61,7 @@ export default function PayerFacturePage({
     async function fetchFacture() {
       try {
         const reponse = await api.get<Facture>(
-          `/factures/facture/${resolvedParams.id}/`
+          `/factures/facture/${resolvedParams.id}/`,
         );
 
         setFacture(reponse.data);
@@ -90,7 +90,7 @@ export default function PayerFacturePage({
         console.error("Erreur: ", err);
       }
     },
-    [methode_paiement, mode_paiement, resolvedParams.id, router]
+    [methode_paiement, mode_paiement, resolvedParams.id, router],
   );
 
   return (
@@ -99,7 +99,9 @@ export default function PayerFacturePage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/ecole_peg/factures/facture/${resolvedParams.id}/`)}
+          onClick={() =>
+            router.push(`/ecole_peg/factures/facture/${resolvedParams.id}/`)
+          }
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -211,22 +213,12 @@ export default function PayerFacturePage({
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="ESP">Espèces</SelectItem>
-                        <SelectItem value="VIR">
-                          Virement bancaire
-                        </SelectItem>
+                        <SelectItem value="VIR">Virement bancaire</SelectItem>
                         <SelectItem value="CAR">Carte bancaire</SelectItem>
-                        <SelectItem value="TEL">
-                          Paiement mobile
-                        </SelectItem>
-                        <SelectItem value="TWI">
-                          Twint
-                        </SelectItem>
-                        <SelectItem value="PAY">
-                          PayPal
-                        </SelectItem>
-                        <SelectItem value="AUT">
-                          Autre
-                        </SelectItem>
+                        <SelectItem value="TEL">Paiement mobile</SelectItem>
+                        <SelectItem value="TWI">Twint</SelectItem>
+                        <SelectItem value="PAY">PayPal</SelectItem>
+                        <SelectItem value="AUT">Autre</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>

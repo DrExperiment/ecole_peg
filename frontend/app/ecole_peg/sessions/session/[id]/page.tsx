@@ -59,7 +59,7 @@ export default function SessionPage({
   const fetchFiches = useCallback(async () => {
     try {
       const reponse = await api.get<FichePresence[]>(
-        `/cours/session/${resolvedParams.id}/fiches_presences/`
+        `/cours/session/${resolvedParams.id}/fiches_presences/`,
       );
 
       setFiches(reponse.data);
@@ -76,7 +76,7 @@ export default function SessionPage({
     async function fetchSession() {
       try {
         const reponse = await api.get<Session>(
-          `/cours/sessions/${resolvedParams.id}`
+          `/cours/sessions/${resolvedParams.id}`,
         );
 
         setSession(reponse.data);
@@ -228,8 +228,8 @@ export default function SessionPage({
                         {session?.periode_journee === "M"
                           ? "Matin"
                           : session?.periode_journee === "S"
-                          ? "Soir"
-                          : "-"}
+                            ? "Soir"
+                            : "-"}
                       </p>
                     </div>
                   </div>
@@ -252,7 +252,7 @@ export default function SessionPage({
                 variant="outline"
                 onClick={() => {
                   router.push(
-                    `/ecole_peg/sessions/session/${resolvedParams.id}/modifier`
+                    `/ecole_peg/sessions/session/${resolvedParams.id}/modifier`,
                   );
                 }}
               >
@@ -299,7 +299,7 @@ export default function SessionPage({
                             size="sm"
                             onClick={() => {
                               router.push(
-                                `${resolvedParams.id}/fiche/${fiche.id}`
+                                `${resolvedParams.id}/fiche/${fiche.id}`,
                               );
                             }}
                           >
@@ -333,7 +333,7 @@ export default function SessionPage({
                 variant="default"
                 onClick={() => {
                   router.push(
-                    `/ecole_peg/sessions/session/${resolvedParams.id}/fiche`
+                    `/ecole_peg/sessions/session/${resolvedParams.id}/fiche`,
                   );
                 }}
                 disabled={session?.statut === "O"}

@@ -60,9 +60,12 @@ export default function CoursPrivesPage() {
           taille: taille_page,
         };
 
-        const reponse = await api.get<ReponseCoursPrives>("/cours/cours_prive/", {
-          params,
-        });
+        const reponse = await api.get<ReponseCoursPrives>(
+          "/cours/cours_prive/",
+          {
+            params,
+          },
+        );
 
         setCoursPrives(reponse.data.cours_prives);
         setNombreTotal(reponse.data.nombre_total);
@@ -172,8 +175,8 @@ export default function CoursPrivesPage() {
                           {cours.lieu === "E"
                             ? "École"
                             : cours.lieu === "D"
-                            ? "Domicile"
-                            : cours.lieu}
+                              ? "Domicile"
+                              : cours.lieu}
                         </span>
                       </TableCell>
                       <TableCell className="text-right">
@@ -182,7 +185,7 @@ export default function CoursPrivesPage() {
                           size="sm"
                           onClick={() => {
                             router.push(
-                              `/ecole_peg/cours_prives/cours_prive/${cours.id}`
+                              `/ecole_peg/cours_prives/cours_prive/${cours.id}`,
                             );
                           }}
                         >
@@ -197,11 +200,9 @@ export default function CoursPrivesPage() {
                       colSpan={7}
                       className="text-center py-6 text-muted-foreground"
                     >
-                      {chargement ? (
-                        "Chargement..."
-                      ) : (
-                        "Aucun cours privé trouvé."
-                      )}
+                      {chargement
+                        ? "Chargement..."
+                        : "Aucun cours privé trouvé."}
                     </TableCell>
                   </TableRow>
                 )}
@@ -227,8 +228,15 @@ export default function CoursPrivesPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setNumPage((p) => Math.min(Math.ceil(nombre_total / taille_page), p + 1))}
-                disabled={num_page === Math.ceil(nombre_total / taille_page) || nombre_total === 0}
+                onClick={() =>
+                  setNumPage((p) =>
+                    Math.min(Math.ceil(nombre_total / taille_page), p + 1),
+                  )
+                }
+                disabled={
+                  num_page === Math.ceil(nombre_total / taille_page) ||
+                  nombre_total === 0
+                }
               >
                 Suivant
               </Button>

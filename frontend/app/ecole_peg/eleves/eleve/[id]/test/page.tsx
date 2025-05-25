@@ -59,7 +59,7 @@ export default function NouveauTestPage({
       try {
         await api.post(
           `/eleves/eleves/${resolvedParams.id}/tests/`,
-          donnees_completes
+          donnees_completes,
         );
 
         router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
@@ -67,14 +67,14 @@ export default function NouveauTestPage({
         console.error("Erreur: ", err);
       }
     },
-    [date, niveau, resolvedParams, router]
+    [date, niveau, resolvedParams, router],
   );
 
   useEffect(() => {
     async function fetchEleve() {
       try {
         const reponse = await api.get<Eleve>(
-          `/eleves/eleve/${resolvedParams.id}/`
+          `/eleves/eleve/${resolvedParams.id}/`,
         );
 
         setEleve(reponse.data);
@@ -92,7 +92,9 @@ export default function NouveauTestPage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)}
+          onClick={() =>
+            router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)
+          }
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -112,7 +114,11 @@ export default function NouveauTestPage({
               <Label>Date du test</Label>
               <Input
                 type="date"
-                value={date instanceof Date && !isNaN(date.getTime()) ? format(date, "yyyy-MM-dd") : ""}
+                value={
+                  date instanceof Date && !isNaN(date.getTime())
+                    ? format(date, "yyyy-MM-dd")
+                    : ""
+                }
                 onChange={(e) => {
                   setDate(new Date(e.target.value));
                 }}

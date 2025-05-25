@@ -12,6 +12,6 @@ export function formatDate(date: Date) {
 
   return string_date.replace(
     /^(\d{2}) (\p{L})/u,
-    (_, d, m1) => `${d} ${m1.toUpperCase()}`
+    (_, d, m1) => `${d} ${m1.toUpperCase()}`,
   );
 }

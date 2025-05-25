@@ -54,7 +54,7 @@ export default function NouveauCoursPage() {
         console.error("Erreur: ", err);
       }
     },
-    [niveau, router, type_cours]
+    [niveau, router, type_cours],
   );
 
   return (

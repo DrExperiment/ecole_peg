@@ -74,7 +74,7 @@ export default function FichePresencePage({
         const [reponse_eleves, reponse_fiche] = await Promise.all([
           api.get<Eleve[]>(`/cours/session/${resolvedParams.id}/eleves/`),
           api.get<FichePresences>(
-            `/cours/fiche_presences/${resolvedParams.id_fiche}/`
+            `/cours/fiche_presences/${resolvedParams.id_fiche}/`,
           ),
         ]);
 
@@ -112,7 +112,7 @@ export default function FichePresencePage({
 
   function totalPresences(id_eleve: number) {
     return Object.values(map_presences[id_eleve] || {}).filter(
-      (p) => p.statut === "P"
+      (p) => p.statut === "P",
     ).length;
   }
 
@@ -135,7 +135,7 @@ export default function FichePresencePage({
 
   async function handleSave() {
     const toutes_presences = Object.values(map_presences).flatMap((par_jour) =>
-      Object.values(par_jour)
+      Object.values(par_jour),
     );
 
     const a_modifier = toutes_presences.map((p) => ({
@@ -146,7 +146,7 @@ export default function FichePresencePage({
     try {
       await api.put(
         `/cours/fiche_presences/${resolvedParams.id_fiche}/`,
-        a_modifier
+        a_modifier,
       );
 
       router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`);
@@ -162,7 +162,9 @@ export default function FichePresencePage({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`)}
+            onClick={() =>
+              router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`)
+            }
             aria-label="Retourner à la page précédente"
           >
             <ArrowLeft className="h-4 w-4" />

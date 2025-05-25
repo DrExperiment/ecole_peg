@@ -72,7 +72,7 @@ export default function NouvelleFichePresencePage({
       try {
         await api.post(
           `/cours/session/${resolvedParams.id}/fiche_presences/`,
-          donnees_completes
+          donnees_completes,
         );
 
         router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`);
@@ -80,7 +80,7 @@ export default function NouvelleFichePresencePage({
         console.error("Erreur: ", err);
       }
     },
-    [mois, resolvedParams.id, router]
+    [mois, resolvedParams.id, router],
   );
 
   return (
@@ -121,7 +121,7 @@ export default function NouvelleFichePresencePage({
                             | "09"
                             | "10"
                             | "11"
-                            | "12"
+                            | "12",
                         );
                       }}
                     >

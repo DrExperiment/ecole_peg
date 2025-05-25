@@ -60,7 +60,7 @@ export default function ModifierElevePage({
 
   const [sexe, setSexe] = useState<"H" | "F">("H");
   const [date_naissance, setDateNaissance] = useState<Date | undefined>(
-    undefined
+    undefined,
   );
   const [niveau, setNiveau] = useState<"A1" | "A2" | "B1" | "B2" | "C1">("A1");
   const [type_permis, setTypePermis] = useState<"E" | "S" | "B" | "P">("P");
@@ -95,7 +95,7 @@ export default function ModifierElevePage({
       setTypePermis(eleve.type_permis);
 
       setDatePermis(
-        eleve.date_permis ? new Date(eleve.date_permis) : undefined
+        eleve.date_permis ? new Date(eleve.date_permis) : undefined,
       );
 
       setIdPays(eleve.pays_id);
@@ -172,7 +172,7 @@ export default function ModifierElevePage({
       router,
       sexe,
       type_permis,
-    ]
+    ],
   );
 
   if (pays.length === 0) {
@@ -185,7 +185,9 @@ export default function ModifierElevePage({
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)}
+          onClick={() =>
+            router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`)
+          }
           aria-label="Retourner à la page précédente"
         >
           <ArrowLeft className="h-4 w-4" />
@@ -543,7 +545,12 @@ export default function ModifierElevePage({
                     id="date_permis"
                     name="date_permis"
                     className="font-mono"
-                    value={date_permis instanceof Date && !isNaN(date_permis.getTime()) ? format(date_permis, "yyyy-MM-dd") : ""}
+                    value={
+                      date_permis instanceof Date &&
+                      !isNaN(date_permis.getTime())
+                        ? format(date_permis, "yyyy-MM-dd")
+                        : ""
+                    }
                     onChange={(e) => {
                       const value = e.target.value;
                       setDatePermis(value ? new Date(value) : undefined);
