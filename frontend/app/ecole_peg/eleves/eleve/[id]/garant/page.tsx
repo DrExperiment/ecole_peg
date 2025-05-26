@@ -136,7 +136,7 @@ export default function NouveauGarantPage({
                   {...register("telephone", {
                     required: "Le numéro de téléphone est obligatoire",
                     pattern: {
-                      value: /^(?:(?:\+|00)33\s?|0)[1-9](?:[\s.-]*\d{2}){4}$/,
+                      value: /^\+?\d{7,15}$/,
                       message:
                         "Le numéro de téléphone doit être au format suisse.",
                     },

@@ -702,6 +702,7 @@ export default function ElevePage({
                 <Table>
                   <TableHeader>
                     <TableRow>
+                      <TableHead className="font-medium">Numéro</TableHead>
                       <TableHead className="font-medium">Date</TableHead>
                       <TableHead className="font-medium">Montant</TableHead>
                       <TableHead className="font-medium">Statut</TableHead>
@@ -714,6 +715,7 @@ export default function ElevePage({
                     {factures.length > 0 ? (
                       factures.map((facture) => (
                         <TableRow key={facture.id}>
+                          <TableCell>{facture.id}</TableCell>
                           <TableCell className="whitespace-nowrap">
                             {formatDate(facture.date_emission)}
                           </TableCell>
@@ -762,7 +764,7 @@ export default function ElevePage({
                     ) : (
                       <TableRow>
                         <TableCell
-                          colSpan={4}
+                          colSpan={5}
                           className="text-center py-6 text-muted-foreground"
                         >
                           {chargement_factures

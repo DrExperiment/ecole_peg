@@ -34,6 +34,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/table";
+import { formatDate } from "@/lib/utils";
 
 interface Anniversaire {
   id: number;
@@ -397,10 +398,10 @@ export default function TableauBordPage() {
                       >
                         <div className="space-y-1">
                           <p className="text-sm font-medium leading-none">
-                            {anniv.prenom} {anniv.nom}
+                            {anniv.nom} {anniv.prenom}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {format(new Date(anniv.date_naissance), "dd MMMM")}{" "}
+                            {formatDate(anniv.date_naissance)}{" "}
                             - {anniv.age} ans
                           </p>
                         </div>

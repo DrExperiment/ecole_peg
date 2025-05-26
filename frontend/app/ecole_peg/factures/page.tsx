@@ -134,6 +134,7 @@ export default function FacturesPage() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="font-medium">Numéro</TableHead>
                   <TableHead className="font-medium">Date</TableHead>
                   <TableHead className="font-medium">Élève</TableHead>
                   <TableHead className="font-medium">Montant</TableHead>
@@ -147,6 +148,7 @@ export default function FacturesPage() {
                 {factures.length > 0 ? (
                   factures.map((facture) => (
                     <TableRow key={facture.id}>
+                      <TableCell>{facture.id}</TableCell>
                       <TableCell className="whitespace-nowrap">
                         {formatDate(facture.date_emission)}
                       </TableCell>
@@ -195,7 +197,7 @@ export default function FacturesPage() {
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={5}
+                      colSpan={6}
                       className="text-center py-6 text-muted-foreground"
                     >
                       {chargement ? "Chargement..." : "Aucune facture trouvée."}

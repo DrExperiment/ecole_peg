@@ -8,9 +8,16 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import { Button } from "@/components/button";
 import { Card, CardContent, CardFooter } from "@/components/card";
-import { ArrowLeft, Download } from "lucide-react";
+import { ArrowLeft, Download, Trash2 } from "lucide-react";
 import { formatDate } from "@/lib/utils";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/table";
 
 type Html2CanvasOptions = Parameters<typeof html2canvas>[1];
 
@@ -70,11 +77,27 @@ export default function FacturePage({
     pdf.save(`facture_${facture?.id ?? "ecole"}.pdf`);
   };
 
+  const handleSupprimer = async () => {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette facture ?")) {
+      return;
+    }
+
+    try {
+      await api.delete(`/factures/facture/${resolvedParams.id}/`);
+
+      router.push("/ecole_peg/factures/");
+    } catch (err) {
+      console.error("Erreur lors de la suppression:", err);
+
+      alert("Une erreur est survenue lors de la suppression de la facture.");
+    }
+  };
+
   useEffect(() => {
     async function fetchFacture() {
       try {
         const reponse = await api.get<Facture>(
-          `/factures/facture/${resolvedParams.id}/`,
+          `/factures/facture/${resolvedParams.id}/`
         );
 
         setFacture(reponse.data);
@@ -86,7 +109,7 @@ export default function FacturePage({
     async function fetchDetailsFacture() {
       try {
         const reponse = await api.get<DetailFacture[]>(
-          `/factures/facture/${resolvedParams.id}/details/`,
+          `/factures/facture/${resolvedParams.id}/details/`
         );
 
         setDetailsFacture(reponse.data);
@@ -123,14 +146,24 @@ export default function FacturePage({
             </p>
           </div>
         </div>
-        <Button
-          variant="outline"
-          onClick={handleTelechargerPdf}
-          className="shadow-sm"
-        >
-          <Download className="mr-2 h-4 w-4" />
-          Télécharger PDF
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleTelechargerPdf}
+            className="shadow-sm"
+          >
+            <Download className="mr-2 h-4 w-4" />
+            Télécharger PDF
+          </Button>
+          <Button
+            variant="destructive"
+            onClick={handleSupprimer}
+            className="shadow-sm"
+          >
+            <Trash2 className="mr-2 h-4 w-4" />
+            Supprimer
+          </Button>
+        </div>
       </div>
 
       <div
@@ -141,7 +174,7 @@ export default function FacturePage({
           height: "297mm",
           backgroundColor: "var(--background)",
           display: "flex",
-          flexDirection: "column"
+          flexDirection: "column",
         }}
       >
         <Card className="border-none flex-1 flex flex-col h-full">
@@ -225,7 +258,9 @@ export default function FacturePage({
                 <TableBody className="divide-y">
                   {details_facture.map((detail) => (
                     <TableRow key={detail.id} className="hover:bg-muted/30">
-                      <TableCell className="px-4 py-3">{detail.description}</TableCell>
+                      <TableCell className="px-4 py-3">
+                        {detail.description}
+                      </TableCell>
                       <TableCell className="px-4 py-3">
                         {detail.date_debut_periode && (
                           <>
@@ -242,7 +277,10 @@ export default function FacturePage({
                     </TableRow>
                   ))}
                   <TableRow className="bg-muted/50">
-                    <TableCell colSpan={2} className="px-4 py-4 text-right font-bold">
+                    <TableCell
+                      colSpan={2}
+                      className="px-4 py-4 text-right font-bold"
+                    >
                       Total
                     </TableCell>
                     <TableCell className="px-4 py-4 text-right font-bold text-primary">
@@ -299,7 +337,7 @@ export default function FacturePage({
           className="bg-green-600 hover:bg-green-700 text-white px-8 shadow-sm transition-all duration-200 hover:shadow-md"
           onClick={() =>
             router.push(
-              `/ecole_peg/factures/facture/${resolvedParams.id}/payer`,
+              `/ecole_peg/factures/facture/${resolvedParams.id}/payer`
             )
           }
         >
