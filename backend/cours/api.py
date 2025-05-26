@@ -405,7 +405,7 @@ def get_inscription(request, eleve_id: int, inscription_id: int):
 @router.get("/{eleve_id}/inscriptions/")
 def get_inscriptions_by_eleve(request, eleve_id: int):
     inscriptions = Inscription.objects.select_related("session", "eleve").filter(
-        eleve_id=eleve_id, preinscription=False
+        eleve_id=eleve_id
     )
     return [
         {
