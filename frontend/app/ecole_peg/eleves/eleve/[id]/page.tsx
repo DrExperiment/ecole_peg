@@ -400,14 +400,14 @@ export default function ElevePage({
   }
 
   const formatTime = (string_temps: string) => {
-      if (!string_temps) return "";
-  
-      const parsed = parseISO(`1970-01-01T${string_temps}`);
-  
-      if (!isValid(parsed)) return "";
-  
-      return format(parsed, "HH:mm");
-    };
+    if (!string_temps) return "";
+
+    const parsed = parseISO(`1970-01-01T${string_temps}`);
+
+    if (!isValid(parsed)) return "";
+
+    return format(parsed, "HH:mm");
+  };
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -669,7 +669,7 @@ export default function ElevePage({
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0 space-y-6">
-              <div className="p-6">
+              <div className="flex items-center justify-between p-6">
                 <Select
                   value={filtre_factures}
                   onValueChange={(value) => setFiltreFactures(value)}
@@ -683,6 +683,17 @@ export default function ElevePage({
                     <SelectItem value="impayees">Impayées</SelectItem>
                   </SelectContent>
                 </Select>
+
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="flex items-center gap-2"
+                  onClick={() =>
+                    router.push(
+                      `/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`
+                    )
+                  }
+                >Nouvelle facture</Button>
               </div>
 
               <div className="rounded-md border">
@@ -1178,7 +1189,8 @@ export default function ElevePage({
                               {formatDate(cours.date_cours_prive)}
                             </TableCell>
                             <TableCell className="px-6 py-4">
-                              {formatTime(cours.heure_debut)} - {formatTime(cours.heure_fin)}
+                              {formatTime(cours.heure_debut)} -{" "}
+                              {formatTime(cours.heure_fin)}
                             </TableCell>
                             <TableCell className="px-6 py-4">
                               {cours.enseignant__nom} {cours.enseignant__prenom}
