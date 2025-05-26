@@ -693,7 +693,9 @@ export default function ElevePage({
                       `/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`
                     )
                   }
-                >Nouvelle facture</Button>
+                >
+                  Nouvelle facture
+                </Button>
               </div>
 
               <div className="rounded-md border">
@@ -857,11 +859,11 @@ export default function ElevePage({
                           </TableCell>
                           <TableCell>
                             <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {
-                                MethodePaiementChoices[
-                                  paiement.methode_paiement as keyof typeof MethodePaiementChoices
-                                ]
-                              }
+                              {paiement.methode_paiement
+                                ? MethodePaiementChoices[
+                                    paiement.methode_paiement as keyof typeof MethodePaiementChoices
+                                  ]
+                                : "-"}
                             </span>
                           </TableCell>
                           <TableCell className="font-medium">

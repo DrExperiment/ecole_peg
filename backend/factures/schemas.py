@@ -53,7 +53,7 @@ class FactureOut(Schema):
 class PaiementIn(Schema):
     montant: float
     mode_paiement: str
-    methode_paiement: str
+    methode_paiement: str | None = None
     id_facture: int
 
 
@@ -62,4 +62,4 @@ class PaiementOut(Schema):
     date_paiement: date
     montant: float
     mode_paiement: str
-    methode_paiement: str
+    methode_paiement: str | None = None

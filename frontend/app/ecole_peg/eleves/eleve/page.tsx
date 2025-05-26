@@ -151,7 +151,7 @@ export default function NouveauElevePage() {
             <CardContent className="grid gap-4">
               <div className="grid gap-4 grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="nom">Nom</Label>
+                  <Label htmlFor="nom">Nom<span className="text-red-500 ml-1">*</span></Label>
                   <Input
                     id="nom"
                     placeholder="Nom de famille"
@@ -168,7 +168,7 @@ export default function NouveauElevePage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="prenom">Prénom</Label>
+                  <Label htmlFor="prenom">Prénom<span className="text-red-500 ml-1">*</span></Label>
                   <Input
                     id="prenom"
                     placeholder="Prénom"
@@ -187,7 +187,7 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="sexe">Sexe</Label>
+                <Label htmlFor="sexe">Sexe<span className="text-red-500 ml-1">*</span></Label>
                 <RadioGroup
                   defaultValue={sexe}
                   onValueChange={(valeur) => setSexe(valeur as "H" | "F")}
@@ -207,7 +207,7 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="date_naissance">Date de naissance</Label>
+                <Label htmlFor="date_naissance">Date de naissance<span className="text-red-500 ml-1">*</span></Label>
                 <Input
                   type="date"
                   id="date_naissance"
@@ -227,7 +227,7 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="lieu_naissance">Lieu de naissance</Label>
+                <Label htmlFor="lieu_naissance">Lieu de naissance<span className="text-red-500 ml-1">*</span></Label>
                 <Input
                   id="lieu_naissance"
                   placeholder="Lieu de naissance"
@@ -236,7 +236,7 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="pays">Pays</Label>
+                <Label htmlFor="pays">Pays<span className="text-red-500 ml-1">*</span></Label>
                 <Select
                   name="id_pays"
                   required
@@ -294,7 +294,7 @@ export default function NouveauElevePage() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="type_permis">Type de permis</Label>
+                <Label htmlFor="type_permis">Type de permis<span className="text-red-500 ml-1">*</span></Label>
                 <Select
                   onValueChange={(valeur) =>
                     setTypePermis(valeur as "E" | "S" | "B" | "P")
@@ -312,7 +312,7 @@ export default function NouveauElevePage() {
                 </Select>
               </div>
 
-              <div className="space-y-2">
+              {type_permis !== "P" && <div className="space-y-2">
                 <Label htmlFor="date_permis">
                   Date d&apos;expiration de permis
                 </Label>
@@ -330,7 +330,7 @@ export default function NouveauElevePage() {
                     setDatePermis(value ? new Date(value) : undefined);
                   }}
                 />
-              </div>
+              </div>}
 
               <div className="space-y-2">
                 <Label htmlFor="src_decouverte">Source de découverte</Label>
@@ -366,7 +366,7 @@ export default function NouveauElevePage() {
               </CardHeader>
               <CardContent className="grid gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="telephone">Téléphone</Label>
+                  <Label htmlFor="telephone">Téléphone<span className="text-red-500 ml-1">*</span></Label>
                   <Input
                     id="telephone"
                     type="tel"
@@ -385,7 +385,7 @@ export default function NouveauElevePage() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
+                  <Label htmlFor="email">Email<span className="text-red-500 ml-1">*</span></Label>
                   <Input
                     id="email"
                     type="email"

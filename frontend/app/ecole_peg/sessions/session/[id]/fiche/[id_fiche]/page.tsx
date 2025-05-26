@@ -2,7 +2,7 @@
 
 import { use, useState, useEffect } from "react";
 import { Button } from "@/components/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/card";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/card";
 import {
   Table,
   TableBody,
@@ -250,6 +250,18 @@ export default function FichePresencePage({
               </Table>
             </div>
           </CardContent>
+          <CardFooter className="border-t p-6">
+            <div className="space-y-2">
+              <p className="text-sm text-muted-foreground">
+                Heures-Participant = Nombre de présences × 3h (durée du cours)
+              </p>
+              <p className="text-lg font-bold">
+                Total:{" "}
+                {eleves.reduce((acc, e) => acc + totalPresences(e.id), 0) * 3}{" "}
+                heures participant
+              </p>
+            </div>
+          </CardFooter>
         </Card>
       )}
     </div>

@@ -51,9 +51,13 @@ export default function PayerFacturePage({
 
   const [facture, setFacture] = useState<Facture>();
 
-  const [mode_paiement, setModePaiement] = useState("PER");
+  const [mode_paiement, setModePaiement] = useState<
+    "PER" | "BPA" | "CAF" | "HOS" | "AUT"
+  >("PER");
 
-  const [methode_paiement, setMethodePaiement] = useState("ESP");
+  const [methode_paiement, setMethodePaiement] = useState<
+    "ESP" | "CAR" | "VIR" | "TWI" | "TEL" | "PAY" | "AUT" | undefined
+  >("ESP");
 
   const montant = watch("montant");
 
@@ -61,7 +65,7 @@ export default function PayerFacturePage({
     async function fetchFacture() {
       try {
         const reponse = await api.get<Facture>(
-          `/factures/facture/${resolvedParams.id}/`,
+          `/factures/facture/${resolvedParams.id}/`
         );
 
         setFacture(reponse.data);
@@ -75,12 +79,24 @@ export default function PayerFacturePage({
 
   const onSoumission = useCallback(
     async (donnees: object) => {
+      if (mode_paiement === "PER" && !methode_paiement) {
+        alert("Vous devez choisir une méthode de paiement.");
+
+        return;
+      }
+
+      if (mode_paiement !== "PER" && methode_paiement) {
+        setMethodePaiement(undefined);
+      }
+
       const donnees_completes = {
         ...donnees,
         id_facture: resolvedParams.id,
         mode_paiement,
         methode_paiement,
       };
+
+      console.log(donnees_completes);
 
       try {
         await api.post("/factures/paiement/", donnees_completes);
@@ -90,7 +106,7 @@ export default function PayerFacturePage({
         console.error("Erreur: ", err);
       }
     },
-    [methode_paiement, mode_paiement, resolvedParams.id, router],
+    [methode_paiement, mode_paiement, resolvedParams.id, router]
   );
 
   return (
@@ -120,7 +136,7 @@ export default function PayerFacturePage({
           <Card className="shadow-lg">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl">
-                Facture #{facture.numero_facture}
+                Facture {facture.numero_facture}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
                 Émise le {formatDate(facture.date_emission)}
@@ -186,7 +202,13 @@ export default function PayerFacturePage({
                   <Label className="text-base">Mode de paiement</Label>
                   <Select
                     value={mode_paiement}
-                    onValueChange={(value) => setModePaiement(value)}
+                    onValueChange={(value) => {
+                      setModePaiement(
+                        value as "PER" | "BPA" | "CAF" | "HOS" | "AUT"
+                      );
+
+                      if (value !== "PER") setMethodePaiement(undefined);
+                    }}
                   >
                     <SelectTrigger className="w-full">
                       <SelectValue placeholder="Sélectionner un mode de paiement" />
@@ -206,7 +228,18 @@ export default function PayerFacturePage({
                     <Label className="text-base">Méthode de paiement</Label>
                     <Select
                       value={methode_paiement}
-                      onValueChange={(value) => setMethodePaiement(value)}
+                      onValueChange={(value) =>
+                        setMethodePaiement(
+                          value as
+                            | "ESP"
+                            | "CAR"
+                            | "VIR"
+                            | "TWI"
+                            | "TEL"
+                            | "PAY"
+                            | "AUT"
+                        )
+                      }
                     >
                       <SelectTrigger className="w-full">
                         <SelectValue placeholder="Choisir une méthode de paiement" />
@@ -239,7 +272,7 @@ export default function PayerFacturePage({
               <Button
                 type="submit"
                 className="w-full sm:w-auto"
-                disabled={isSubmitting}
+                disabled={isSubmitting || (mode_paiement === "PER" && !methode_paiement)}
               >
                 {montant > 0
                   ? `Enregistrer le paiement de ${montant} CHF`

@@ -168,7 +168,7 @@ class Paiement(models.Model):
     )
     mode_paiement = models.CharField(max_length=3, choices=ModePaiementChoices.choices)
     methode_paiement = models.CharField(
-        max_length=3, choices=MethodePaiementChoices.choices
+        blank=True, null=True, max_length=3, choices=MethodePaiementChoices.choices
     )
     facture = models.ForeignKey(
         Facture, on_delete=models.CASCADE, related_name="paiements"
