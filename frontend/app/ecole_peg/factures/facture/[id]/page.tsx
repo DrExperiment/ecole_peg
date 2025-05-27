@@ -1,8 +1,8 @@
+/* eslint-disable @next/next/no-img-element */
 "use client";
 
 import { use, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 import { api } from "@/lib/api";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
@@ -56,6 +56,8 @@ export default function FacturePage({
 
     const canvas = await html2canvas(factureRef.current, {
       scale: 2,
+      useCORS: true,
+      allowTaint: false,
     } as Html2CanvasOptions);
 
     const imgData = canvas.toDataURL("image/png");
@@ -67,12 +69,25 @@ export default function FacturePage({
     });
 
     const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
 
     const pxToMm = pageWidth / canvas.width;
-    const imgWidthMm = canvas.width * pxToMm;
-    const imgHeightMm = canvas.height * pxToMm;
+    let imgWidthMm = canvas.width * pxToMm;
+    let imgHeightMm = canvas.height * pxToMm;
 
-    pdf.addImage(imgData, "PNG", 0, 0, imgWidthMm, imgHeightMm);
+    if (imgHeightMm > pageHeight) {
+      const mmPerPxH = pageHeight / canvas.height;
+      const altWidth = canvas.width * mmPerPxH;
+      const altHeight = pageHeight;
+
+      imgWidthMm = altWidth;
+      imgHeightMm = altHeight;
+    }
+
+    const x = (pageWidth - imgWidthMm) / 2;
+    const y = (pageHeight - imgHeightMm) / 2;
+
+    pdf.addImage(imgData, "PNG", x, y, imgWidthMm, imgHeightMm);
 
     pdf.save(`facture_${facture?.id ?? "ecole"}.pdf`);
   };
@@ -91,7 +106,7 @@ export default function FacturePage({
 
       alert("Une erreur est survenue lors de la suppression de la facture.");
     }
-  };
+  }
 
   useEffect(() => {
     async function fetchFacture() {
@@ -182,12 +197,13 @@ export default function FacturePage({
             <div className="flex flex-col md:flex-row md:justify-between gap-6">
               <div className="space-y-4">
                 <div>
-                  <Image
+                  <img
                     src="/logo/ecole_peg.png"
                     alt="École PEG"
                     width={150}
                     height={75}
-                    className="object-contain"
+                    style={{ objectFit: "contain" }}
+                    crossOrigin="anonymous"
                   />
                 </div>
                 <div className="space-y-1 text-sm text-muted-foreground">
@@ -311,13 +327,13 @@ export default function FacturePage({
                   </div>
                 </div>
                 <div className="flex justify-center md:justify-end">
-                  <Image
+                  <img
                     src="/QR.png"
                     alt="QR Code pour paiement"
                     width={120}
                     height={80}
-                    className="object-contain"
-                    priority
+                    style={{ objectFit: "contain" }}
+                    crossOrigin="anonymous"
                   />
                 </div>
               </div>

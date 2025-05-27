@@ -8,7 +8,7 @@ import {
   BookOpen,
   Cake,
   Clock,
-  DollarSign,
+  Coins,
   FileText,
   Home,
   PieChart,
@@ -286,7 +286,7 @@ export default function TableauBordPage() {
                 <CardTitle className="text-base font-medium">
                   Finances du mois
                 </CardTitle>
-                <DollarSign className="h-4 w-4 text-muted-foreground" />
+                <Coins className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="grid grid-cols-2 gap-4">
@@ -343,12 +343,11 @@ export default function TableauBordPage() {
                 </CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
-                {stats.cours.sessions_ouvertes.length > 0 ? (
+              <CardContent>                {stats.cours.sessions_ouvertes.length > 0 ? (
                   <div className="space-y-4">
-                    {stats.cours.sessions_ouvertes.map((s) => (
+                    {stats.cours.sessions_ouvertes.map((s, index) => (
                       <div
-                        key={new Date(s.date_debut).toISOString()}
+                        key={`session-${index}-${new Date(s.date_debut).toISOString()}`}
                         className="flex items-center justify-between"
                       >
                         <div className="space-y-1">
