@@ -336,22 +336,34 @@ export default function ElevePage({
   }, [filtre_factures]);
 
   async function supprimerEleve() {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cet élève ?")) {
+      return;
+    }
+
     try {
       await api.delete(`/eleves/eleves/${resolvedParams.id}/`);
 
       router.push("/ecole_peg/eleves/");
     } catch (err) {
       console.error("Erreur: ", err);
+
+      alert("Une erreur est survenue lors de la suppression de l'élève.");
     }
   }
 
   async function supprimerTest(id_test: number) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce test ?")) {
+      return;
+    }
+
     try {
       await api.delete(`/eleves/eleves/${resolvedParams.id}/tests/${id_test}/`);
 
       fetchTests();
     } catch (err) {
       console.error("Erreur: ", err);
+
+      alert("Une erreur est survenue lors de la suppression du test.");
     }
   }
   async function handleUpload(e: React.FormEvent<HTMLFormElement>) {
@@ -376,6 +388,10 @@ export default function ElevePage({
   }
 
   async function supprimerDocument(id_document: number) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce document ?")) {
+      return;
+    }
+
     try {
       await api.delete(
         `/eleves/eleves/${resolvedParams.id}/documents/${id_document}/`
@@ -384,10 +400,16 @@ export default function ElevePage({
       fetchDocuments();
     } catch (err) {
       console.error("Erreur de suppression", err);
+
+      alert("Une erreur est survenue lors de la suppression du document.");
     }
   }
 
   async function supprimerInscription(id_insription: number) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette inscription ?")) {
+      return;
+    }
+
     try {
       await api.delete(
         `/cours/${resolvedParams.id}/inscriptions/${id_insription}/`
@@ -396,6 +418,8 @@ export default function ElevePage({
       fetchInscriptions();
     } catch (erreur) {
       console.error("Erreur suppression inscription:", erreur);
+
+      alert("Une erreur est survenue lors de la suppression de l'inscription.");
     }
   }
 
@@ -1155,9 +1179,7 @@ export default function ElevePage({
               </Button>
             </CardFooter>
           </Card>
-        </TabsContent>
-
-        <TabsContent value="cours_prives">
+        </TabsContent>        <TabsContent value="cours_prives">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
               <CardTitle>Cours privés</CardTitle>
@@ -1166,52 +1188,77 @@ export default function ElevePage({
               </CardDescription>
             </CardHeader>
             <CardContent className="p-0">
-              {cours_prives.length === 0 ? (
-                <div className="text-center py-4">Aucun cours privé trouvé</div>
-              ) : (
-                <>
-                  <div className="relative overflow-x-auto">
-                    <Table className="w-full text-sm text-left rtl:text-right">
-                      <TableHeader className="text-xs uppercase bg-gray-50 dark:bg-gray-700">
-                        <TableRow>
-                          <TableHead className="px-6 py-3">Date</TableHead>
-                          <TableHead className="px-6 py-3">Horaire</TableHead>
-                          <TableHead className="px-6 py-3">
-                            Enseignant
-                          </TableHead>
-                          <TableHead className="px-6 py-3">Lieu</TableHead>
-                          <TableHead className="px-6 py-3">Tarif</TableHead>
+              <div className="rounded-md border">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="font-medium">Date</TableHead>
+                      <TableHead className="font-medium">Horaire</TableHead>
+                      <TableHead className="font-medium">Enseignant</TableHead>
+                      <TableHead className="font-medium">Lieu</TableHead>
+                      <TableHead className="font-medium">Tarif</TableHead>
+                      <TableHead className="text-right font-medium">
+                        Actions
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {cours_prives.length > 0 ? (
+                      cours_prives.map((cours) => (
+                        <TableRow key={cours.id}>
+                          <TableCell className="whitespace-nowrap">
+                            {formatDate(cours.date_cours_prive)}
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap">
+                            {formatTime(cours.heure_debut)} –{" "}
+                            {formatTime(cours.heure_fin)}
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {cours.enseignant__nom} {cours.enseignant__prenom}
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium bg-gray-50 text-gray-700">
+                              {cours.lieu === "E"
+                                ? "École"
+                                : cours.lieu === "D"
+                                ? "Domicile"
+                                : cours.lieu}
+                            </span>
+                          </TableCell>
+                          <TableCell className="whitespace-nowrap font-medium">
+                            {typeof cours.tarif === "number"
+                              ? cours.tarif.toLocaleString("fr-CH")
+                              : cours.tarif}{" "}
+                            CHF
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => {
+                                router.push(
+                                  `/ecole_peg/cours_prives/cours_prive/${cours.id}`,
+                                );
+                              }}
+                            >
+                              Détails
+                            </Button>
+                          </TableCell>
                         </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {cours_prives.map((cours) => (
-                          <TableRow
-                            key={cours.id}
-                            className="border-b dark:border-gray-700"
-                          >
-                            <TableCell className="px-6 py-4">
-                              {formatDate(cours.date_cours_prive)}
-                            </TableCell>
-                            <TableCell className="px-6 py-4">
-                              {formatTime(cours.heure_debut)} -{" "}
-                              {formatTime(cours.heure_fin)}
-                            </TableCell>
-                            <TableCell className="px-6 py-4">
-                              {cours.enseignant__nom} {cours.enseignant__prenom}
-                            </TableCell>
-                            <TableCell className="px-6 py-4">
-                              {cours.lieu === "E" ? "École" : "Domicile"}
-                            </TableCell>
-                            <TableCell className="px-6 py-4">
-                              {cours.tarif} CHF
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </div>
-                </>
-              )}
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={6}
+                          className="text-center py-6 text-muted-foreground"
+                        >
+                          Aucun cours privé trouvé.
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

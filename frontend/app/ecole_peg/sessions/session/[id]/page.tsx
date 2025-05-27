@@ -37,6 +37,8 @@ interface Session {
   statut: "O" | "F";
   periode_journee: "M" | "S";
   seances_mois: number;
+  enseignant__nom: string;
+  enseignant__prenom: string;
 }
 
 interface FichePresence {
@@ -89,22 +91,34 @@ export default function SessionPage({
   }, [resolvedParams.id]);
 
   async function supprimerSession() {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette session ?")) {
+      return;
+    }
+
     try {
       await api.delete(`/cours/sessions/${resolvedParams.id}/`);
 
       router.push("/ecole_peg/sessions/");
     } catch (err) {
       console.error("Erreur: ", err);
+
+      alert("Une erreur est survenue lors de la suppression de la session.");
     }
   }
 
   async function supprimerFiche(id_fiche: number) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cette fiche de présences ?")) {
+      return;
+    }
+
     try {
       await api.delete(`/cours/fiche_presences/${id_fiche}/`);
 
       fetchFiches();
     } catch (err) {
       console.error("Erreur: ", err);
+
+      alert("Une erreur est survenue lors de la suppression de la fiche de présences.");
     }
   }
 
@@ -192,6 +206,18 @@ export default function SessionPage({
                         {session?.cours__type_cours === "I"
                           ? "Intensif"
                           : "Semi-intensif"}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <Users className="h-4 w-4 text-muted-foreground" />
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">
+                        Enseignant
+                      </p>
+                      <p className="text-sm">
+                        {session?.enseignant__nom} {session?.enseignant__prenom}
                       </p>
                     </div>
                   </div>
@@ -336,7 +362,7 @@ export default function SessionPage({
                     `/ecole_peg/sessions/session/${resolvedParams.id}/fiche`,
                   );
                 }}
-                disabled={session?.statut === "O"}
+                // disabled={session?.statut === "O"}
               >
                 Nouvelle fiche de présence
               </Button>

@@ -128,7 +128,7 @@ export default function ModifierSessionPage({
       try {
         await api.put(
           `/cours/sessions/${resolvedParams.id}/`,
-          donnees_completes,
+          donnees_completes
         );
 
         router.push(`/ecole_peg/sessions/session/${resolvedParams.id}/`);
@@ -144,8 +144,12 @@ export default function ModifierSessionPage({
       periode_journee,
       resolvedParams.id,
       router,
-    ],
+    ]
   );
+
+  if (id_cours === undefined || id_enseignant === undefined) {
+    return <div>Chargement…</div>;
+  }
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-3xl">
@@ -180,7 +184,7 @@ export default function ModifierSessionPage({
                   Cours
                 </Label>
                 <Select
-                  value={id_cours ? String(id_cours) : ""}
+                  defaultValue={String(id_cours)}
                   name="id_cours"
                   required
                   onValueChange={(valeur) => setIdCours(Number(valeur))}
@@ -206,7 +210,7 @@ export default function ModifierSessionPage({
                   Enseignant
                 </Label>
                 <Select
-                  value={id_enseignant ? String(id_enseignant) : ""}
+                  defaultValue={String(id_enseignant)}
                   name="enseignant"
                   required
                   onValueChange={(valeur) => setIdEnseignant(Number(valeur))}

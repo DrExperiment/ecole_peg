@@ -47,12 +47,18 @@ export default function EnseignantsPage() {
   }, [fetchEnseignants]);
 
   async function supprimerEnseignant(id_enseignant: number) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer cet enseignant ?")) {
+      return;
+    }
+
     try {
       await api.delete(`/cours/enseignants/${id_enseignant}/`);
 
       fetchEnseignants();
     } catch (err) {
       console.error("Erreur: ", err);
+
+      alert("Une erreur est survenue lors de la suppression de l'enseignant.");
     }
   }
 

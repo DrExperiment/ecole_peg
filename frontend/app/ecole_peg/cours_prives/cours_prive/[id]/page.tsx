@@ -75,12 +75,18 @@ export default function DetailsCoursPrivePage({
   }
 
   async function supprimerCoursPrive() {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce cours privé ?")) {
+      return;
+    }
+
     try {
       await api.delete(`/cours/cours_prive/${resolvedParams.id}/`);
 
       router.push("/ecole_peg/cours_prives/");
     } catch (err) {
       console.error("Erreur: ", err);
+
+      alert("Une erreur est survenue lors de la suppression du cours privé.");
     }
   }
 

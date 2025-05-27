@@ -77,7 +77,7 @@ export default function FacturePage({
     pdf.save(`facture_${facture?.id ?? "ecole"}.pdf`);
   };
 
-  const handleSupprimer = async () => {
+  async function supprimerFacture() {
     if (!confirm("Êtes-vous sûr de vouloir supprimer cette facture ?")) {
       return;
     }
@@ -157,7 +157,7 @@ export default function FacturePage({
           </Button>
           <Button
             variant="destructive"
-            onClick={handleSupprimer}
+            onClick={supprimerFacture}
             className="shadow-sm"
           >
             <Trash2 className="mr-2 h-4 w-4" />

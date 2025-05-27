@@ -62,12 +62,18 @@ export default function CoursPage() {
   }, [fetchCours]);
 
   async function supprimerCours(id_cours: number) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce cours ?")) {
+      return;
+    }
+
     try {
       await api.delete(`/cours/cours/${id_cours}/`);
 
       fetchCours();
     } catch (err) {
       console.error("Erreur: ", err);
+
+      alert("Une erreur est survenue lors de la suppression du cours.");
     }
   }
 

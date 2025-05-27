@@ -210,6 +210,7 @@ def supprimer_garant_eleve(request, eleve_id: int):
             return {"message": "Aucun garant trouvé pour cet élève."}
         eleve.garant = None
         eleve.save()
+        return {"success": True}
 
 
 # ------------------- TESTS -------------------
