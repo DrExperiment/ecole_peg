@@ -11,6 +11,7 @@ from eleves.models import Eleve, NiveauChoices
 class PeriodeJourneeChoices(models.TextChoices):
     MATIN = "M", "Matin"
     SOIR = "S", "Soir"
+    APRES_MIDI = "A", "Après-midi"
 
 
 class TypeCoursChoices(models.TextChoices):
@@ -128,8 +129,6 @@ class Session(models.Model):
             raise ValidationError(
                 "La date de fin doit être postérieure à la date de début."
             )
-        if self.date_debut < timezone.now().date():
-            raise ValidationError("La date de début ne peut pas être dans le passé.")
 
     class Meta:
         ordering = ["date_debut"]

@@ -46,35 +46,11 @@ class Facture(models.Model):
         related_name="factures",
     )
 
-    # --- NOUVEAU CHAMP ---
-    numero_facture = models.PositiveIntegerField(
-        editable=False, help_text="Position de la facture dans l'historique de l'élève"
-    )
-
     _cached_montant_total = None
     _cached_montant_restant = None
 
     class Meta:
         ordering = ["date_emission"]
-        unique_together = ("eleve", "numero_facture")
-
-    def save(self, *args, **kwargs):
-        if not self.pk and self.numero_facture is None:
-            with transaction.atomic():
-                # Déterminer l'élève concerné
-                eleve_cible = self.inscription.eleve if self.inscription else self.eleve
-                self.eleve = eleve_cible  # Toujours remplir ce champ pour cohérence
-
-                if eleve_cible:
-                    last_num = (
-                        Facture.objects.filter(
-                            models.Q(inscription__eleve=eleve_cible)
-                            | models.Q(eleve=eleve_cible)
-                        ).aggregate(max_num=models.Max("numero_facture"))["max_num"]
-                        or 0
-                    )
-                    self.numero_facture = last_num + 1
-        super().save(*args, **kwargs)
 
     @property
     def montant_total(self):

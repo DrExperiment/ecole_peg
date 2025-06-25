@@ -41,7 +41,6 @@ def factures(
         "factures": [
             FactureOut(
                 id=f.id,
-                numero_facture=f.numero_facture,
                 date_emission=f.date_emission,
                 montant_total=float(f.montant_total),
                 montant_restant=float(f.montant_restant),
@@ -75,7 +74,6 @@ def get_factures_payees(
     result = [
         FactureOut(
             id=f.id,
-            numero_facture=f.numero_facture,
             date_emission=f.date_emission,
             montant_total=float(f.montant_total),
             montant_restant=0.0,
@@ -109,7 +107,6 @@ def get_factures_impayees(
     result = [
         FactureOut(
             id=f.id,
-            numero_facture=f.numero_facture,
             date_emission=f.date_emission,
             montant_total=float(f.montant_total),
             montant_restant=float(f.montant_restant),
@@ -140,7 +137,6 @@ def factures_eleve(
         "factures": [
             FacturesOut(
                 id=f.id,
-                numero_facture=f.numero_facture,
                 date_emission=f.date_emission,
                 montant_total=f.montant_total,
                 montant_restant=f.montant_restant,
@@ -175,7 +171,6 @@ def factures_eleve_payees(
         "factures": [
             FacturesOut(
                 id=f.id,
-                numero_facture=f.numero_facture,
                 date_emission=f.date_emission,
                 montant_total=float(f.montant_total),
                 montant_restant=0.0,
@@ -210,7 +205,6 @@ def factures_eleve_impayees(
         "factures": [
             FacturesOut(
                 id=f.id,
-                numero_facture=f.numero_facture,
                 date_emission=f.date_emission,
                 montant_total=float(f.montant_total),
                 montant_restant=float(f.montant_restant),
@@ -231,7 +225,6 @@ def get_facture(request, facture_id: int):
     )
     return FactureOut(
         id=facture.id,
-        numero_facture=facture.numero_facture,
         date_emission=facture.date_emission,
         montant_total=float(facture.montant_total),
         montant_restant=float(facture.montant_restant),
@@ -343,7 +336,7 @@ def delete_paiement(request, paiement_id: int):
 
 @router.get("/facture/{facture_id}/paiements/", response=list[PaiementOut])
 def list_paiements_for_facture(request, facture_id: int):
-    _ = get_object_or_404(Facture, id=facture_id)
+    get_object_or_404(Facture, id=facture_id)
     qs = Paiement.objects.filter(facture_id=facture_id)
     return [PaiementOut.from_orm(p) for p in qs]
 

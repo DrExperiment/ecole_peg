@@ -62,9 +62,12 @@ class Personne(models.Model):
     )
     localite = models.CharField(max_length=100, blank=True, null=True)
     telephone = models.CharField(
-        max_length=15,
+        max_length=255,  
         validators=[
-            RegexValidator(r"^\+?\d{9,15}$", message="Numéro de téléphone invalide.")
+            RegexValidator(
+                r"^\+?[\d\s]{9,}$",
+                message="Numéro de téléphone invalide."
+            )
         ],
     )
     email = models.EmailField(unique=True)

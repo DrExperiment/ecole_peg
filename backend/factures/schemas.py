@@ -31,7 +31,6 @@ class FactureIn(Schema):
 
 class FacturesOut(Schema):
     id: int
-    numero_facture: int
     date_emission: date
     montant_total: float
     montant_restant: float
@@ -39,7 +38,6 @@ class FacturesOut(Schema):
 
 class FactureOut(Schema):
     id: int
-    numero_facture: int
     date_emission: date
     montant_total: float
     montant_restant: float

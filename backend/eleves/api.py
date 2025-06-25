@@ -311,20 +311,10 @@ def statistiques_dashboard(request):
         .values("p")
     )
 
-    # --- Nombre total de factures impayées ---
-    nb_factures_impayees = (
-        Facture.objects.annotate(
-            total=Coalesce(Subquery(total_sq), Value(0), output_field=DecimalField()),
-            paye=Coalesce(Subquery(paye_sq), Value(0), output_field=DecimalField()),
-        )
-        .annotate(restant=F("total") - F("paye"))
-        .filter(restant__gt=0)
-        .count()
-    )
-
-    # --- Montant total de toutes les factures impayées ---
-    montant_total_factures_impayees = (
-        Facture.objects.annotate(
+    # --- Montant total de toutes les factures impayées du mois ---
+    montant_total_factures_impayees_mois = (
+        Facture.objects.filter(date_emission__gte=first_day_month)
+        .annotate(
             total=Coalesce(Subquery(total_sq), Value(0), output_field=DecimalField()),
             paye=Coalesce(Subquery(paye_sq), Value(0), output_field=DecimalField()),
         )
@@ -448,19 +438,23 @@ def statistiques_dashboard(request):
     nombre_enseignants = Enseignant.objects.count()
     total_eleves = Eleve.objects.count()
     eleves_actifs = Eleve.objects.filter(inscriptions__statut="A").distinct().count()
-    pays_max = (
+    # Annoter le nombre d'élèves par pays
+    pays_counts = (
         Eleve.objects.values("pays__nom")
         .annotate(total=Count("id"))
         .order_by("-total")
-        .first()
     )
-    pays_plus_eleves = pays_max["pays__nom"] if pays_max else None
+    # Trouver le maximum
+    max_total = pays_counts.first()["total"] if pays_counts else None
+    # Retourner tous les pays ayant ce maximum
+    pays_plus_eleves = [
+        p["pays__nom"] for p in pays_counts if p["total"] == max_total
+    ] if max_total else []
 
     return {
         "factures": {
-            "nombre_factures_impayees": nb_factures_impayees,
             "montant_total_paiements_mois": float(montant_total_paiements_mois),
-            "montant_total_factures_impayees": float(montant_total_factures_impayees),
+            "montant_total_factures_impayees": float(montant_total_factures_impayees_mois),
             "factures_impayees_plus_5j": factures_impayees_plus_5j,
         },
         "cours": {
