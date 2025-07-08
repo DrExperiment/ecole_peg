@@ -67,7 +67,6 @@ type Niveau = "A1" | "A2" | "B1" | "B2" | "C1";
 interface FactureDetail {
   id: number;
   date_emission: Date;
-  numero_facture: number;
   montant_total: number;
   montant_restant: number;
   eleve_nom: string;
@@ -460,7 +459,7 @@ export default function TableauBordPage() {
                             {inv.eleve_prenom} {inv.eleve_nom}
                           </strong>
                           <br />
-                          N° {inv.numero_facture} — émis le{" "}
+                          N° {inv.id} — émis le{" "}
                           {format(new Date(inv.date_emission), "dd/MM/yyyy")}
                         </div>
                         <div className="text-right">

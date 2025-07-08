@@ -23,7 +23,6 @@ type Html2CanvasOptions = Parameters<typeof html2canvas>[1];
 
 interface Facture {
   id: number;
-  numero_facture: number;
   date_emission: Date;
   montant_total: number;
   eleve_nom: string;
@@ -152,7 +151,7 @@ export default function FacturePage({
           </Button>
           <div className="space-y-1">
             <h1 className="text-3xl font-bold tracking-tight">
-              Facture {facture?.numero_facture}
+              Facture {facture?.id}
             </h1>
             <p className="text-muted-foreground">
               {facture?.date_emission
@@ -225,7 +224,7 @@ export default function FacturePage({
                         N° de facture :
                       </span>{" "}
                       <span className="font-medium">
-                        {facture?.numero_facture}
+                        {facture?.id}
                       </span>
                     </p>
                     <p>

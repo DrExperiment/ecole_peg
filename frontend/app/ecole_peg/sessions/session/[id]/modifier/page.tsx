@@ -44,7 +44,7 @@ interface Session {
   cours__niveau: "A1" | "A2" | "B1" | "B2" | "C1";
   date_debut: Date;
   date_fin: Date;
-  periode_journee: "M" | "S";
+  periode_journee: "M" | "S" | "A";
   statut: "O" | "F";
   seances_mois: number;
   capacite_max: number;
@@ -76,7 +76,7 @@ export default function ModifierSessionPage({
   const [enseignants, setEnseignants] = useState<Enseignant[]>([]);
   const [id_enseignant, setIdEnseignant] = useState<number>();
 
-  const [periode_journee, setPeriodeJournee] = useState<"M" | "S">("M");
+  const [periode_journee, setPeriodeJournee] = useState<"M" | "S" | "A">("M");
 
   useEffect(() => {
     async function fetchDonnees() {
@@ -100,7 +100,7 @@ export default function ModifierSessionPage({
         setDateDebut(new Date(session.date_debut));
         setDateFin(new Date(session.date_fin));
 
-        setPeriodeJournee(session.periode_journee as "M" | "S");
+        setPeriodeJournee(session.periode_journee as "M" | "S" | "A");
 
         reset({
           seances_mois: session.seances_mois,
@@ -324,66 +324,100 @@ export default function ModifierSessionPage({
             </div>
 
             <div className="space-y-4">
-              <Label className="text-base">Période de la journée</Label>
-              <div className="grid grid-cols-2 gap-4">
-                <div
-                  className={`flex flex-col space-y-1 rounded-lg border p-4 cursor-pointer transition-colors ${
-                    periode_journee === "M" ? "border-primary bg-primary/5" : ""
-                  }`}
-                  onClick={() => setPeriodeJournee("M")}
-                >
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name="periode_journee"
-                      value="M"
-                      checked={periode_journee === "M"}
-                      onChange={() => setPeriodeJournee("M")}
-                      className="hidden"
-                    />
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 ${
-                        periode_journee === "M"
-                          ? "border-primary bg-primary"
-                          : "border-muted"
-                      }`}
-                    />
-                    <span className="font-medium">Matin</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground pl-6">
-                    Session programmée le matin
-                  </p>
-                </div>
-                <div
-                  className={`flex flex-col space-y-1 rounded-lg border p-4 cursor-pointer transition-colors ${
-                    periode_journee === "S" ? "border-primary bg-primary/5" : ""
-                  }`}
-                  onClick={() => setPeriodeJournee("S")}
-                >
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="radio"
-                      name="periode_journee"
-                      value="S"
-                      checked={periode_journee === "S"}
-                      onChange={() => setPeriodeJournee("S")}
-                      className="hidden"
-                    />
-                    <div
-                      className={`w-4 h-4 rounded-full border-2 ${
-                        periode_journee === "S"
-                          ? "border-primary bg-primary"
-                          : "border-muted"
-                      }`}
-                    />
-                    <span className="font-medium">Soir</span>
-                  </div>
-                  <p className="text-sm text-muted-foreground pl-6">
-                    Session programmée le soir
-                  </p>
-                </div>
-              </div>
-            </div>
+  <Label className="text-base">Période de la journée</Label>
+  <div className="grid grid-cols-3 gap-4">
+    {/* Matin */}
+    <div
+      className={`flex flex-col space-y-1 rounded-lg border p-4 cursor-pointer transition-colors ${
+        periode_journee === "M" ? "border-primary bg-primary/5" : ""
+      }`}
+      onClick={() => setPeriodeJournee("M")}
+    >
+      <div className="flex items-center space-x-2">
+        <input
+          type="radio"
+          name="periode_journee"
+          value="M"
+          checked={periode_journee === "M"}
+          onChange={() => setPeriodeJournee("M")}
+          className="hidden"
+        />
+        <div
+          className={`w-4 h-4 rounded-full border-2 ${
+            periode_journee === "M"
+              ? "border-primary bg-primary"
+              : "border-muted"
+          }`}
+        />
+        <span className="font-medium">Matin</span>
+      </div>
+      <p className="text-sm text-muted-foreground pl-6">
+        Session programmée le matin
+      </p>
+    </div>
+
+    {/* Après-midi */}
+    <div
+      className={`flex flex-col space-y-1 rounded-lg border p-4 cursor-pointer transition-colors ${
+        periode_journee === "A" ? "border-primary bg-primary/5" : ""
+      }`}
+      onClick={() => setPeriodeJournee("A")}
+    >
+      <div className="flex items-center space-x-2">
+        <input
+          type="radio"
+          name="periode_journee"
+          value="A"
+          checked={periode_journee === "A"}
+          onChange={() => setPeriodeJournee("A")}
+          className="hidden"
+        />
+        <div
+          className={`w-4 h-4 rounded-full border-2 ${
+            periode_journee === "A"
+              ? "border-primary bg-primary"
+              : "border-muted"
+          }`}
+        />
+        <span className="font-medium">Après-midi</span>
+      </div>
+      <p className="text-sm text-muted-foreground pl-6">
+        Session programmée l&apos;après-midi
+      </p>
+    </div>
+
+    {/* Soir */}
+    <div
+      className={`flex flex-col space-y-1 rounded-lg border p-4 cursor-pointer transition-colors ${
+        periode_journee === "S" ? "border-primary bg-primary/5" : ""
+      }`}
+      onClick={() => setPeriodeJournee("S")}
+    >
+      <div className="flex items-center space-x-2">
+        <input
+          type="radio"
+          name="periode_journee"
+          value="S"
+          checked={periode_journee === "S"}
+          onChange={() => setPeriodeJournee("S")}
+          className="hidden"
+        />
+        <div
+          className={`w-4 h-4 rounded-full border-2 ${
+            periode_journee === "S"
+              ? "border-primary bg-primary"
+              : "border-muted"
+          }`}
+        />
+        <span className="font-medium">Soir</span>
+      </div>
+      <p className="text-sm text-muted-foreground pl-6">
+        Session programmée le soir
+      </p>
+    </div>
+  </div>
+</div>
+
           </CardContent>
           <CardFooter className="flex justify-end gap-4">
             <Button

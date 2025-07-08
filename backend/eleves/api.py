@@ -351,7 +351,6 @@ def statistiques_dashboard(request):
         .values(
             "id",
             "date_emission",
-            "numero_facture",
             "total",
             "restant",
             "eleve_nom",
@@ -363,7 +362,6 @@ def statistiques_dashboard(request):
         {
             "id": f["id"],
             "date_emission": f["date_emission"],
-            "numero_facture": f["numero_facture"],
             "montant_total": float(f["total"]),
             "montant_restant": float(f["restant"]),
             "eleve_nom": f["eleve_nom"],

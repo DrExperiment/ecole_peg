@@ -65,9 +65,10 @@ class Personne(models.Model):
         max_length=255,  
         validators=[
             RegexValidator(
-                r"^\+?[\d\s]{9,}$",
-                message="Numéro de téléphone invalide."
-            )
+    r"^[\d\s\-\+\(\)\.]{7,}$",
+    message="Numéro de téléphone invalide."
+)
+
         ],
     )
     email = models.EmailField(unique=True)

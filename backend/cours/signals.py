@@ -7,10 +7,10 @@ from .models import Session, StatutInscriptionChoices , StatutSessionChoices
 def gerer_statut_session_apres_modification(sender, instance, **kwargs):
     """Ferme ou rouvre la session selon la date de fin."""
     aujourd_hui = timezone.now().date()
-    if instance.date_fin < aujourd_hui and instance.statut != StatutSessionChoices.FERMEE:
-        instance.statut = StatutSessionChoices.FERMEE
+    if instance.date_fin < aujourd_hui and instance.statut != StatutSessionChoices.FERMÉE:
+        instance.statut = StatutSessionChoices.FERMÉE
         instance.save(update_fields=["statut"])
-    elif instance.date_fin >= aujourd_hui and instance.statut == StatutSessionChoices.FERMEE:
+    elif instance.date_fin >= aujourd_hui and instance.statut == StatutSessionChoices.FERMÉE:
         instance.statut = StatutSessionChoices.OUVERTE
         instance.save(update_fields=["statut"])
         

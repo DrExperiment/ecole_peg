@@ -35,7 +35,7 @@ interface Session {
   date_fin: Date;
   capacite_max: number;
   statut: "O" | "F";
-  periode_journee: "M" | "S";
+  periode_journee: "M" | "S" | "A";
   seances_mois: number;
   enseignant__nom: string;
   enseignant__prenom: string;
@@ -255,6 +255,8 @@ export default function SessionPage({
                           ? "Matin"
                           : session?.periode_journee === "S"
                             ? "Soir"
+                            : session?.periode_journee === "A"
+                            ? "Apres-midi"
                             : "-"}
                       </p>
                     </div>

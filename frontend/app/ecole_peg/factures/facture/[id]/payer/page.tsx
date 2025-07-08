@@ -26,7 +26,6 @@ import { formatDate } from "@/lib/utils";
 
 interface Facture {
   id: number;
-  numero_facture: number;
   date_emission: Date;
   montant_total: number;
   montant_restant: number;
@@ -136,7 +135,7 @@ export default function PayerFacturePage({
           <Card className="shadow-lg">
             <CardHeader className="space-y-1">
               <CardTitle className="text-2xl">
-                Facture {facture.numero_facture}
+                Facture {facture.id}
               </CardTitle>
               <p className="text-sm text-muted-foreground">
                 Émise le {formatDate(facture.date_emission)}

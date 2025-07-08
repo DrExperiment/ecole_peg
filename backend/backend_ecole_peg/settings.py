@@ -32,7 +32,7 @@ JWT_ACCESS_TOKEN_EXPIRES = timedelta(
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-key")  # Mets une vraie clé en prod !
-DEBUG = os.getenv("DEBUG", "False").lower() == "true"
+DEBUG = True
 
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
@@ -100,10 +100,16 @@ WSGI_APPLICATION = "backend_ecole_peg.wsgi.application"
 import dj_database_url
 
 DATABASES = {
-    "default": dj_database_url.config(
-        default=os.getenv("DATABASE_URL", "postgres://postgres:postgres@db:5432/postgres")
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.postgresql',
+        'NAME': 'mondb',
+        'USER': 'anis',
+        'PASSWORD': 'djemai10',
+        'HOST': 'localhost',
+        'PORT': '5434',  # (ou 5432 si c'est le port par défaut chez toi)
+    }
 }
+
 
 
 # Password validation
