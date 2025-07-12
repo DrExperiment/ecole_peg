@@ -100,15 +100,12 @@ WSGI_APPLICATION = "backend_ecole_peg.wsgi.application"
 import dj_database_url
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'mondb',
-        'USER': 'anis',
-        'PASSWORD': 'djemai10',
-        'HOST': 'localhost',
-        'PORT': '5434',  # (ou 5432 si c'est le port par défaut chez toi)
-    }
+    'default': dj_database_url.config(
+        env='DATABASE_URL',   # va lire la variable DATABASE_URL de ton .env
+        default='postgres://myuser:mypassword@localhost:5432/mydb'
+    )
 }
+
 
 
 
