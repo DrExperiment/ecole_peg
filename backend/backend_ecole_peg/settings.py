@@ -101,10 +101,11 @@ import dj_database_url
 
 DATABASES = {
     'default': dj_database_url.config(
-        env='DATABASE_URL',   # va lire la variable DATABASE_URL de ton .env
-        default='postgres://myuser:mypassword@localhost:5432/mydb'
+        env='DATABASE_URL',
+        default='postgres://myuser:mypassword@db:5432/mydb'
     )
 }
+
 
 
 
