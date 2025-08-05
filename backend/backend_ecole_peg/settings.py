@@ -100,12 +100,18 @@ WSGI_APPLICATION = "backend_ecole_peg.wsgi.application"
 import dj_database_url
 
 DATABASES = {
-    'default': dj_database_url.config(
-        env='DATABASE_URL',
-        default='postgres://myuser:mypassword@db:5432/mydb'
-    )
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',  # MariaDB = MySQL pour Django
+        'NAME': 'hq2kkg_bdpeg',
+        'USER': 'hq2kkg_anis',
+        'PASSWORD': 'Djem@i2004!',
+        'HOST': 'hq2kkg.myd.infomaniak.com',
+        'PORT': '3306',
+        'OPTIONS': {
+            'init_command': "SET sql_mode='STRICT_TRANS_TABLES'",
+        },
+    }
 }
-
 
 
 

@@ -135,11 +135,6 @@ export default function NouveauGarantPage({
                   placeholder="+41 XX XXX XX XX"
                   {...register("telephone", {
                     required: "Le numéro de téléphone est obligatoire",
-                    pattern: {
-                      value: /^\+?\d{7,15}$/,
-                      message:
-                        "Le numéro de téléphone doit être au format suisse.",
-                    },
                     setValueAs: (v) => v.trim(),
                   })}
                 />
