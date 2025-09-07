@@ -1,6 +1,6 @@
+from typing import Optional, List
 from ninja import Schema
 from datetime import date, time
-
 
 # ------------------- COURS -------------------
 class CoursOut(Schema):
@@ -8,8 +8,8 @@ class CoursOut(Schema):
     nom: str
     type_cours: str
     niveau: str
-    heures_par_semaine: int | None = None
-    duree_semaines: int | None = None
+    heures_par_semaine: Optional[int] = None
+    duree_semaines: Optional[int] = None
     tarif: float
 
 
@@ -17,8 +17,8 @@ class CoursIn(Schema):
     nom: str
     type_cours: str
     niveau: str
-    heures_par_semaine: int | None = None
-    duree_semaines: int | None = None
+    heures_par_semaine: Optional[int] = None
+    duree_semaines: Optional[int] = None
     tarif: float
 
 
@@ -48,15 +48,15 @@ class SessionIn(Schema):
 class SessionOut(Schema):
     id: int
     id_cours: int
-    id_enseignant: int | None = None
-    enseignant__nom: str | None = None
-    enseignant__prenom: str | None = None
+    id_enseignant: Optional[int] = None
+    enseignant__nom: Optional[str] = None
+    enseignant__prenom: Optional[str] = None
     cours__nom: str
     cours__type_cours: str
     cours__niveau: str
     date_debut: date
     date_fin: date
-    periode_journee: str | None = None
+    periode_journee: Optional[str] = None
     statut: str
     capacite_max: int
     seances_mois: int
@@ -69,7 +69,7 @@ class CoursPriveIn(Schema):
     heure_fin: time
     tarif: float
     lieu: str
-    eleves_ids: list[int]
+    eleves_ids: List[int]
     enseignant: int
 
 
@@ -83,15 +83,15 @@ class CoursPriveOut(Schema):
     enseignant: int
     enseignant__nom: str
     enseignant__prenom: str
-    eleves: list[str] = []
-    eleves_ids: list[int] = []
+    eleves: List[str] = []
+    eleves_ids: List[int] = []
 
 
 # ------------------- INSCRIPTION -------------------
 class InscriptionIn(Schema):
     frais_inscription: float
-    but: str | None = None
-    preinscription: bool | None = None
+    but: Optional[str] = None
+    preinscription: Optional[bool] = None
     id_session: int
 
 
@@ -101,20 +101,20 @@ class InscriptionOut(Schema):
     frais_inscription: float
     but: str
     statut: str
-    date_sortie: date | None = None
-    motif_sortie: str | None = None
+    date_sortie: Optional[date] = None
+    motif_sortie: Optional[str] = None
     preinscription: bool
     id_session: int
 
 
 class InscriptionUpdateIn(Schema):
-    frais_inscription: float | None = None
-    but: str | None = None
-    statut: str | None = None
-    date_sortie: date | None = None
-    motif_sortie: str | None = None
-    preinscription: bool | None = None
-    id_session: int | None = None
+    frais_inscription: Optional[float] = None
+    but: Optional[str] = None
+    statut: Optional[str] = None
+    date_sortie: Optional[date] = None
+    motif_sortie: Optional[str] = None
+    preinscription: Optional[bool] = None
+    id_session: Optional[int] = None
 
 
 class FichePresencesIn(Schema):
@@ -144,4 +144,4 @@ class FichePresencesOut(Schema):
     id: int
     mois: str
     annee: int
-    presences: list[PresenceOut]
+    presences: List[PresenceOut]

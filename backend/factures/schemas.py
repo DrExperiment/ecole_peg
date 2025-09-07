@@ -1,32 +1,31 @@
 from datetime import date
+from typing import Optional, List
 from ninja import Schema
 
 # ------------------- DÉTAIL DE FACTURE -------------------
 
-
 class DetailFactureIn(Schema):
     description: str
-    date_debut_periode: date | None = None
-    date_fin_periode: date | None = None
+    date_debut_periode: Optional[date] = None
+    date_fin_periode: Optional[date] = None
     montant: float
 
 
 class DetailFactureOut(Schema):
     id: int
     description: str
-    date_debut_periode: date | None = None
-    date_fin_periode: date | None = None
+    date_debut_periode: Optional[date] = None
+    date_fin_periode: Optional[date] = None
     montant: float
 
 
 # ------------------- FACTURE -------------------
 
-
 class FactureIn(Schema):
-    id_inscription: int | None = None
-    id_cours_prive: int | None = None
-    id_eleve: int | None = None
-    details_facture: list[DetailFactureIn]
+    id_inscription: Optional[int] = None
+    id_cours_prive: Optional[int] = None
+    id_eleve: Optional[int] = None
+    details_facture: List[DetailFactureIn]
 
 
 class FacturesOut(Schema):
@@ -38,28 +37,27 @@ class FacturesOut(Schema):
 
 class FactureOut(Schema):
     id: int
-    date_echeance: date | None = None
+    date_echeance: Optional[date] = None
     date_emission: date
     montant_total: float
     montant_restant: float
     eleve_nom: str
     eleve_prenom: str
-    eleve_rue:str | None = None
-    eleve_numero: str | None = None
-    eleve_npa: str | None = None
-    eleve_localite: str | None = None
-
+    eleve_rue: Optional[str] = None
+    eleve_numero: Optional[str] = None
+    eleve_npa: Optional[str] = None
+    eleve_localite: Optional[str] = None
 
 
 class EcheanceIn(Schema):
-    date_echeance:date| None = None 
-# ------------------- PAIEMENT -------------------
+    date_echeance: Optional[date] = None
 
+# ------------------- PAIEMENT -------------------
 
 class PaiementIn(Schema):
     montant: float
     mode_paiement: str
-    methode_paiement: str | None = None
+    methode_paiement: Optional[str] = None
     id_facture: int
 
 
@@ -68,4 +66,4 @@ class PaiementOut(Schema):
     date_paiement: date
     montant: float
     mode_paiement: str
-    methode_paiement: str | None = None
+    methode_paiement: Optional[str] = None

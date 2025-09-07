@@ -1,15 +1,15 @@
 from datetime import date
+from typing import Optional
 from ninja import Schema, UploadedFile, File
-
 
 # ------------------- GARANT -------------------
 class GarantIn(Schema):
     nom: str
     prenom: str
-    rue: str | None = None
-    numero: str | None = None
-    npa: str | None = None
-    localite: str | None = None
+    rue: Optional[str] = None
+    numero: Optional[str] = None
+    npa: Optional[str] = None
+    localite: Optional[str] = None
     telephone: str
     email: str
 
@@ -18,10 +18,10 @@ class GarantOut(Schema):
     id: int
     nom: str
     prenom: str
-    rue: str | None = None
-    numero: str | None = None
-    npa: str | None = None
-    localite: str | None = None
+    rue: Optional[str] = None
+    numero: Optional[str] = None
+    npa: Optional[str] = None
+    localite: Optional[str] = None
     telephone: str
     email: str
 
@@ -65,8 +65,8 @@ class DocumentOut(Schema):
 
 
 class DocumentUpdateIn(Schema):
-    nom: str | None = None
-    fichier: UploadedFile | None = File(None)
+    nom: Optional[str] = None
+    fichier: Optional[UploadedFile] = File(None)
 
 
 # ------------------- ELEVE -------------------
@@ -76,20 +76,20 @@ class EleveIn(Schema):
     date_naissance: date
     lieu_naissance: str
     sexe: str
-    rue: str | None = None
-    numero: str | None = None
-    npa: str | None = None
-    localite: str | None = None
+    rue: Optional[str] = None
+    numero: Optional[str] = None
+    npa: Optional[str] = None
+    localite: Optional[str] = None
     telephone: str
     email: str
-    adresse_facturation: str | None = None
-    type_permis: str | None = None
-    date_permis: date | None = None
-    niveau: str | None = None
-    langue_maternelle: str | None = None
-    autres_langues: str | None = None
-    src_decouverte: str | None = None
-    commentaires: str | None = None
+    adresse_facturation: Optional[str] = None
+    type_permis: Optional[str] = None
+    date_permis: Optional[date] = None
+    niveau: Optional[str] = None
+    langue_maternelle: Optional[str] = None
+    autres_langues: Optional[str] = None
+    src_decouverte: Optional[str] = None
+    commentaires: Optional[str] = None
     pays_id: int
 
 
@@ -110,20 +110,20 @@ class EleveOut(Schema, from_attributes=True):
     date_naissance: date
     lieu_naissance: str
     sexe: str
-    rue: str | None = None
-    numero: str | None = None
-    npa: str | None = None
-    localite: str | None = None
+    rue: Optional[str] = None
+    numero: Optional[str] = None
+    npa: Optional[str] = None
+    localite: Optional[str] = None
     telephone: str
     email: str
-    adresse_facturation: str | None = None
-    type_permis: str | None = None
-    date_permis: date | None = None
-    niveau: str | None = None
-    langue_maternelle: str | None = None
-    autres_langues: str | None = None
-    src_decouverte: str | None = None
-    commentaires: str | None = None
+    adresse_facturation: Optional[str] = None
+    type_permis: Optional[str] = None
+    date_permis: Optional[date] = None
+    niveau: Optional[str] = None
+    langue_maternelle: Optional[str] = None
+    autres_langues: Optional[str] = None
+    src_decouverte: Optional[str] = None
+    commentaires: Optional[str] = None
     pays_id: int
     pays__nom: str
 
