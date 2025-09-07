@@ -440,7 +440,16 @@ export default function NouveauElevePage() {
                     <Input
                       id="npa"
                       placeholder="Code postal"
-                      {...register("npa")}
+                      {...register("npa", {
+                        setValueAs: (v) => {
+                          const t = (v ?? "").trim();
+                          return t === "" ? undefined : t;
+                        },
+                        validate: (v) =>
+                          v === undefined ||
+                          /^\d{4,6}$/.test(v) ||
+                          "Le NPA doit contenir entre 4 et 6 chiffres.",
+                      })}
                     />
                   </div>
 

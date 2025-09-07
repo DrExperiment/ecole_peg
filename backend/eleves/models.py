@@ -46,18 +46,20 @@ class Personne(models.Model):
         null=True,
         validators=[
             RegexValidator(
-                r"^\d+$", message="Le numéro doit contenir uniquement des chiffres."
+                r"^\d*$", message="Le numéro doit contenir uniquement des chiffres."
             )
         ],
     )
     npa = models.CharField(
-        max_length=4,
+        max_length=6,
         blank=True,
         null=True,
         validators=[
-            RegexValidator(
-                r"^\d{4}$", message="Le NPA doit contenir exactement 4 chiffres."
-            )
+           RegexValidator(
+    r"^(\d{4,6})?$",
+    message="Le NPA doit contenir entre 4 et 6 chiffres."
+)
+
         ],
     )
     localite = models.CharField(max_length=100, blank=True, null=True)
@@ -75,16 +77,6 @@ class Personne(models.Model):
 
     class Meta:
         abstract = True  # Indique que cette classe est abstraite et ne sera pas créée en tant que table dans la base de données.
-
-    def clean(self):
-        super().clean()
-        # Validation pour les champs d'adresse
-        if any([self.rue, self.numero, self.npa, self.localite]) and not all(
-            [self.rue, self.numero, self.npa, self.localite]
-        ):
-            raise ValidationError(
-                "Tous les champs d'adresse doivent être remplis ou laissés vides."
-            )
 
 
 class Garant(Personne):
@@ -126,8 +118,6 @@ class Eleve(Personne):
         if self.date_permis and self.date_permis < timezone.now().date():
             raise ValidationError("La date du permis ne peut pas être dans le passé.")
 
-        if self.type_permis != TypePermisChoices.PAS_DE_PERMIS and not self.date_permis:
-            raise ValidationError("Date de permis requise pour ce type de permis.")
 
     class Meta:
         indexes = [

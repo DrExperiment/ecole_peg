@@ -15,6 +15,8 @@ import {
   UserMinus,
   UserPlus,
   Users,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import {
@@ -106,32 +108,63 @@ interface Stats {
 
 export default function TableauBordPage() {
   const [stats, setStats] = useState<Stats>();
-
   const [anniversaires, setAnniversaires] = useState<Anniversaire[]>([]);
   const [chargement, setChargement] = useState(true);
 
+  // ⬇️ Sélection du mois (1..12) + année courante
+  const [moisSel, setMoisSel] = useState<number>(new Date().getMonth() + 1);
+  const anneeCourante = new Date().getFullYear();
+
+  // Libellé du mois sélectionné
+  const moisLibelle = format(
+    new Date(anneeCourante, moisSel - 1, 1),
+    "MMMM yyyy",
+    { locale: fr }
+  );
+
+  // 🔹 Récupérer les stats (1 seule fois)
   useEffect(() => {
-    setChargement(true);
-
-    async function fetchDonnees() {
+    let mounted = true;
+    async function fetchStats() {
       try {
-        const [reponse_stats, reponse_anniv] = await Promise.all([
-          api.get<Stats>("/eleves/statistiques/dashboard/"),
-          api.get<Anniversaire[]>("/eleves/anniversaires/"),
-        ]);
-
-        setStats(reponse_stats.data);
-
-        setAnniversaires(reponse_anniv.data);
+        setChargement(true);
+        const reponse_stats = await api.get<Stats>(
+          "/eleves/statistiques/dashboard/"
+        );
+        if (mounted) setStats(reponse_stats.data);
       } catch (err) {
-        console.error("Erreur: ", err);
+        console.error("Erreur (stats): ", err);
+      } finally {
+        if (mounted) setChargement(false);
       }
     }
-
-    fetchDonnees();
-
-    setChargement(false);
+    fetchStats();
+    return () => {
+      mounted = false;
+    };
   }, []);
+
+  // 🔹 Récupérer les anniversaires selon le mois sélectionné
+  useEffect(() => {
+    let mounted = true;
+    async function fetchAnniversaires() {
+      try {
+        setChargement(true);
+        const reponse_anniv = await api.get<Anniversaire[]>(
+          `/eleves/anniversaires/?mois=${moisSel}&annee=${anneeCourante}`
+        );
+        if (mounted) setAnniversaires(reponse_anniv.data);
+      } catch (err) {
+        console.error("Erreur (anniversaires): ", err);
+      } finally {
+        if (mounted) setChargement(false);
+      }
+    }
+    fetchAnniversaires();
+    return () => {
+      mounted = false;
+    };
+  }, [moisSel, anneeCourante]);
 
   if (chargement)
     return (
@@ -141,8 +174,6 @@ export default function TableauBordPage() {
     );
 
   if (!stats) return <p>Aucune donnée disponible.</p>;
-
-  const aujourdHui = format(new Date(), "MMMM yyyy", { locale: fr });
 
   const factures_impayees = stats.factures.nombre_factures_impayees;
   const eleves_absence = stats.eleves.eleves_presence_inferieur_80.length;
@@ -267,7 +298,9 @@ export default function TableauBordPage() {
                           {r["inscriptions__session__cours__nom"]}
                         </TableCell>
                         <TableCell>
-                          {r["inscriptions__session__cours__type_cours"] === "I" ? "Intensif" : "Semi-intensif"}
+                          {r["inscriptions__session__cours__type_cours"] === "I"
+                            ? "Intensif"
+                            : "Semi-intensif"}
                         </TableCell>
                         <TableCell>
                           {r["inscriptions__session__cours__niveau"]}
@@ -279,60 +312,68 @@ export default function TableauBordPage() {
                 </Table>
               </CardContent>
             </Card>
-
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-base font-medium">
-                  Finances du mois
-                </CardTitle>
-                <Coins className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-green-700">
-                      Montant reçu
-                    </p>
-                    <div className="flex items-center">
-                      <span className="text-2xl font-bold">
-                        {stats.factures.montant_total_paiements_mois.toLocaleString(
-                          "fr-FR",
-                          {
-                            style: "currency",
-                            currency: "CHF",
-                          }
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <p className="text-sm font-medium text-red-700">
-                      Montant impayé
-                    </p>
-                    <div className="flex items-center">
-                      <span className="text-2xl font-bold">
-                        {stats.factures.montant_total_factures_impayees.toLocaleString(
-                          "fr-FR",
-                          {
-                            style: "currency",
-                            currency: "CHF",
-                          }
-                        )}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center justify-between border-t pt-4">
-                  <span className="text-sm text-muted-foreground">
-                    Pays principal
-                  </span>
-                  <span className="font-medium">
-                    {stats.eleves.pays_plus_eleves || "Non défini"}
-                  </span>
-                </div>
-              </CardContent>
-            </Card>
           </div>
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between pb-2">
+              <CardTitle className="text-base font-medium">Finances</CardTitle>
+              <Coins className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-green-700">
+                    Montant reçu (mois)
+                  </p>
+                  <div className="flex items-center">
+                    <span className="text-2xl font-bold">
+                      {stats.factures.montant_total_paiements_mois.toLocaleString(
+                        "fr-FR",
+                        {
+                          style: "currency",
+                          currency: "CHF",
+                        }
+                      )}
+                    </span>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <p className="text-sm font-medium text-red-700">
+                    Montant impayé (total)
+                  </p>
+                  <div className="flex items-center">
+                    <span className="text-2xl font-bold">
+                      {stats.factures.montant_total_factures_impayees.toLocaleString(
+                        "fr-FR",
+                        {
+                          style: "currency",
+                          currency: "CHF",
+                        }
+                      )}
+                    </span>
+                  </div>
+                  {/* Si ton backend renvoie aussi `nombre_factures_impayees`, tu peux afficher le nombre : */}
+                  {/* <p className="text-xs text-muted-foreground">
+          {stats.factures.nombre_factures_impayees} facture(s) impayée(s)
+        </p> */}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t pt-4">
+                <span className="text-sm text-muted-foreground">
+                  Pays principal
+                </span>
+                <span className="font-medium">
+                  {Array.isArray(stats.eleves.pays_plus_eleves)
+                    ? stats.eleves.pays_plus_eleves.length
+                      ? stats.eleves.pays_plus_eleves.join(", ")
+                      : "Non défini"
+                    : stats.eleves.pays_plus_eleves || "Non défini"}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
 
           <div className="grid gap-4 md:grid-cols-2">
             <Card>
@@ -342,11 +383,14 @@ export default function TableauBordPage() {
                 </CardTitle>
                 <Clock className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>                {stats.cours.sessions_ouvertes.length > 0 ? (
+              <CardContent>
+                {stats.cours.sessions_ouvertes.length > 0 ? (
                   <div className="space-y-4">
                     {stats.cours.sessions_ouvertes.map((s, index) => (
                       <div
-                        key={`session-${index}-${new Date(s.date_debut).toISOString()}`}
+                        key={`session-${index}-${new Date(
+                          s.date_debut
+                        ).toISOString()}`}
                         className="flex items-center justify-between"
                       >
                         <div className="space-y-1">
@@ -378,11 +422,58 @@ export default function TableauBordPage() {
                     Anniversaires du mois
                   </CardTitle>
                 </div>
-                <span className="text-sm text-muted-foreground capitalize">
-                  {aujourdHui}
-                </span>
+
+                {/* ⬇️ Contrôles de sélection du mois */}
+                <div className="flex items-center gap-2">
+                  <button
+                    className="rounded-md border px-2 py-1 text-sm hover:bg-muted"
+                    onClick={() => setMoisSel((m) => (m === 1 ? 12 : m - 1))}
+                    aria-label="Mois précédent"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                  </button>
+
+                  <select
+                    className="rounded-md border px-2 py-1 text-sm capitalize bg-background"
+                    value={moisSel}
+                    onChange={(e) => setMoisSel(Number(e.target.value))}
+                    aria-label="Sélection du mois"
+                  >
+                    {[
+                      "janvier",
+                      "février",
+                      "mars",
+                      "avril",
+                      "mai",
+                      "juin",
+                      "juillet",
+                      "août",
+                      "septembre",
+                      "octobre",
+                      "novembre",
+                      "décembre",
+                    ].map((m, i) => (
+                      <option key={m} value={i + 1} className="capitalize">
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+
+                  <button
+                    className="rounded-md border px-2 py-1 text-sm hover:bg-muted"
+                    onClick={() => setMoisSel((m) => (m === 12 ? 1 : m + 1))}
+                    aria-label="Mois suivant"
+                  >
+                    <ChevronRight className="h-4 w-4" />
+                  </button>
+                </div>
               </CardHeader>
+
               <CardContent>
+                <div className="mb-3 text-sm text-muted-foreground capitalize">
+                  {moisLibelle}
+                </div>
+
                 {anniversaires.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     Aucun anniversaire ce mois-ci.
@@ -399,8 +490,7 @@ export default function TableauBordPage() {
                             {anniv.nom} {anniv.prenom}
                           </p>
                           <p className="text-sm text-muted-foreground">
-                            {formatDate(anniv.date_naissance)}{" "}
-                            - {anniv.age} ans
+                            {formatDate(anniv.date_naissance)} — {anniv.age} ans
                           </p>
                         </div>
                       </div>
@@ -463,13 +553,13 @@ export default function TableauBordPage() {
                           {format(new Date(inv.date_emission), "dd/MM/yyyy")}
                         </div>
                         <div className="text-right">
-                          Total :{" "}
+                          Total:{" "}
                           {inv.montant_total.toLocaleString("fr-FR", {
                             style: "currency",
                             currency: "CHF",
                           })}
                           <br />
-                          Restant :{" "}
+                          Restant:{" "}
                           {inv.montant_restant.toLocaleString("fr-FR", {
                             style: "currency",
                             currency: "CHF",

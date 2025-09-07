@@ -3,7 +3,7 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
 from django.utils import timezone
-from django.db import transaction, models
+from django.db import transaction, models, IntegrityError
 from django.db.models import (
     OuterRef,
     Subquery,
@@ -111,19 +111,33 @@ def rechercher_eleve(request, id_eleve: int):
         return {"Erreur": "Cet élève n'existe pas"}
 
     return EleveOut.model_validate(eleve, from_attributes=True)
-
-
 @router.post("/eleve/")
 def creer_eleve(request, eleve: EleveIn):
+    from django.http import JsonResponse
     try:
         with transaction.atomic():
             pays = get_object_or_404(Pays, id=eleve.pays_id)
-            eleve_obj = Eleve(pays=pays, **eleve.dict(exclude={"pays_id"}))
-            eleve_obj.full_clean()
-            eleve_obj.save()
-            return {"id": eleve_obj.id}
+            data = eleve.dict(exclude={"pays_id"})
+
+            # Normalisation: "" => None + trim
+            for k in (
+                "rue","numero","npa","localite","adresse_facturation",
+                "langue_maternelle","autres_langues","src_decouverte","commentaires"
+            ):
+                v = data.get(k)
+                if isinstance(v, str):
+                    v = v.strip()
+                    data[k] = v or None
+
+            obj = Eleve(pays=pays, **data)
+            obj.full_clean()
+            obj.save()
+            return {"id": obj.id}
+
     except ValidationError as e:
-        return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
+        return JsonResponse({"message": "Erreurs de validation.", "erreurs": e.message_dict}, status=422)
+    except IntegrityError as e:
+        return JsonResponse({"message": "Conflit d’unicité (probablement l’email)."}, status=409)
 
 
 @router.put("/eleves/{eleve_id}/")
@@ -289,8 +303,6 @@ def pays(request):
 
 
 # ------------------- STATISTIQUES -------------------
-
-
 @router.get("/statistiques/dashboard/")
 def statistiques_dashboard(request):
     today = timezone.now().date()
@@ -311,21 +323,23 @@ def statistiques_dashboard(request):
         .values("p")
     )
 
-    # --- Montant total de toutes les factures impayées du mois ---
-    montant_total_factures_impayees_mois = (
-        Facture.objects.filter(date_emission__gte=first_day_month)
+    # === MONTANT TOTAL IMPAYÉ (toutes factures, toutes périodes) ===
+    impayees_qs = (
+        Facture.objects
         .annotate(
             total=Coalesce(Subquery(total_sq), Value(0), output_field=DecimalField()),
             paye=Coalesce(Subquery(paye_sq), Value(0), output_field=DecimalField()),
         )
         .annotate(restant=F("total") - F("paye"))
         .filter(restant__gt=0)
-        .aggregate(
-            total_restant=Coalesce(
-                Sum("restant"), Value(0), output_field=DecimalField()
-            )
-        )["total_restant"]
     )
+
+    montant_total_factures_impayees = impayees_qs.aggregate(
+        total_restant=Coalesce(Sum("restant"), Value(0), output_field=DecimalField())
+    )["total_restant"]
+
+    # (facultatif mais pratique pour le front)
+    nombre_factures_impayees = impayees_qs.count()
 
     # --- Montant total des paiements du mois ---
     montant_total_paiements_mois = Paiement.objects.filter(
@@ -436,23 +450,20 @@ def statistiques_dashboard(request):
     nombre_enseignants = Enseignant.objects.count()
     total_eleves = Eleve.objects.count()
     eleves_actifs = Eleve.objects.filter(inscriptions__statut="A").distinct().count()
-    # Annoter le nombre d'élèves par pays
+
     pays_counts = (
         Eleve.objects.values("pays__nom")
         .annotate(total=Count("id"))
         .order_by("-total")
     )
-    # Trouver le maximum
     max_total = pays_counts.first()["total"] if pays_counts else None
-    # Retourner tous les pays ayant ce maximum
-    pays_plus_eleves = [
-        p["pays__nom"] for p in pays_counts if p["total"] == max_total
-    ] if max_total else []
+    pays_plus_eleves = [p["pays__nom"] for p in pays_counts if p["total"] == max_total] if max_total else []
 
     return {
         "factures": {
             "montant_total_paiements_mois": float(montant_total_paiements_mois),
-            "montant_total_factures_impayees": float(montant_total_factures_impayees_mois),
+            "montant_total_factures_impayees": float(montant_total_factures_impayees),  # ✅ total global
+            "nombre_factures_impayees": nombre_factures_impayees,                      # ✅ utile pour le front
             "factures_impayees_plus_5j": factures_impayees_plus_5j,
         },
         "cours": {
@@ -474,30 +485,30 @@ def statistiques_dashboard(request):
 
 
 @router.get("/anniversaires/", response=list[Anniversaire])
-def anniversaires_mois(request):
-    aujourdhui = timezone.now().date()
-    mois_actuel = aujourdhui.month
+def anniversaires_mois(request, mois: int | None = None, annee: int | None = None):
+    aujourdhui = timezone.localdate()
+    mois_actuel = mois or aujourdhui.month
+    annee_actuelle = annee or aujourdhui.year
+
+    if mois_actuel < 1 or mois_actuel > 12:
+        # Optionnel: tu peux lever une 400 ici si tu veux
+        mois_actuel = aujourdhui.month
 
     qs = (
         Eleve.objects.filter(
-            date_naissance__month=mois_actuel, inscriptions__statut="A", inscriptions__preinscription=False,
+            date_naissance__month=mois_actuel,
+            inscriptions__statut="A",
+            inscriptions__preinscription=False,
         )
         .distinct()
         .order_by("date_naissance__day")
     )
 
     resultat = []
-
     for eleve in qs:
         date_naissance = eleve.date_naissance
-        age = (
-            aujourdhui.year
-            - date_naissance.year
-            - (
-                (aujourdhui.month, aujourdhui.day)
-                < (date_naissance.month, date_naissance.day)
-            )
-        )
+        # Âge atteint à l’anniversaire de l'année sélectionnée
+        age_ce_mois = annee_actuelle - date_naissance.year
 
         resultat.append(
             Anniversaire.model_validate(
@@ -506,7 +517,7 @@ def anniversaires_mois(request):
                     "nom": eleve.nom,
                     "prenom": eleve.prenom,
                     "date_naissance": date_naissance,
-                    "age": age,
+                    "age": age_ce_mois,
                 }
             )
         )

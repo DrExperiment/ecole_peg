@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from django.db import transaction, models
 from django.core.exceptions import ValidationError
 from ninja import Router
+from ninja.errors import HttpError
 from .models import Facture, DetailFacture, Paiement
 from cours.models import Inscription, CoursPrive
 from eleves.models import Eleve
@@ -12,6 +13,7 @@ from .schemas import (
     PaiementIn,
     PaiementOut,
     DetailFactureOut,
+    EcheanceIn,  # 👈 Ajouté pour corriger l'erreur
 )
 from django.core.paginator import Paginator
 
@@ -213,27 +215,71 @@ def factures_eleve_impayees(
         ],
         "nombre_total": paginator.count,
     }
-
-
 @router.get("/facture/{facture_id}/", response=FactureOut)
 def get_facture(request, facture_id: int):
     facture = get_object_or_404(
-        Facture.objects.select_related("eleve", "inscription__eleve").prefetch_related(
-            "details", "paiements"
-        ),
+        Facture.objects.select_related("eleve", "inscription__eleve", "eleve__garant")
+               .prefetch_related("details", "paiements"),
         id=facture_id,
     )
+
+    eleve = facture.eleve or (facture.inscription.eleve if facture.inscription else None)
+    if eleve is None:
+        # Par sécurité (normalement non atteignable grâce à clean())
+        raise HttpError(500, "Aucun élève associé à la facture.")
+
+    # Adresse principale = celle de l'élève
+    rue, numero, npa, localite = eleve.rue, eleve.numero, eleve.npa, eleve.localite
+
+    # Si tout est vide, on essaie l'adresse du garant (fallback)
+    if not any([rue, numero, npa, localite]) and eleve.garant_id:
+        g = eleve.garant
+        rue, numero, npa, localite = g.rue, g.numero, g.npa, g.localite
+
     return FactureOut(
         id=facture.id,
         date_emission=facture.date_emission,
+        date_echeance=facture.date_echeance,            # 👈 renvoyée
         montant_total=float(facture.montant_total),
         montant_restant=float(facture.montant_restant),
-        eleve_nom=facture.eleve.nom if facture.eleve else facture.inscription.eleve.nom,
-        eleve_prenom=(
-            facture.eleve.prenom if facture.eleve else facture.inscription.eleve.prenom
-        ),
+        eleve_nom=eleve.nom,
+        eleve_prenom=eleve.prenom,
+        eleve_rue=rue,
+        eleve_numero=numero,
+        eleve_npa=npa,
+        eleve_localite=localite,
     )
 
+
+@router.patch("/facture/{facture_id}/echeance/", response=FactureOut)
+def set_echeance(request, facture_id: int, payload: EcheanceIn):
+    facture = get_object_or_404(Facture, id=facture_id)
+    facture.date_echeance = payload.date_echeance  # None pour effacer
+    facture.full_clean()
+    facture.save(update_fields=["date_echeance"])
+
+    # Recrée la réponse comme dans GET
+    eleve = facture.eleve or (facture.inscription.eleve if facture.inscription else None)
+    if not eleve:
+        raise HttpError(500, "Aucun élève associé à la facture.")
+    rue, numero, npa, localite = eleve.rue, eleve.numero, eleve.npa, eleve.localite
+    if not any([rue, numero, npa, localite]) and eleve.garant_id:
+        g = eleve.garant
+        rue, numero, npa, localite = g.rue, g.numero, g.npa, g.localite
+
+    return FactureOut(
+        id=facture.id,
+        date_emission=facture.date_emission,
+        date_echeance=facture.date_echeance,
+        montant_total=float(facture.montant_total),
+        montant_restant=float(facture.montant_restant),
+        eleve_nom=eleve.nom,
+        eleve_prenom=eleve.prenom,
+        eleve_rue=rue,
+        eleve_numero=numero,
+        eleve_npa=npa,
+        eleve_localite=localite,
+    )
 
 @router.get("/facture/{id_facture}/details/")
 def rechercher_details_facture(request, id_facture: int):

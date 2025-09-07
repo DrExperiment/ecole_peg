@@ -38,13 +38,21 @@ class FacturesOut(Schema):
 
 class FactureOut(Schema):
     id: int
+    date_echeance: date | None = None
     date_emission: date
     montant_total: float
     montant_restant: float
     eleve_nom: str
     eleve_prenom: str
+    eleve_rue:str | None = None
+    eleve_numero: str | None = None
+    eleve_npa: str | None = None
+    eleve_localite: str | None = None
 
 
+
+class EcheanceIn(Schema):
+    date_echeance:date| None = None 
 # ------------------- PAIEMENT -------------------
 
 

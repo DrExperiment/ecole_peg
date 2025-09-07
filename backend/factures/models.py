@@ -24,6 +24,7 @@ class MethodePaiementChoices(models.TextChoices):
 
 class Facture(models.Model):
     date_emission = models.DateField(auto_now_add=True)
+    date_echeance = models.DateField(null=True, blank=True)
     inscription = models.ForeignKey(
         "cours.Inscription",
         on_delete=models.CASCADE,

@@ -34,11 +34,12 @@ interface Eleve {
 interface Session {
   id: number;
   cours__nom: string;
-  cours__type: string;
+  cours__type_cours: "I" | "S";
   cours__niveau: string;
-  date_debut: Date;
-  date_fin: Date;
+  date_debut: string; // la réponse est une string ISO
+  date_fin: string;
 }
+
 
 export default function InscrirePage({
   params,
@@ -157,7 +158,7 @@ export default function InscrirePage({
                     <SelectItem key={session.id} value={session.id.toString()}>
                       <span className="font-medium">{session.cours__nom}</span>{" "}
                       -{" "}
-                      {session.cours__type === "I"
+                      {session.cours__type_cours === "I"
                         ? "Intensif"
                         : "Semi-intensif"}{" "}
                       <span className="font-medium">
@@ -165,8 +166,8 @@ export default function InscrirePage({
                       </span>
                       <br />
                       <span className="text-sm text-muted-foreground">
-                        Du {formatDate(session.date_debut)} au{" "}
-                        {formatDate(session.date_fin)}
+                        Du {formatDate(new Date(session.date_debut))} au{" "}
+                        {formatDate(new Date(session.date_fin))}
                       </span>
                     </SelectItem>
                   ))}
