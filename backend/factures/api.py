@@ -215,6 +215,8 @@ def factures_eleve_impayees(
         ],
         "nombre_total": paginator.count,
     }
+
+
 @router.get("/facture/{facture_id}/", response=FactureOut)
 def get_facture(request, facture_id: int):
     facture = get_object_or_404(
@@ -280,6 +282,7 @@ def set_echeance(request, facture_id: int, payload: EcheanceIn):
         eleve_npa=npa,
         eleve_localite=localite,
     )
+
 
 @router.get("/facture/{id_facture}/details/")
 def rechercher_details_facture(request, id_facture: int):

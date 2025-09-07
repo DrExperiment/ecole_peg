@@ -18,6 +18,7 @@ from django.db.models import (
 from django.db.models.functions import Coalesce, Lower
 from ninja import Router, File, Form
 from ninja.files import UploadedFile
+from typing import Optional  # 👈 ajouté
 
 from .models import (
     Eleve,
@@ -51,9 +52,9 @@ def eleves(
     request,
     page: int = 1,
     taille: int = 10,
-    recherche: str | None = None,
-    date_naissance: str | None = None,
-    statut: str | None = None,
+    recherche: Optional[str] = None,
+    date_naissance: Optional[str] = None,
+    statut: Optional[str] = None,
 ):
     qs = Eleve.objects.select_related("pays").annotate(
         lower_nom=Lower("nom"),
@@ -111,6 +112,8 @@ def rechercher_eleve(request, id_eleve: int):
         return {"Erreur": "Cet élève n'existe pas"}
 
     return EleveOut.model_validate(eleve, from_attributes=True)
+
+
 @router.post("/eleve/")
 def creer_eleve(request, eleve: EleveIn):
     from django.http import JsonResponse
@@ -462,8 +465,8 @@ def statistiques_dashboard(request):
     return {
         "factures": {
             "montant_total_paiements_mois": float(montant_total_paiements_mois),
-            "montant_total_factures_impayees": float(montant_total_factures_impayees),  # ✅ total global
-            "nombre_factures_impayees": nombre_factures_impayees,                      # ✅ utile pour le front
+            "montant_total_factures_impayees": float(montant_total_factures_impayees),
+            "nombre_factures_impayees": nombre_factures_impayees,
             "factures_impayees_plus_5j": factures_impayees_plus_5j,
         },
         "cours": {
@@ -485,7 +488,7 @@ def statistiques_dashboard(request):
 
 
 @router.get("/anniversaires/", response=list[Anniversaire])
-def anniversaires_mois(request, mois: int | None = None, annee: int | None = None):
+def anniversaires_mois(request, mois: Optional[int] = None, annee: Optional[int] = None):
     aujourdhui = timezone.localdate()
     mois_actuel = mois or aujourdhui.month
     annee_actuelle = annee or aujourdhui.year

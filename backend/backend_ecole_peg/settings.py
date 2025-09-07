@@ -1,10 +1,12 @@
 from pathlib import Path
 import os
 from datetime import timedelta
-from dotenv import load_dotenv
+from dotenv import load_dotenv, find_dotenv
+
+# Au lieu de: load_dotenv(BASE_DIR / ".env")
+load_dotenv(find_dotenv(usecwd=True), override=True)
 
 BASE_DIR = Path(__file__).resolve().parent.parent
-load_dotenv(BASE_DIR / ".env")
 
 # --- Secrets / JWT ---
 MASTER_PASSWORD = os.getenv("MASTER_PASSWORD")

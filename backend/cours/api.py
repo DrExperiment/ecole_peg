@@ -36,6 +36,7 @@ from .schemas import (
 )
 from django.db import transaction
 from django.core.paginator import Paginator
+from typing import Optional, List
 
 router = Router()
 
@@ -89,7 +90,7 @@ def delete_cours(request, cours_id: int):
 
 # ------------------- ENSEIGNANT -------------------
 @router.get("/enseignants/")
-def list_enseignants(request, search: str | None = None):
+def list_enseignants(request, search: Optional[str] = None):
     enseignants = Enseignant.objects.all()
     if search:
         enseignants = enseignants.filter(
@@ -137,9 +138,9 @@ def sessions(
     request,
     page: int = 1,
     taille: int = 10,
-    type: str | None = None,
-    niveau: str | None = None,
-    statut: str | None = None,
+    type: Optional[str] = None,
+    niveau: Optional[str] = None,
+    statut: Optional[str] = None,
 ):
     sessions_qs = (
         Session.objects.select_related("cours", "enseignant")
