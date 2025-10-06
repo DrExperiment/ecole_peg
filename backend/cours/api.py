@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.db import models
 from ninja import Router
+from ninja.errors import HttpError
 from .models import (
     Cours,
     Enseignant,
@@ -33,6 +34,7 @@ from .schemas import (
     InscriptionIn,
     InscriptionUpdateIn,
     FichePresencesIn,
+    InscriptionOut,  # Added import for InscriptionOut
 )
 from django.db import transaction
 from django.core.paginator import Paginator
@@ -447,40 +449,36 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
     except ValidationError as e:
         return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
 
-
-@router.put("/{eleve_id}/inscriptions/{inscription_id}/")
-def update_inscription(
-    request, eleve_id: int, inscription_id: int, inscription: InscriptionUpdateIn
-):
+@router.put("/inscriptions/{inscription_id}/", response=InscriptionOut)
+def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
+    """
+    Met à jour une inscription existante sans écraser les champs non fournis.
+    Les champs non envoyés (None) sont ignorés, ce qui évite les erreurs SQL.
+    """
     try:
-        with transaction.atomic():
-            inscription_obj = get_object_or_404(
-                Inscription.objects.select_related("session", "eleve"),
-                id=inscription_id,
-                eleve_id=eleve_id,
-            )
+        # 1️⃣ Récupération de l'inscription à modifier
+        inscription_obj = Inscription.objects.get(id=inscription_id)
+    except Inscription.DoesNotExist:
+        raise HttpError(404, "Inscription non trouvée")
 
-            new_session = get_object_or_404(Session, id=inscription.id_session)
-            old_session = inscription_obj.session
+    # 2️⃣ Mise à jour uniquement des champs fournis
+    for field, value in inscription.dict(exclude={"id_session"}).items():
+        if value is not None:
+            setattr(inscription_obj, field, value)
 
-            if old_session != new_session:
-                if new_session.inscriptions.count() >= new_session.capacite_max:
-                    return {
-                        "detail": "Capacité maximale atteinte pour la nouvelle session"
-                    }
+    # 3️⃣ Si id_session est fourni, mettre à jour la relation
+    if inscription.id_session is not None:
+        try:
+            session = Session.objects.get(id=inscription.id_session)
+            inscription_obj.id_session = session
+        except Session.DoesNotExist:
+            raise HttpError(404, "Session non trouvée")
 
-                if Inscription.objects.filter(
-                    eleve_id=eleve_id, session=new_session
-                ).exists():
-                    return {"detail": "L'élève est déjà inscrit à cette session"}
+    # 4️⃣ Sauvegarde finale
+    inscription_obj.save()
 
-            for field, value in inscription.dict(exclude={"id_session"}).items():
-                setattr(inscription_obj, field, value)
-            inscription_obj.session = new_session
-            inscription_obj.save()
-            return {"id": inscription_obj.id}
-    except ValidationError as e:
-        return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
+    # 5️⃣ Retourne l'inscription mise à jour
+    return inscription_obj
 
 
 @router.delete("/{eleve_id}/inscriptions/{inscription_id}/")
