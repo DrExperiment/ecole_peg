@@ -448,11 +448,12 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
             return {"id": inscription_obj.id}
     except ValidationError as e:
         return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
+    
 @router.put("/inscriptions/{inscription_id}/", response=InscriptionOut)
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
     """
     Met à jour une inscription existante sans écraser les champs non fournis.
-    Les champs non envoyés (None) sont ignorés, ce qui évite les erreurs SQL.
+    Les champs non envoyés (non fournis dans la requête PUT) sont ignorés.
     """
     try:
         # 1️⃣ Récupération de l'inscription à modifier
@@ -460,29 +461,27 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # 2️⃣ Mise à jour uniquement des champs fournis (hors id_session)
-    for field, value in inscription.dict(exclude={"id_session"}).items():
+    # 2️⃣ Mise à jour uniquement des champs explicitement envoyés (et non None)
+    for field, value in inscription.dict(exclude_unset=True, exclude={"id_session"}).items():
         if value is not None:
             setattr(inscription_obj, field, value)
 
-    # 3️⃣ Si id_session est fourni, mettre à jour la relation ForeignKey
+    # 3️⃣ Mise à jour de la relation session si fournie
     if inscription.id_session is not None:
         try:
             session = Session.objects.get(id=inscription.id_session)
-            inscription_obj.session = session  # ✅ champ réel du modèle
+            inscription_obj.session = session
         except Session.DoesNotExist:
             raise HttpError(404, "Session non trouvée")
-        except Exception as e:
-            raise HttpError(400, f"Erreur lors de la mise à jour de la session : {str(e)}")
 
-    # 4️⃣ Sauvegarde finale avec validation complète
+    # 4️⃣ Validation et sauvegarde
     try:
         inscription_obj.full_clean()
         inscription_obj.save()
     except Exception as e:
         raise HttpError(400, f"Erreur de validation : {str(e)}")
 
-    # 5️⃣ Retourne l'inscription mise à jour avec compatibilité frontend
+    # 5️⃣ Réponse au frontend
     return InscriptionOut(
         id=inscription_obj.id,
         id_session=inscription_obj.session.id,
@@ -494,6 +493,7 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         date_sortie=inscription_obj.date_sortie,
         motif_sortie=inscription_obj.motif_sortie,
     )
+
 
 
 
