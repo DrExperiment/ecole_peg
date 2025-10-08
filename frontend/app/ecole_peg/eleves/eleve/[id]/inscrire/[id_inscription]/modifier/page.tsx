@@ -54,13 +54,17 @@ export default function ModifierInscriptionPage({
   const router = useRouter();
   const resolvedParams = use(params);
 
-  const { register, reset, handleSubmit, formState: { isSubmitting } } = useForm();
+  const {
+    register,
+    reset,
+    handleSubmit,
+    formState: { isSubmitting },
+  } = useForm();
 
   const [sessions, setSessions] = useState<Session[]>([]);
   const [id_session, setIdSession] = useState<number>();
   const [preinscription, setPreinscription] = useState<boolean>(false);
   const [date_sortie, setDateSortie] = useState<Date | undefined>(undefined);
-  const [date_inscription, setDateInscription] = useState<Date>(new Date());
 
   useEffect(() => {
     async function fetchDonnees() {
@@ -75,10 +79,16 @@ export default function ModifierInscriptionPage({
         const inscription = reponse_inscription.data;
 
         setSessions(reponse_sessions.data.sessions);
+
         setIdSession(inscription.id_session);
+
         setPreinscription(inscription.preinscription ?? false);
-        setDateSortie(inscription.date_sortie ? new Date(inscription.date_sortie) : undefined);
-        setDateInscription(new Date(inscription.date_inscription));
+
+        setDateSortie(
+          inscription.date_sortie
+            ? new Date(inscription.date_sortie)
+            : undefined,
+        );
 
         reset({
           but: inscription.but,
@@ -94,35 +104,19 @@ export default function ModifierInscriptionPage({
   }, [reset, resolvedParams.id, resolvedParams.id_inscription]);
 
   const onSoumission = async (donnees: object) => {
-    // 1️⃣ Récupérer la session sélectionnée
-    const session = sessions.find((s) => s.id === id_session);
-
-    // 2️⃣ Calculer le statut
-    let statut = "A"; // Actif par défaut
-    if (session) {
-      const dateFinSession = new Date(session.date_fin);
-      if (dateFinSession < date_inscription) {
-        statut = "I"; // Inactif si fin de session < date inscription
-      }
-    }
-
-    // 3️⃣ Préparer les données complètes à envoyer
     const donnees_completes = {
       ...donnees,
       id_session,
       preinscription,
       date_sortie,
-      statut, // ✅ on envoie le statut
-      date_inscription, // pour référence si besoin côté back
     };
-
-    console.log("Données envoyées :", donnees_completes);
 
     try {
       await api.put(
         `/cours/${resolvedParams.id}/inscriptions/${resolvedParams.id_inscription}/`,
         donnees_completes,
       );
+
       router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
     } catch (err) {
       console.error("Erreur: ", err);
@@ -159,9 +153,10 @@ export default function ModifierInscriptionPage({
           </CardHeader>
           <CardContent className="space-y-6">
             <div className="space-y-4">
-              {/* Sélection de session */}
               <div>
-                <Label htmlFor="session" className="text-base">Session du cours</Label>
+                <Label htmlFor="session" className="text-base">
+                  Session du cours
+                </Label>
                 <p className="text-sm text-muted-foreground mb-2">
                   Sélectionnez la session à laquelle l&apos;élève est inscrit
                 </p>
@@ -175,16 +170,25 @@ export default function ModifierInscriptionPage({
                   </SelectTrigger>
                   <SelectContent>
                     {sessions.map((session) => (
-                      <SelectItem key={session.id} value={session.id.toString()} className="py-3">
+                      <SelectItem
+                        key={session.id}
+                        value={session.id.toString()}
+                        className="py-3"
+                      >
                         <div className="space-y-1">
                           <div className="font-medium">
                             {session.cours__nom}{" "}
                             <span className="text-muted-foreground">
-                              ({session.cours__type === "I" ? "Intensif" : "Semi-intensif"} - {session.cours__niveau})
+                              (
+                              {session.cours__type === "I"
+                                ? "Intensif"
+                                : "Semi-intensif"}{" "}
+                              - {session.cours__niveau})
                             </span>
                           </div>
                           <div className="text-sm text-muted-foreground">
-                            Du {formatDate(session.date_debut)} au {formatDate(session.date_fin)}
+                            Du {formatDate(session.date_debut)} au{" "}
+                            {formatDate(session.date_fin)}
                           </div>
                         </div>
                       </SelectItem>
@@ -193,79 +197,124 @@ export default function ModifierInscriptionPage({
                 </Select>
               </div>
 
-              {/* Frais et But */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="frais_inscription" className="text-base">Frais d&apos;inscription (CHF)</Label>
-                  <Input
-                    id="frais_inscription"
-                    type="number"
-                    min="0"
-                    step="0.01"
-                    onWheel={(e) => e.currentTarget.blur()}
-                    className="pl-8 font-mono"
-                    placeholder="0.00"
-                    required
-                    {...register("frais_inscription", { required: true, min: 0 })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="but" className="text-base">But de l&apos;inscription</Label>
-                  <Input
-                    id="but"
-                    placeholder="Ex: Amélioration du français pour études universitaires"
-                    className="w-full"
-                    {...register("but")}
-                  />
+                  <Label htmlFor="frais_inscription" className="text-base">
+                    Frais d&apos;inscription (CHF)
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="frais_inscription"
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      onWheel={(e) => e.currentTarget.blur()}
+                      className="pl-8 font-mono"
+                      placeholder="0.00"
+                      required
+                      {...register("frais_inscription", {
+                        required: "Les frais d'inscription sont obligatoires",
+                        min: {
+                          value: 0,
+                          message: "Les frais ne peuvent pas être négatifs",
+                        },
+                      })}
+                    />
+                  </div>
                 </div>
               </div>
 
-              {/* Date de sortie et motif */}
+              <div className="space-y-2">
+                <Label htmlFor="but" className="text-base">
+                  But de l&apos;inscription
+                </Label>
+                <Input
+                  id="but"
+                  placeholder="Ex: Amélioration du français pour études universitaires"
+                  className="w-full"
+                  {...register("but")}
+                />
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="date_sortie" className="text-base">Date de sortie</Label>
-                  <Input
-                    id="date_sortie"
-                    type="date"
-                    className="w-full"
-                    value={date_sortie ? format(date_sortie, "yyyy-MM-dd") : ""}
-                    onChange={(e) => setDateSortie(new Date(e.target.value))}
-                  />
-                  <p className="text-sm text-muted-foreground">Optionnel - Laissez vide si l&apos;élève est toujours inscrit</p>
+                  <Label htmlFor="date_sortie" className="text-base">
+                    Date de sortie
+                  </Label>
+                  <div className="relative">
+                    <Input
+                      id="date_sortie"
+                      type="date"
+                      className="w-full"
+                      value={
+                        date_sortie instanceof Date &&
+                        !isNaN(date_sortie.getTime())
+                          ? format(date_sortie, "yyyy-MM-dd")
+                          : ""
+                      }
+                      onChange={(e) => setDateSortie(new Date(e.target.value))}
+                    />
+                  </div>
+                  <p className="text-sm text-muted-foreground">
+                    Optionnel - Laissez vide si l&apos;élève est toujours
+                    inscrit
+                  </p>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="motif_sortie" className="text-base">Motif de sortie</Label>
+                  <Label htmlFor="motif_sortie" className="text-base">
+                    Motif de sortie
+                  </Label>
                   <Input
                     id="motif_sortie"
                     placeholder="Ex: Déménagement, niveau atteint..."
                     className="w-full"
                     {...register("motif_sortie")}
                   />
+                  <p className="text-sm text-muted-foreground">
+                    Optionnel - Raison de la fin de l&apos;inscription
+                  </p>
                 </div>
               </div>
 
-              {/* Préinscription */}
               <div className="rounded-lg border p-4 space-y-3">
                 <div className="flex items-center space-x-2">
                   <Checkbox
                     id="preinscription"
                     checked={preinscription}
-                    onCheckedChange={(checked) => setPreinscription(checked as boolean)}
+                    onCheckedChange={(checked) =>
+                      setPreinscription(checked as boolean)
+                    }
                   />
                   <div className="grid gap-1.5">
-                    <Label htmlFor="preinscription" className="text-base font-medium leading-none">
+                    <Label
+                      htmlFor="preinscription"
+                      className="text-base font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
                       Préinscription
                     </Label>
-                    <p className="text-sm text-muted-foreground">Cochez cette case s&apos;il s&apos;agit d&apos;une préinscription</p>
+                    <p className="text-sm text-muted-foreground">
+                      Cochez cette case s&apos;il s&apos;agit d&apos;une
+                      préinscription
+                    </p>
                   </div>
                 </div>
               </div>
-
             </div>
           </CardContent>
           <CardFooter className="flex flex-col sm:flex-row gap-4 sm:justify-end">
-            <Button variant="outline" type="button" onClick={() => router.back()} className="w-full sm:w-auto">Annuler</Button>
-            <Button type="submit" disabled={isSubmitting} className="w-full sm:w-auto">
+            <Button
+              variant="outline"
+              type="button"
+              onClick={() => router.back()}
+              className="w-full sm:w-auto"
+            >
+              Annuler
+            </Button>
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="w-full sm:w-auto"
+            >
               <Save className="mr-2 h-4 w-4" />
               {isSubmitting ? (
                 <>

@@ -15,6 +15,7 @@ from .models import (
     Inscription,
     FichePresences,
     StatutPresenceChoices,
+    StatutInscriptionChoices,  # <-- Add this import
 )
 from eleves.models import Eleve
 from eleves.schemas import ElevesOut
@@ -448,25 +449,19 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
             return {"id": inscription_obj.id}
     except ValidationError as e:
         return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
-
 @router.put("/inscriptions/{inscription_id}/", response=InscriptionOut)
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
-    """
-    Met à jour une inscription existante sans écraser les champs non fournis.
-    Les champs non envoyés (None) sont ignorés, ce qui évite les erreurs SQL.
-    """
     try:
-        # 1️⃣ Récupération de l'inscription à modifier
         inscription_obj = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # 2️⃣ Mise à jour uniquement des champs fournis
+    # Mise à jour des champs (sans statut)
     for field, value in inscription.dict(exclude={"id_session"}).items():
         if value is not None:
             setattr(inscription_obj, field, value)
 
-    # 3️⃣ Si id_session est fourni, mettre à jour la relation
+    # Mise à jour de la session si fournie
     if inscription.id_session is not None:
         try:
             session = Session.objects.get(id=inscription.id_session)
@@ -474,11 +469,20 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         except Session.DoesNotExist:
             raise HttpError(404, "Session non trouvée")
 
-    # 4️⃣ Sauvegarde finale
-    inscription_obj.save()
+    # 🔥 CALCUL AUTOMATIQUE DU STATUT
+    from django.utils import timezone
+    today = timezone.now().date()
+    
+    if inscription_obj.date_sortie:
+        inscription_obj.statut = StatutInscriptionChoices.INACTIF
+    elif inscription_obj.session.date_fin < today:
+        inscription_obj.statut = StatutInscriptionChoices.INACTIF
+    else:
+        inscription_obj.statut = StatutInscriptionChoices.ACTIF
 
-    # 5️⃣ Retourne l'inscription mise à jour
+    inscription_obj.save()
     return inscription_obj
+
 
 
 @router.delete("/{eleve_id}/inscriptions/{inscription_id}/")
