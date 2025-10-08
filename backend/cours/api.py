@@ -448,7 +448,6 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
             return {"id": inscription_obj.id}
     except ValidationError as e:
         return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
-
 @router.put("/inscriptions/{inscription_id}/", response=InscriptionOut)
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
     """
@@ -461,24 +460,41 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # 2️⃣ Mise à jour uniquement des champs fournis
+    # 2️⃣ Mise à jour uniquement des champs fournis (hors id_session)
     for field, value in inscription.dict(exclude={"id_session"}).items():
         if value is not None:
             setattr(inscription_obj, field, value)
 
-    # 3️⃣ Si id_session est fourni, mettre à jour la relation
+    # 3️⃣ Si id_session est fourni, mettre à jour la relation ForeignKey
     if inscription.id_session is not None:
         try:
             session = Session.objects.get(id=inscription.id_session)
-            inscription_obj.id_session = session
+            inscription_obj.session = session  # ✅ champ réel du modèle
         except Session.DoesNotExist:
             raise HttpError(404, "Session non trouvée")
+        except Exception as e:
+            raise HttpError(400, f"Erreur lors de la mise à jour de la session : {str(e)}")
 
-    # 4️⃣ Sauvegarde finale
-    inscription_obj.save()
+    # 4️⃣ Sauvegarde finale avec validation complète
+    try:
+        inscription_obj.full_clean()
+        inscription_obj.save()
+    except Exception as e:
+        raise HttpError(400, f"Erreur de validation : {str(e)}")
 
-    # 5️⃣ Retourne l'inscription mise à jour
-    return inscription_obj
+    # 5️⃣ Retourne l'inscription mise à jour avec compatibilité frontend
+    return InscriptionOut(
+        id=inscription_obj.id,
+        id_session=inscription_obj.session.id,
+        date_inscription=inscription_obj.date_inscription,
+        statut=inscription_obj.statut,
+        preinscription=inscription_obj.preinscription,
+        but=inscription_obj.but,
+        frais_inscription=float(inscription_obj.frais_inscription),
+        date_sortie=inscription_obj.date_sortie,
+        motif_sortie=inscription_obj.motif_sortie,
+    )
+
 
 
 @router.delete("/{eleve_id}/inscriptions/{inscription_id}/")
