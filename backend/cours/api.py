@@ -454,19 +454,20 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
     """
     Met à jour une inscription existante sans écraser les champs non fournis.
-    Le statut est automatiquement défini si non fourni.
+    Le statut est automatiquement calculé selon la date de fin de la session.
     """
     try:
+        # 1️⃣ Récupération de l'inscription existante
         inscription_obj = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # Mise à jour des champs fournis
+    # 2️⃣ Mise à jour des champs fournis dans la requête (sauf id_session)
     for field, value in inscription.dict(exclude_unset=True, exclude={"id_session"}).items():
         if value is not None:
             setattr(inscription_obj, field, value)
 
-    # Gestion de la session
+    # 3️⃣ Mise à jour de la session si un id_session est fourni
     if inscription.id_session is not None:
         try:
             session = Session.objects.get(id=inscription.id_session)
@@ -474,28 +475,26 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         except Session.DoesNotExist:
             raise HttpError(404, "Session non trouvée")
     else:
-        session = inscription_obj.session
+        session = inscription_obj.session  # garder la session actuelle
 
-    # Sécurité : si statut absent ou None → on le régénère
-    if not inscription_obj.statut:
-        # Si on a des dates valides, on détermine automatiquement le statut
-        if session.date_fin and inscription_obj.date_inscription:
-            inscription_obj.statut = (
-                StatutInscriptionChoices.ACTIF
-                if session.date_fin >= inscription_obj.date_inscription
-                else StatutInscriptionChoices.INACTIF
-            )
-        else:
-            # fallback de sécurité
+    # 4️⃣ Calcul automatique du statut en fonction des dates
+    if session.date_fin and inscription_obj.date_inscription:
+        if session.date_fin >= inscription_obj.date_inscription:
             inscription_obj.statut = StatutInscriptionChoices.ACTIF
+        else:
+            inscription_obj.statut = StatutInscriptionChoices.INACTIF
+    else:
+        # Cas où les dates ne sont pas définies (sécurité)
+        inscription_obj.statut = StatutInscriptionChoices.ACTIF
 
-    # Validation et sauvegarde
+    # 5️⃣ Validation et sauvegarde
     try:
         inscription_obj.full_clean()
         inscription_obj.save()
     except Exception as e:
         raise HttpError(400, f"Erreur de validation : {str(e)}")
 
+    # 6️⃣ Réponse au frontend
     return InscriptionOut(
         id=inscription_obj.id,
         id_session=session.id,
