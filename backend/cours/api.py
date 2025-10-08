@@ -454,29 +454,37 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
     """
     Met à jour une inscription existante sans écraser les champs non fournis.
-    Les champs non envoyés (non fournis dans la requête PUT) sont ignorés.
+    Le statut est automatiquement défini selon la date de fin de session.
     """
     try:
-        # 1️⃣ Récupération de l'inscription à modifier
+        # 1️⃣ Récupération de l'inscription
         inscription_obj = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # 2️⃣ Mise à jour uniquement des champs explicitement envoyés (et non None)
+    # 2️⃣ Mise à jour des champs fournis
     for field, value in inscription.dict(exclude_unset=True, exclude={"id_session"}).items():
         if value is not None:
             setattr(inscription_obj, field, value)
 
-    # 3️⃣ Mise à jour de la relation session si fournie
+    # 3️⃣ Si on fournit une nouvelle session
     if inscription.id_session is not None:
         try:
             session = Session.objects.get(id=inscription.id_session)
             inscription_obj.session = session
         except Session.DoesNotExist:
             raise HttpError(404, "Session non trouvée")
+    else:
+        session = inscription_obj.session  # session actuelle
 
-    # 4️⃣ Forcer le statut par défaut si None
-    if inscription_obj.statut is None:
+    # 4️⃣ Détermination automatique du statut
+    if inscription_obj.date_inscription and session.date_fin:
+        if session.date_fin >= inscription_obj.date_inscription:
+            inscription_obj.statut = StatutInscriptionChoices.ACTIF
+        else:
+            inscription_obj.statut = StatutInscriptionChoices.INACTIF
+    else:
+        # fallback si les dates ne sont pas définies
         inscription_obj.statut = StatutInscriptionChoices.ACTIF
 
     # 5️⃣ Validation et sauvegarde
@@ -489,7 +497,7 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
     # 6️⃣ Réponse au frontend
     return InscriptionOut(
         id=inscription_obj.id,
-        id_session=inscription_obj.session.id,
+        id_session=session.id,
         date_inscription=inscription_obj.date_inscription,
         statut=inscription_obj.statut,
         preinscription=inscription_obj.preinscription,
@@ -498,7 +506,6 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         date_sortie=inscription_obj.date_sortie,
         motif_sortie=inscription_obj.motif_sortie,
     )
-
 
 
 
