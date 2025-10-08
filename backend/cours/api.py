@@ -15,7 +15,6 @@ from .models import (
     Inscription,
     FichePresences,
     StatutPresenceChoices,
-    StatutInscriptionChoices,  # <-- Add this import
 )
 from eleves.models import Eleve
 from eleves.schemas import ElevesOut
@@ -449,64 +448,37 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
             return {"id": inscription_obj.id}
     except ValidationError as e:
         return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
-    
+
 @router.put("/inscriptions/{inscription_id}/", response=InscriptionOut)
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
     """
     Met à jour une inscription existante sans écraser les champs non fournis.
-    Le statut est automatiquement calculé selon la date de fin de la session.
+    Les champs non envoyés (None) sont ignorés, ce qui évite les erreurs SQL.
     """
     try:
-        # 1️⃣ Récupération de l'inscription existante
+        # 1️⃣ Récupération de l'inscription à modifier
         inscription_obj = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # 2️⃣ Mise à jour des champs fournis dans la requête (sauf id_session)
-    for field, value in inscription.dict(exclude_unset=True, exclude={"id_session"}).items():
+    # 2️⃣ Mise à jour uniquement des champs fournis
+    for field, value in inscription.dict(exclude={"id_session"}).items():
         if value is not None:
             setattr(inscription_obj, field, value)
 
-    # 3️⃣ Mise à jour de la session si un id_session est fourni
+    # 3️⃣ Si id_session est fourni, mettre à jour la relation
     if inscription.id_session is not None:
         try:
             session = Session.objects.get(id=inscription.id_session)
             inscription_obj.session = session
         except Session.DoesNotExist:
             raise HttpError(404, "Session non trouvée")
-    else:
-        session = inscription_obj.session  # garder la session actuelle
 
-    # 4️⃣ Calcul automatique du statut en fonction des dates
-    if session.date_fin and inscription_obj.date_inscription:
-        if session.date_fin >= inscription_obj.date_inscription:
-            inscription_obj.statut = StatutInscriptionChoices.ACTIF
-        else:
-            inscription_obj.statut = StatutInscriptionChoices.INACTIF
-    else:
-        # Cas où les dates ne sont pas définies (sécurité)
-        inscription_obj.statut = StatutInscriptionChoices.ACTIF
+    # 4️⃣ Sauvegarde finale
+    inscription_obj.save()
 
-    # 5️⃣ Validation et sauvegarde
-    try:
-        inscription_obj.full_clean()
-        inscription_obj.save()
-    except Exception as e:
-        raise HttpError(400, f"Erreur de validation : {str(e)}")
-
-    # 6️⃣ Réponse au frontend
-    return InscriptionOut(
-        id=inscription_obj.id,
-        id_session=session.id,
-        date_inscription=inscription_obj.date_inscription,
-        statut=inscription_obj.statut,
-        preinscription=inscription_obj.preinscription,
-        but=inscription_obj.but,
-        frais_inscription=float(inscription_obj.frais_inscription),
-        date_sortie=inscription_obj.date_sortie,
-        motif_sortie=inscription_obj.motif_sortie,
-    )
-
+    # 5️⃣ Retourne l'inscription mise à jour
+    return inscription_obj
 
 
 @router.delete("/{eleve_id}/inscriptions/{inscription_id}/")
