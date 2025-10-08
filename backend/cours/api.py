@@ -449,19 +449,27 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
             return {"id": inscription_obj.id}
     except ValidationError as e:
         return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
-@router.put("/inscriptions/{inscription_id}/", response=InscriptionOut)
+    
+@router.put("/inscriptions/{inscription_id}/", response=dict)  # Changé temporairement
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
     try:
         inscription_obj = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # Mise à jour des champs (sans statut)
-    for field, value in inscription.dict(exclude={"id_session"}).items():
+    # 🔍 Collecte des infos de debug
+    debug_info = {
+        "donnees_recues": inscription.dict(),
+        "statut_avant": inscription_obj.statut,
+        "session_id": inscription_obj.session.id if inscription_obj.session else None,
+        "date_fin_session": str(inscription_obj.session.date_fin) if inscription_obj.session else None,
+    }
+
+    # Votre logique normale
+    for field, value in inscription.dict(exclude={"id_session", "statut"}).items():
         if value is not None:
             setattr(inscription_obj, field, value)
 
-    # Mise à jour de la session si fournie
     if inscription.id_session is not None:
         try:
             session = Session.objects.get(id=inscription.id_session)
@@ -469,19 +477,31 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         except Session.DoesNotExist:
             raise HttpError(404, "Session non trouvée")
 
-    # 🔥 CALCUL AUTOMATIQUE DU STATUT
+    # Calcul du statut
     from django.utils import timezone
     today = timezone.now().date()
     
     if inscription_obj.date_sortie:
-        inscription_obj.statut = StatutInscriptionChoices.INACTIF
+        inscription_obj.statut = 'I'
     elif inscription_obj.session.date_fin < today:
-        inscription_obj.statut = StatutInscriptionChoices.INACTIF
+        inscription_obj.statut = 'I'
     else:
-        inscription_obj.statut = StatutInscriptionChoices.ACTIF
+        inscription_obj.statut = 'A'
+
+    debug_info["statut_apres"] = inscription_obj.statut
+    debug_info["today"] = str(today)
 
     inscription_obj.save()
-    return inscription_obj
+    
+    # Retour temporaire avec debug
+    return {
+        "inscription": {
+            "id": inscription_obj.id,
+            "statut": inscription_obj.statut,
+            # ... autres champs
+        },
+        "debug": debug_info
+    }
 
 
 
