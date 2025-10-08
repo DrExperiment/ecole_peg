@@ -15,6 +15,7 @@ from .models import (
     Inscription,
     FichePresences,
     StatutPresenceChoices,
+    StatutInscriptionChoices,  # <-- Add this import
 )
 from eleves.models import Eleve
 from eleves.schemas import ElevesOut
@@ -474,14 +475,18 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         except Session.DoesNotExist:
             raise HttpError(404, "Session non trouvée")
 
-    # 4️⃣ Validation et sauvegarde
+    # 4️⃣ Forcer le statut par défaut si None
+    if inscription_obj.statut is None:
+        inscription_obj.statut = StatutInscriptionChoices.ACTIF
+
+    # 5️⃣ Validation et sauvegarde
     try:
         inscription_obj.full_clean()
         inscription_obj.save()
     except Exception as e:
         raise HttpError(400, f"Erreur de validation : {str(e)}")
 
-    # 5️⃣ Réponse au frontend
+    # 6️⃣ Réponse au frontend
     return InscriptionOut(
         id=inscription_obj.id,
         id_session=inscription_obj.session.id,
