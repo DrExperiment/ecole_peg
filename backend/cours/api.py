@@ -451,67 +451,76 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
         return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
     
 
-@router.put("/inscriptions/{inscription_id}/", response=dict)
+@router.put("/inscriptions/{inscription_id}/", response=InscriptionOut)
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
+    """
+    Met à jour une inscription existante sans écraser les champs non fournis.
+    Les champs non envoyés (non fournis dans la requête PUT) sont ignorés.
+    Si le statut n’est pas envoyé, il est automatiquement défini :
+        - "Actif" si la session n’est pas encore terminée
+        - "Inactif" sinon
+    """
     try:
+        # 1️⃣ Récupération de l'inscription à modifier
         inscription_obj = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    from django.utils import timezone
-    today = timezone.now().date()
-
-    debug_info = {
-        "donnees_recues": inscription.dict(),
-        "statut_avant": inscription_obj.statut,
-        "session_avant": inscription_obj.session.id if inscription_obj.session else None,
-        "date_fin_session_avant": str(inscription_obj.session.date_fin) if inscription_obj.session else None,
-    }
-
-    # ✅ Mettre à jour les champs normaux
-    for field, value in inscription.dict(exclude={"id_session", "statut"}).items():
+    # 2️⃣ Mise à jour des champs explicitement envoyés
+    for field, value in inscription.dict(exclude_unset=True, exclude={"id_session"}).items():
         if value is not None:
             setattr(inscription_obj, field, value)
 
-    # ✅ Mettre à jour la session si fournie
+    # 3️⃣ Mise à jour de la session si fournie
+    session = None
     if inscription.id_session is not None:
         try:
             session = Session.objects.get(id=inscription.id_session)
             inscription_obj.session = session
         except Session.DoesNotExist:
             raise HttpError(404, "Session non trouvée")
-
-    # 🔁 Recharger la session à jour depuis la DB
-    session_actuelle = inscription_obj.session
-
-    # ✅ Calcul automatique du statut
-    if inscription_obj.date_sortie:
-        inscription_obj.statut = "I"  # inactif si sortie
-    elif session_actuelle and session_actuelle.date_fin < today:
-        inscription_obj.statut = "I"  # inactif si session finie
     else:
-        inscription_obj.statut = "A"  # actif sinon
+        session = inscription_obj.session  # garde la session actuelle si non changée
 
-    debug_info["statut_apres"] = inscription_obj.statut
-    debug_info["date_fin_session_apres"] = (
-        str(session_actuelle.date_fin) if session_actuelle else None
-    )
-    debug_info["today"] = str(today)
+    # 4️⃣ Détermination automatique du statut si manquant
+    if not inscription_obj.statut:
+        if session and session.date_fin and session.date_fin > inscription_obj.date_inscription:
+            inscription_obj.statut = "Actif"
+        else:
+            inscription_obj.statut = "Inactif"
 
+    # 5️⃣ Validation et sauvegarde sécurisée
     try:
         inscription_obj.full_clean()
         inscription_obj.save()
     except Exception as e:
-        raise HttpError(500, f"Erreur lors de la sauvegarde : {str(e)}")
+        import traceback
+        tb = traceback.format_exc()
+        return {
+            "error": str(e),
+            "traceback": tb,
+            "debug": {
+                "inscription_id": inscription_id,
+                "statut": inscription_obj.statut,
+                "session": session.id if session else None,
+                "date_fin_session": str(session.date_fin) if session and session.date_fin else None,
+                "date_inscription": str(inscription_obj.date_inscription),
+                "raw_input": inscription.dict(exclude_unset=True),
+            },
+        }
 
-    return {
-        "inscription": {
-            "id": inscription_obj.id,
-            "statut": inscription_obj.statut,
-            "id_session": inscription_obj.session.id if inscription_obj.session else None,
-        },
-        "debug": debug_info,
-    }
+    # 6️⃣ Réponse au frontend
+    return InscriptionOut(
+        id=inscription_obj.id,
+        id_session=inscription_obj.session.id,
+        date_inscription=inscription_obj.date_inscription,
+        statut=inscription_obj.statut,
+        preinscription=inscription_obj.preinscription,
+        but=inscription_obj.but,
+        frais_inscription=float(inscription_obj.frais_inscription),
+        date_sortie=inscription_obj.date_sortie,
+        motif_sortie=inscription_obj.motif_sortie,
+    )
 
 
 @router.delete("/{eleve_id}/inscriptions/{inscription_id}/")
