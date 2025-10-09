@@ -450,26 +450,30 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
     except ValidationError as e:
         return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
     
-@router.put("/inscriptions/{inscription_id}/", response=dict)  # Changé temporairement
+
+@router.put("/inscriptions/{inscription_id}/", response=dict)
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
     try:
         inscription_obj = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # 🔍 Collecte des infos de debug
+    from django.utils import timezone
+    today = timezone.now().date()
+
     debug_info = {
         "donnees_recues": inscription.dict(),
         "statut_avant": inscription_obj.statut,
-        "session_id": inscription_obj.session.id if inscription_obj.session else None,
-        "date_fin_session": str(inscription_obj.session.date_fin) if inscription_obj.session else None,
+        "session_avant": inscription_obj.session.id if inscription_obj.session else None,
+        "date_fin_session_avant": str(inscription_obj.session.date_fin) if inscription_obj.session else None,
     }
 
-    # Votre logique normale
+    # ✅ Mettre à jour les champs normaux
     for field, value in inscription.dict(exclude={"id_session", "statut"}).items():
         if value is not None:
             setattr(inscription_obj, field, value)
 
+    # ✅ Mettre à jour la session si fournie
     if inscription.id_session is not None:
         try:
             session = Session.objects.get(id=inscription.id_session)
@@ -477,32 +481,37 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         except Session.DoesNotExist:
             raise HttpError(404, "Session non trouvée")
 
-    # Calcul du statut
-    from django.utils import timezone
-    today = timezone.now().date()
-    
+    # 🔁 Recharger la session à jour depuis la DB
+    session_actuelle = inscription_obj.session
+
+    # ✅ Calcul automatique du statut
     if inscription_obj.date_sortie:
-        inscription_obj.statut = 'I'
-    elif inscription_obj.session.date_fin < today:
-        inscription_obj.statut = 'I'
+        inscription_obj.statut = "I"  # inactif si sortie
+    elif session_actuelle and session_actuelle.date_fin < today:
+        inscription_obj.statut = "I"  # inactif si session finie
     else:
-        inscription_obj.statut = 'A'
+        inscription_obj.statut = "A"  # actif sinon
 
     debug_info["statut_apres"] = inscription_obj.statut
+    debug_info["date_fin_session_apres"] = (
+        str(session_actuelle.date_fin) if session_actuelle else None
+    )
     debug_info["today"] = str(today)
 
-    inscription_obj.save()
-    
-    # Retour temporaire avec debug
+    try:
+        inscription_obj.full_clean()
+        inscription_obj.save()
+    except Exception as e:
+        raise HttpError(500, f"Erreur lors de la sauvegarde : {str(e)}")
+
     return {
         "inscription": {
             "id": inscription_obj.id,
             "statut": inscription_obj.statut,
-            # ... autres champs
+            "id_session": inscription_obj.session.id if inscription_obj.session else None,
         },
-        "debug": debug_info
+        "debug": debug_info,
     }
-
 
 
 @router.delete("/{eleve_id}/inscriptions/{inscription_id}/")
