@@ -455,19 +455,19 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
     """
     Met à jour une inscription existante.
-    Le statut est défini automatiquement selon la date de fin de la session.
+    Le statut est automatiquement défini selon la date de fin de la session.
     """
     try:
         inscription_obj = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # Mise à jour des champs envoyés (hors session)
+    # 1️⃣ Mettre à jour uniquement les champs envoyés
     for field, value in inscription.dict(exclude_unset=True, exclude={"id_session"}).items():
         if value is not None:
             setattr(inscription_obj, field, value)
 
-    # Si une session est envoyée, la mettre à jour
+    # 2️⃣ Si une nouvelle session est envoyée
     if inscription.id_session is not None:
         try:
             session = Session.objects.get(id=inscription.id_session)
@@ -475,23 +475,27 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         except Session.DoesNotExist:
             raise HttpError(404, "Session non trouvée")
     else:
-        session = inscription_obj.session  # session déjà existante
+        session = inscription_obj.session  # garder la session actuelle
 
-    # ✅ Définir automatiquement le statut
+    # 3️⃣ Définir un statut s'il n'existe pas ou s'il est vide
+    if not inscription_obj.statut:
+        inscription_obj.statut = "A"  # Valeur par défaut de sécurité (Actif)
+
+    # 4️⃣ Calcul automatique du statut selon la date de fin de session
     date_inscription = inscription_obj.date_inscription or date.today()
-    if session.date_fin and date_inscription < session.date_fin:
-        inscription_obj.statut = "Actif"
+    if session.date_fin and date_inscription <= session.date_fin:
+        inscription_obj.statut = "A"  # Actif
     else:
-        inscription_obj.statut = "Inactif"
+        inscription_obj.statut = "I"  # Inactif
 
-    # Validation et sauvegarde
+    # 5️⃣ Sauvegarde avec validation
     try:
         inscription_obj.full_clean()
         inscription_obj.save()
     except Exception as e:
         raise HttpError(400, f"Erreur de validation : {str(e)}")
 
-    # Réponse finale
+    # 6️⃣ Retourner les données à jour
     return InscriptionOut(
         id=inscription_obj.id,
         id_session=inscription_obj.session.id,
