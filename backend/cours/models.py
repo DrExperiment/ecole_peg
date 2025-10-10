@@ -167,6 +167,19 @@ class Inscription(models.Model):
                 "La date de sortie doit être postérieure à la date d'inscription."
             )
 
+    def save(self, *args, **kwargs):
+        # ⚙️ Définir automatiquement le statut avant l’enregistrement
+        if self.session.date_fin and self.date_inscription:
+            if self.date_inscription <= self.session.date_fin:
+                self.statut = StatutInscriptionChoices.ACTIF
+            else:
+                self.statut = StatutInscriptionChoices.INACTIF
+        else:
+            # Valeur par défaut
+            self.statut = self.statut or StatutInscriptionChoices.ACTIF
+
+        super().save(*args, **kwargs)
+
     class Meta:
         unique_together = (("eleve", "session"),)
         ordering = ["date_inscription"]
