@@ -110,7 +110,6 @@ class InscriptionOut(Schema):
 class InscriptionUpdateIn(Schema):
     frais_inscription: Optional[float] = None
     but: Optional[str] = None
-    statut: Optional[str] = None
     date_sortie: Optional[date] = None
     motif_sortie: Optional[str] = None
     preinscription: Optional[bool] = None
