@@ -12,13 +12,7 @@ import {
 } from "@/components/card";
 import { Input } from "@/components/input";
 import { Label } from "@/components/label";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/select";
+
 import { ArrowLeft, Save } from "lucide-react";
 import { format } from "date-fns";
 import { api } from "@/lib/api";
@@ -158,43 +152,35 @@ export default function ModifierInscriptionPage({
                   Session du cours
                 </Label>
                 <p className="text-sm text-muted-foreground mb-2">
-                  Sélectionnez la session à laquelle l&apos;élève est inscrit
+                  Session à laquelle l&apos;élève est inscrit
                 </p>
-                <Select
-                  name="session"
-                  value={id_session?.toString()}
-                  onValueChange={(valeur) => setIdSession(Number(valeur))}
-                disabled>
-                  <SelectTrigger id="session">
-                    <SelectValue placeholder="Sélectionner la session" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sessions.map((session) => (
-                      <SelectItem
-                        key={session.id}
-                        value={session.id.toString()}
-                        className="py-3"
-                      >
-                        <div className="space-y-1">
-                          <div className="font-medium">
-                            {session.cours__nom}{" "}
-                            <span className="text-muted-foreground">
-                              (
-                              {session.cours__type === "I"
-                                ? "Intensif"
-                                : "Semi-intensif"}{" "}
-                              - {session.cours__niveau})
-                            </span>
-                          </div>
-                          <div className="text-sm text-muted-foreground">
-                            Du {formatDate(session.date_debut)} au{" "}
-                            {formatDate(session.date_fin)}
-                          </div>
-                        </div>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {(() => {
+                  const session = sessions.find((s) => s.id === id_session);
+                  if (!session)
+                    return (
+                      <span className="text-muted-foreground">
+                        Session non trouvée
+                      </span>
+                    );
+                  return (
+                    <div className="p-3 rounded-md border bg-muted">
+                      <div className="font-medium">
+                        {session.cours__nom}{" "}
+                        <span className="text-muted-foreground">
+                          (
+                          {session.cours__type === "I"
+                            ? "Intensif"
+                            : "Semi-intensif"}{" "}
+                          - {session.cours__niveau})
+                        </span>
+                      </div>
+                      <div className="text-sm text-muted-foreground">
+                        Du {formatDate(session.date_debut)} au{" "}
+                        {formatDate(session.date_fin)}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
