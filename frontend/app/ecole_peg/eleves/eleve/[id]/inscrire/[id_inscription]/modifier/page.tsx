@@ -164,7 +164,7 @@ export default function ModifierInscriptionPage({
                   name="session"
                   value={id_session?.toString()}
                   onValueChange={(valeur) => setIdSession(Number(valeur))}
-                >
+                disabled>
                   <SelectTrigger id="session">
                     <SelectValue placeholder="Sélectionner la session" />
                   </SelectTrigger>

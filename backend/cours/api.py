@@ -454,7 +454,7 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
 @router.put("/inscriptions/{inscription_id}/", response=InscriptionOut)
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
     """
-    Met à jour une inscription existante.
+    Met à jour une inscription existante sans changer la session.
     Le statut est automatiquement défini selon la date de fin de la session.
     """
     try:
@@ -462,40 +462,33 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # 1️⃣ Mettre à jour uniquement les champs envoyés
-    for field, value in inscription.dict(exclude_unset=True, exclude={"id_session"}).items():
+    # 🔹 Mettre à jour uniquement les champs modifiables
+    for field, value in inscription.dict(exclude_unset=True).items():
         if value is not None:
             setattr(inscription_obj, field, value)
 
-    # 2️⃣ Si une nouvelle session est envoyée
-    if inscription.id_session is not None:
-        try:
-            session = Session.objects.get(id=inscription.id_session)
-            inscription_obj.session = session
-        except Session.DoesNotExist:
-            raise HttpError(404, "Session non trouvée")
-    else:
-        session = inscription_obj.session  # garder la session actuelle
+    # 🔹 Garder la session actuelle
+    session = inscription_obj.session
 
-    # 3️⃣ Définir un statut s'il n'existe pas ou s'il est vide
+    # 🔹 Assurer un statut par défaut (sécurité)
     if not inscription_obj.statut:
-        inscription_obj.statut = "A"  # Valeur par défaut de sécurité (Actif)
+        inscription_obj.statut = "A"
 
-    # 4️⃣ Calcul automatique du statut selon la date de fin de session
+    # 🔹 Recalculer le statut selon la date de fin de session
     date_inscription = inscription_obj.date_inscription or date.today()
     if session.date_fin and date_inscription <= session.date_fin:
-        inscription_obj.statut = "A"  # Actif
+        inscription_obj.statut = "A"
     else:
-        inscription_obj.statut = "I"  # Inactif
+        inscription_obj.statut = "I"
 
-    # 5️⃣ Sauvegarde avec validation
+    # 🔹 Sauvegarder
     try:
         inscription_obj.full_clean()
         inscription_obj.save()
     except Exception as e:
         raise HttpError(400, f"Erreur de validation : {str(e)}")
 
-    # 6️⃣ Retourner les données à jour
+    # 🔹 Retourner la réponse
     return InscriptionOut(
         id=inscription_obj.id,
         id_session=inscription_obj.session.id,
@@ -507,6 +500,7 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         date_sortie=inscription_obj.date_sortie,
         motif_sortie=inscription_obj.motif_sortie,
     )
+    
 
 
 @router.delete("/{eleve_id}/inscriptions/{inscription_id}/")

@@ -113,7 +113,7 @@ class InscriptionUpdateIn(Schema):
     date_sortie: Optional[date] = None
     motif_sortie: Optional[str] = None
     preinscription: Optional[bool] = None
-    id_session: Optional[int] = None
+    # ❌ id_session retiré (on ne veut plus qu’il soit modifié)
 
 
 class FichePresencesIn(Schema):
