@@ -38,6 +38,7 @@ interface Inscription {
   preinscription: boolean;
   date_sortie: Date | undefined;
   motif_sortie: string | undefined;
+  statut: "A" | "I"; // ⚡ Ajouter statut ici
 }
 
 export default function ModifierInscriptionPage({
@@ -56,6 +57,7 @@ export default function ModifierInscriptionPage({
   } = useForm();
 
   const [sessions, setSessions] = useState<Session[]>([]);
+  const [inscription, setInscription] = useState<Inscription | null>(null); // ⚡ Nouvel état
   const [id_session, setIdSession] = useState<number>();
   const [preinscription, setPreinscription] = useState<boolean>(false);
   const [date_sortie, setDateSortie] = useState<Date | undefined>(undefined);
@@ -70,24 +72,19 @@ export default function ModifierInscriptionPage({
           api.get(`/cours/sessions/`),
         ]);
 
-        const inscription = reponse_inscription.data;
+        const insc = reponse_inscription.data;
+
+        setInscription(insc); // ⚡ stocker l’inscription complète
 
         setSessions(reponse_sessions.data.sessions);
-
-        setIdSession(inscription.id_session);
-
-        setPreinscription(inscription.preinscription ?? false);
-
-        setDateSortie(
-          inscription.date_sortie
-            ? new Date(inscription.date_sortie)
-            : undefined,
-        );
+        setIdSession(insc.id_session);
+        setPreinscription(insc.preinscription ?? false);
+        setDateSortie(insc.date_sortie ? new Date(insc.date_sortie) : undefined);
 
         reset({
-          but: inscription.but,
-          frais_inscription: inscription.frais_inscription,
-          motif_sortie: inscription.motif_sortie || "",
+          but: insc.but,
+          frais_inscription: insc.frais_inscription,
+          motif_sortie: insc.motif_sortie || "",
         });
       } catch (err) {
         console.error(err);
@@ -98,24 +95,30 @@ export default function ModifierInscriptionPage({
   }, [reset, resolvedParams.id, resolvedParams.id_inscription]);
 
   const onSoumission = async (donnees: object) => {
+    if (!inscription) {
+      console.error("Inscription non chargée !");
+      return;
+    }
+
     const donnees_completes = {
       ...donnees,
       id_session,
       preinscription,
       date_sortie,
+      statut: inscription.statut ?? "A", // ⚡ assure que statut n’est jamais null
     };
 
     try {
       console.log("DONNÉES ENVOYÉES:", donnees_completes);
 
-      await api.patch(
+      await api.put(
         `/cours/${resolvedParams.id}/inscriptions/${resolvedParams.id_inscription}/`,
         donnees_completes,
       );
 
       router.push(`/ecole_peg/eleves/eleve/${resolvedParams.id}/`);
     } catch (err) {
-      console.error("Erreur: ", err);
+      console.error("Erreur lors de la mise à jour de l'inscription : ", err);
     }
   };
 
