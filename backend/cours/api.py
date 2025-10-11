@@ -462,7 +462,7 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # 🔹 Mettre à jour uniquement les champs modifiables
+    # 🔹 Mise à jour des champs modifiables
     for field, value in inscription.dict(exclude_unset=True).items():
         if value is not None:
             setattr(inscription_obj, field, value)
@@ -470,35 +470,30 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
     # 🔹 Garder la session actuelle
     session = inscription_obj.session
 
-    # 🔹 Assurer un statut par défaut (sécurité)
-    if not inscription_obj.statut:
-        inscription_obj.statut = "A"
-
-    # 🔹 Recalculer le statut selon la date de fin de session
+    # 🔹 Déterminer le statut automatiquement
     date_inscription = inscription_obj.date_inscription or date.today()
     if session.date_fin and date_inscription <= session.date_fin:
-        inscription_obj.statut = "A"
+        inscription_obj.statut = StatutInscriptionChoices.ACTIF
     else:
-        inscription_obj.statut = "I"
+        inscription_obj.statut = StatutInscriptionChoices.INACTIF
 
-    # 🔹 Sauvegarder
-    
+    print("DEBUG avant clean:", inscription_obj.id, inscription_obj.statut, inscription_obj.session_id)
 
     try:
-        print("DEBUG:", inscription_obj.id, inscription_obj.statut, inscription_obj.session_id)
         inscription_obj.full_clean()
-        print("FULL_CLEAN APRÈS:", inscription_obj.statut)
+        # 🔒 Protection anti-null
         if not inscription_obj.statut:
-          inscription_obj.statut = StatutInscriptionChoices.ACTIF
+            inscription_obj.statut = StatutInscriptionChoices.ACTIF
 
+        print("DEBUG avant save:", inscription_obj.statut)
         inscription_obj.save()
     except Exception as e:
+        print("ERREUR:", str(e))
         raise HttpError(400, f"Erreur de validation : {str(e)}")
 
-    # 🔹 Retourner la réponse
     return InscriptionOut(
         id=inscription_obj.id,
-        id_session=inscription_obj.session.id,
+        id_session=session.id,
         date_inscription=inscription_obj.date_inscription,
         statut=inscription_obj.statut,
         preinscription=inscription_obj.preinscription,
@@ -507,7 +502,7 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         date_sortie=inscription_obj.date_sortie,
         motif_sortie=inscription_obj.motif_sortie,
     )
-    
+
 
 
 @router.delete("/{eleve_id}/inscriptions/{inscription_id}/")
