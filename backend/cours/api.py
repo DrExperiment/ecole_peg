@@ -482,8 +482,15 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         inscription_obj.statut = "I"
 
     # 🔹 Sauvegarder
+    
+
     try:
+        print("DEBUG:", inscription_obj.id, inscription_obj.statut, inscription_obj.session_id)
         inscription_obj.full_clean()
+        print("FULL_CLEAN APRÈS:", inscription_obj.statut)
+        if not inscription_obj.statut:
+          inscription_obj.statut = StatutInscriptionChoices.ACTIF
+
         inscription_obj.save()
     except Exception as e:
         raise HttpError(400, f"Erreur de validation : {str(e)}")
