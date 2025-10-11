@@ -108,7 +108,7 @@ export default function ModifierInscriptionPage({
     try {
       console.log("DONNÉES ENVOYÉES:", donnees_completes);
 
-      await api.put(
+      await api.patch(
         `/cours/${resolvedParams.id}/inscriptions/${resolvedParams.id_inscription}/`,
         donnees_completes,
       );
