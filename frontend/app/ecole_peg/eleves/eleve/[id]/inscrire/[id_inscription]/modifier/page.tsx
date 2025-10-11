@@ -99,6 +99,16 @@ export default function ModifierInscriptionPage({
       console.error("Inscription non chargée !");
       return;
     }
+  // 🔹 Trouver la session correspondante
+  const session = sessions.find((s) => s.id === id_session);
+
+  // 🔹 Déterminer le statut automatiquement
+   // valeur par défaut
+  if (session) {
+    const dateFinSession = new Date(session.date_fin);
+    const dateInscription = new Date(inscription.date_inscription);
+    inscription.statut = dateInscription <= dateFinSession ? "A" : "I";
+  }
 
     const donnees_completes = {
       ...donnees,
