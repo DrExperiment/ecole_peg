@@ -46,7 +46,7 @@ export default function PaiementsPage() {
       if (mois) params.mois = mois;
       if (annee) params.annee = annee;
 
-      const response = await api.get("/paiements/", { params });
+      const response = await api.get("/factures/paiements/", { params });
       setPaiements(response.data.paiements);
       setTotalPages(response.data.total_pages ?? 1);
     } catch (error) {
