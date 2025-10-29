@@ -428,15 +428,9 @@ def get_total_paiements_facture(request, facture_id: int):
 
 
 @router.get("/paiements/", response=dict)
-def paiements(
-    request,
-    page: int = 1,
-    taille: int = 10,
-    mois: Optional[int] = None,     # nouveau paramètre
-    annee: Optional[int] = None,    # pour filtrer par année aussi
-):
+def paiements(request):
     """
-    Liste paginée des paiements, avec possibilité de filtrer par mois et année.
+    Retourne tous les paiements (sans pagination ni filtrage).
     """
     qs = Paiement.objects.select_related(
         "facture",
@@ -444,18 +438,6 @@ def paiements(
         "facture__inscription__eleve"
     ).order_by("-date_paiement")
 
-    if mois and annee:
-        qs = qs.filter(date_paiement__month=mois, date_paiement__year=annee)
-    elif mois:
-        qs = qs.filter(date_paiement__month=mois)
-    elif annee:
-        qs = qs.filter(date_paiement__year=annee)
+    paiements = [PaiementOut.from_orm(p) for p in qs]
 
-    paginator = Paginator(qs, taille)
-    page_obj = paginator.get_page(page)
-
-    return {
-        "paiements": [PaiementOut.from_orm(p) for p in page_obj.object_list],
-        "nombre_total": paginator.count,
-        "total_pages": paginator.num_pages,
-    }
+    return {"paiements": paiements}

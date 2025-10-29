@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
 import {
@@ -31,34 +31,46 @@ interface Paiement {
   eleve_prenom?: string;
 }
 
+const ELEMENTS_PAR_PAGE = 10;
+
 export default function PaiementsPage() {
-  const [paiements, setPaiements] = useState<Paiement[]>([]);
+  const [paiementsAll, setPaiementsAll] = useState<Paiement[]>([]);
   const [numPage, setNumPage] = useState<number>(1);
-  const [totalPages, setTotalPages] = useState<number>(1);
-  const [chargement, setChargement] = useState<boolean>(false);
   const [mois, setMois] = useState<number | "">("");
   const [annee, setAnnee] = useState<number | "">(2025);
-
-  const fetchPaiements = useCallback(async () => {
-    try {
-      setChargement(true);
-      const params: { page: number; mois?: number; annee?: number } = { page: numPage };
-      if (mois) params.mois = mois;
-      if (annee) params.annee = annee;
-
-      const response = await api.get("/factures/paiements/", { params });
-      setPaiements(response.data.paiements);
-      setTotalPages(response.data.total_pages ?? 1);
-    } catch (error) {
-      console.error("Erreur lors de la récupération des paiements :", error);
-    } finally {
-      setChargement(false);
-    }
-  }, [numPage, mois, annee]);
+  const [chargement, setChargement] = useState<boolean>(false);
 
   useEffect(() => {
+    const fetchPaiements = async () => {
+      setChargement(true);
+      try {
+        const response = await api.get("/factures/paiements/");
+        setPaiementsAll(response.data.paiements || []);
+      } catch (error) {
+        console.error("Erreur lors de la récupération des paiements :", error);
+      } finally {
+        setChargement(false);
+      }
+    };
     fetchPaiements();
-  }, [fetchPaiements]);
+  }, []);
+
+  // 🔍 Filtrage par mois et année (local)
+  const paiementsFiltres = useMemo(() => {
+    return paiementsAll.filter((p) => {
+      const date = new Date(p.date_paiement);
+      const matchMois = mois ? date.getMonth() + 1 === mois : true;
+      const matchAnnee = annee ? date.getFullYear() === annee : true;
+      return matchMois && matchAnnee;
+    });
+  }, [paiementsAll, mois, annee]);
+
+  // 📄 Pagination locale
+  const totalPages = Math.ceil(paiementsFiltres.length / ELEMENTS_PAR_PAGE);
+  const paiementsPage = paiementsFiltres.slice(
+    (numPage - 1) * ELEMENTS_PAR_PAGE,
+    numPage * ELEMENTS_PAR_PAGE
+  );
 
   const formatDate = (dateString: string) => {
     try {
@@ -79,6 +91,7 @@ export default function PaiementsPage() {
           <CardTitle>Liste des paiements</CardTitle>
         </CardHeader>
         <CardContent>
+          {/* Filtres */}
           <div className="flex flex-wrap items-center gap-4 mb-4">
             <select
               className="border rounded-md px-2 py-1"
@@ -105,11 +118,12 @@ export default function PaiementsPage() {
               placeholder="Année"
             />
 
-            <Button variant="outline" onClick={() => fetchPaiements()}>
+            <Button variant="outline" onClick={() => setNumPage(1)}>
               Filtrer
             </Button>
           </div>
 
+          {/* Tableau */}
           {chargement ? (
             <div className="flex justify-center p-4">
               <div className="text-sm text-muted-foreground">
@@ -130,8 +144,8 @@ export default function PaiementsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {paiements.length > 0 ? (
-                    paiements.map((p) => (
+                  {paiementsPage.length > 0 ? (
+                    paiementsPage.map((p) => (
                       <TableRow key={p.id}>
                         <TableCell>{p.eleve_nom ?? "-"}</TableCell>
                         <TableCell>{p.eleve_prenom ?? "-"}</TableCell>
@@ -156,7 +170,7 @@ export default function PaiementsPage() {
             </div>
           )}
 
-          {/* Pagination */}
+          {/* Pagination locale */}
           <div className="flex items-center justify-center gap-4 mt-4">
             <Button
               variant="outline"
@@ -168,14 +182,16 @@ export default function PaiementsPage() {
             </Button>
 
             <span className="text-sm text-muted-foreground">
-              Page {numPage} sur {totalPages}
+              Page {numPage} sur {totalPages || 1}
             </span>
 
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setNumPage((p) => Math.min(p + 1, totalPages))}
-              disabled={numPage === totalPages}
+              onClick={() =>
+                setNumPage((p) => Math.min(p + 1, totalPages || 1))
+              }
+              disabled={numPage === totalPages || totalPages === 0}
             >
               Suivant
             </Button>
