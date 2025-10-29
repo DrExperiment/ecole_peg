@@ -30,6 +30,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     { href: "/ecole_peg/sessions/", icon: BookOpen, title: "Sessions" },
     { href: "/ecole_peg/factures/", icon: FileText, title: "Factures" },
     { href: "/ecole_peg/cours_prives/", icon: User, title: "Cours privés" },
+    { href: "/ecole_peg/paiements/", icon: FileText, title: "paiements" },
   ];
 
   return (

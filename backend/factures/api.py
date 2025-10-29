@@ -3,6 +3,8 @@ from django.db import transaction, models
 from django.core.exceptions import ValidationError
 from ninja import Router
 from ninja.errors import HttpError
+from typing import Optional
+from datetime import date
 from .models import Facture, DetailFacture, Paiement
 from cours.models import Inscription, CoursPrive
 from eleves.models import Eleve
@@ -423,4 +425,37 @@ def get_total_paiements_facture(request, facture_id: int):
     if not paiements.exists():
         return {"message": "Aucun paiement trouvé pour cette facture"}
     total = paiements.aggregate(total_amount=models.Sum("montant"))["total_amount"] or 0
-    return {"total": float(total)}
+
+
+@router.get("/paiements/", response=dict)
+def paiements(
+    request,
+    page: int = 1,
+    taille: int = 10,
+    mois: Optional[int] = None,     # nouveau paramètre
+    annee: Optional[int] = None,    # pour filtrer par année aussi
+):
+    """
+    Liste paginée des paiements, avec possibilité de filtrer par mois et année.
+    """
+    qs = Paiement.objects.select_related(
+        "facture",
+        "facture__eleve",
+        "facture__inscription__eleve"
+    ).order_by("-date_paiement")
+
+    if mois and annee:
+        qs = qs.filter(date_paiement__month=mois, date_paiement__year=annee)
+    elif mois:
+        qs = qs.filter(date_paiement__month=mois)
+    elif annee:
+        qs = qs.filter(date_paiement__year=annee)
+
+    paginator = Paginator(qs, taille)
+    page_obj = paginator.get_page(page)
+
+    return {
+        "paiements": [PaiementOut.from_orm(p) for p in page_obj.object_list],
+        "nombre_total": paginator.count,
+        "total_pages": paginator.num_pages,
+    }
