@@ -15,7 +15,8 @@ from .schemas import (
     PaiementIn,
     PaiementOut,
     DetailFactureOut,
-    EcheanceIn,  # 👈 Ajouté pour corriger l'erreur
+    EcheanceIn,
+    PaiementWithEleveOut,  # 👈 Ajouté pour corriger l'erreur
 )
 from django.core.paginator import Paginator
 
@@ -429,15 +430,23 @@ def get_total_paiements_facture(request, facture_id: int):
 
 @router.get("/paiements/", response=dict)
 def paiements(request):
-    """
-    Retourne tous les paiements (sans pagination ni filtrage).
-    """
     qs = Paiement.objects.select_related(
         "facture",
         "facture__eleve",
         "facture__inscription__eleve"
     ).order_by("-date_paiement")
 
-    paiements = [PaiementOut.from_orm(p) for p in qs]
+    paiements = []
+    for p in qs:
+        eleve = getattr(p.facture.inscription, "eleve", None) or getattr(p.facture, "eleve", None)
+        paiements.append(PaiementWithEleveOut(
+            id=p.id,
+            date_paiement=p.date_paiement,
+            montant=p.montant,
+            mode_paiement=p.mode_paiement,
+            methode_paiement=p.methode_paiement,
+            eleve_nom=getattr(eleve, "nom", None),
+            eleve_prenom=getattr(eleve, "prenom", None),
+        ))
 
     return {"paiements": paiements}

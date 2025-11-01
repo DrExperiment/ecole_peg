@@ -67,3 +67,7 @@ class PaiementOut(Schema):
     montant: float
     mode_paiement: str
     methode_paiement: Optional[str] = None
+
+class PaiementWithEleveOut(PaiementOut):
+    eleve_nom: Optional[str] = None
+    eleve_prenom: Optional[str] = None
