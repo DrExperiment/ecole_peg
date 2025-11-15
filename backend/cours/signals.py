@@ -1,23 +1,56 @@
-from django.db.models.signals import post_save
-from django.utils import timezone
+from django.db.models.signals import post_save, post_delete
 from django.dispatch import receiver
-from .models import Session, StatutInscriptionChoices , StatutSessionChoices
+from django.utils import timezone
+from .models import Session, Inscription, StatutInscriptionChoices, StatutSessionChoices
 
-@receiver(post_save, sender=Session)
-def gerer_statut_session_apres_modification(sender, instance, **kwargs):
-    """Ferme ou rouvre la session selon la date de fin."""
+
+@receiver(post_save, sender=Inscription)
+def gerer_inscription_et_session(sender, instance, **kwargs):
+    """
+    Met à jour automatiquement le statut d'une inscription et celui de la session :
+    - Si l'élève sort (date_sortie + motif_sortie) → inscription inactive
+    - Si la session est terminée → tout devient inactif, session fermée
+    - Si une place est libre → session rouverte
+    - Si session pleine → session fermée
+    """
+    session = instance.session
     aujourd_hui = timezone.now().date()
-    if instance.date_fin < aujourd_hui and instance.statut != StatutSessionChoices.FERMÉE:
-        instance.statut = StatutSessionChoices.FERMÉE
-        instance.save(update_fields=["statut"])
-    elif instance.date_fin >= aujourd_hui and instance.statut == StatutSessionChoices.FERMÉE:
-        instance.statut = StatutSessionChoices.OUVERTE
-        instance.save(update_fields=["statut"])
-        
-@receiver(post_save, sender=Session)
-def fermer_inscriptions_expirees(sender, instance, **kwargs):
-    """Désactive automatiquement les inscriptions aux sessions terminées"""
-    if instance.date_fin < timezone.now().date():
-        instance.inscriptions.filter(statut=StatutInscriptionChoices.ACTIF).update(
+
+    # 🟠 1. Si l’élève est sorti : on désactive seulement
+    if instance.date_sortie and instance.motif_sortie:
+        if instance.statut != StatutInscriptionChoices.INACTIF:
+            instance.statut = StatutInscriptionChoices.INACTIF
+            instance.save(update_fields=["statut"])
+
+    # 🟢 2. Si la session est finie : on ferme tout
+    if session.date_fin < aujourd_hui:
+        session.inscriptions.filter(statut=StatutInscriptionChoices.ACTIF).update(
             statut=StatutInscriptionChoices.INACTIF
         )
+        if session.statut != StatutSessionChoices.FERMÉE:
+            session.statut = StatutSessionChoices.FERMÉE
+            session.save(update_fields=["statut"])
+        return
+
+    # 🔵 3. Recompter les inscriptions actives et ajuster le statut de la session
+    nb_actifs = session.inscriptions.filter(statut=StatutInscriptionChoices.ACTIF).count()
+
+    if nb_actifs < session.capacite_max:
+        if session.statut != StatutSessionChoices.OUVERTE:
+            session.statut = StatutSessionChoices.OUVERTE
+            session.save(update_fields=["statut"])
+    else:
+        if session.statut != StatutSessionChoices.FERMÉE:
+            session.statut = StatutSessionChoices.FERMÉE
+            session.save(update_fields=["statut"])
+
+
+@receiver(post_delete, sender=Inscription)
+def gerer_suppression_inscription(sender, instance, **kwargs):
+    """Rouvre la session si une inscription est supprimée (place libérée)."""
+    session = instance.session
+    nb_actifs = session.inscriptions.filter(statut=StatutInscriptionChoices.ACTIF).count()
+    if nb_actifs < session.capacite_max:
+        if session.statut != StatutSessionChoices.OUVERTE:
+            session.statut = StatutSessionChoices.OUVERTE
+            session.save(update_fields=["statut"])

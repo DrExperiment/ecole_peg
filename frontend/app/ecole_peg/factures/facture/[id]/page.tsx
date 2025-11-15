@@ -413,6 +413,7 @@ export default function FacturePage({
           </CardContent>
 
           <CardFooter className="justify-between border-t px-8 py-4 bg-muted/50">
+            <p className="text-sm text-muted-foreground">Veuillez indiquer votre nom sur le mode de paiement</p>
             <p className="text-sm text-muted-foreground">Merci de votre confiance.</p>
           </CardFooter>
         </Card>
