@@ -122,7 +122,7 @@ export default function ModifierInscriptionPage({
       console.log("DONNÉES ENVOYÉES:", donnees_completes);
 
       await api.put(
-        `/cours/${resolvedParams.id}/inscriptions/${resolvedParams.id_inscription}/`,
+        `/cours/inscriptions/${resolvedParams.id_inscription}/`,
         donnees_completes,
       );
 
