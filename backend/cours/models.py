@@ -159,31 +159,28 @@ class Inscription(models.Model):
     motif_sortie = models.CharField(max_length=100, blank=True, null=True)
 
     def clean(self):
-     super().clean()
-    # Bloquer seulement si c'est une nouvelle inscription
-     if self.session.statut == StatutSessionChoices.FERMÉE and self._state.adding:
-        raise ValidationError("Inscription impossible : session fermée.")
-
-    # Vérification des dates
-     if self.date_sortie and self.date_sortie < self.date_inscription:
-        raise ValidationError(
-            "La date de sortie doit être postérieure à la date d'inscription."
-        )
-
-
+        super().clean()
+        if self.session.statut == StatutSessionChoices.FERMÉE:
+            raise ValidationError("Inscription impossible : session fermée.")
+        if self.date_sortie and self.date_sortie < self.date_inscription:
+            raise ValidationError(
+                "La date de sortie doit être postérieure à la date d'inscription."
+            )
 
     def save(self, *args, **kwargs):
-        # ⚙️ Définir automatiquement le statut avant l’enregistrement
-        if self.session.date_fin and self.date_inscription:
-            if self.date_inscription <= self.session.date_fin:
-                self.statut = StatutInscriptionChoices.ACTIF
-            else:
-                self.statut = StatutInscriptionChoices.INACTIF
-        else:
-            # Valeur par défaut
-            self.statut = self.statut or StatutInscriptionChoices.ACTIF
+    # 1. Sortie = inactif
+     if self.date_sortie:
+        self.statut = StatutInscriptionChoices.INACTIF
 
-        super().save(*args, **kwargs)
+    # 2. Sinon règle normale
+     elif self.session.date_fin and self.date_inscription:
+        if self.date_inscription <= self.session.date_fin:
+            self.statut = StatutInscriptionChoices.ACTIF
+        else:
+            self.statut = StatutInscriptionChoices.INACTIF
+
+     super().save(*args, **kwargs)
+
 
     class Meta:
         unique_together = (("eleve", "session"),)
