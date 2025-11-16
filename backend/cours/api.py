@@ -455,35 +455,40 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
     """
     Met à jour une inscription existante sans changer la session.
-    Permet de modifier certains champs même si la session est fermée.
+    Le statut est automatiquement défini selon la date de fin de la session.
     """
     try:
         inscription_obj = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    session = inscription_obj.session
-
-    # ⚡ Mise à jour uniquement des champs modifiables
-    champs_modifiables = ["but", "frais_inscription", "date_sortie", "motif_sortie", "preinscription"]
+    # 🔹 Mise à jour des champs modifiables
     for field, value in inscription.dict(exclude_unset=True).items():
-        if field in champs_modifiables and value is not None:
+        if value is not None:
             setattr(inscription_obj, field, value)
 
-    # ⚡ Déterminer le statut automatiquement
-    if inscription_obj.date_sortie:
-        inscription_obj.statut = StatutInscriptionChoices.INACTIF
+    # 🔹 Garder la session actuelle
+    session = inscription_obj.session
+
+    # 🔹 Déterminer le statut automatiquement
+    date_inscription = inscription_obj.date_inscription or date.today()
+    if session.date_fin and date_inscription <= session.date_fin:
+        inscription_obj.statut = StatutInscriptionChoices.ACTIF
     else:
-        date_inscription = inscription_obj.date_inscription or date.today()
-        if session.date_fin and date_inscription <= session.date_fin:
-            inscription_obj.statut = StatutInscriptionChoices.ACTIF
-        else:
-            inscription_obj.statut = StatutInscriptionChoices.INACTIF
+        inscription_obj.statut = StatutInscriptionChoices.INACTIF
+
+    print("DEBUG avant clean:", inscription_obj.id, inscription_obj.statut, inscription_obj.session_id)
 
     try:
-        inscription_obj.full_clean()  # ✅ Valide toujours les autres contraintes
+        inscription_obj.full_clean()
+        # 🔒 Protection anti-null
+        if not inscription_obj.statut:
+            inscription_obj.statut = StatutInscriptionChoices.ACTIF
+
+        print("DEBUG avant save:", inscription_obj.statut)
         inscription_obj.save()
     except Exception as e:
+        print("ERREUR:", str(e))
         raise HttpError(400, f"Erreur de validation : {str(e)}")
 
     return InscriptionOut(
