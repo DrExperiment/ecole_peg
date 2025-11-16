@@ -458,6 +458,16 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
     Le statut est automatiquement défini selon la date de fin de la session.
     """
     try:
+        print("Payload reçu :", request.body.decode())
+
+        # force parsing pour afficher erreurs détaillées
+        parsed = InscriptionUpdateIn(**request.json())
+        print("Payload parsé :", parsed)
+
+    except Exception as e:
+        print("ERREUR PARSING :", repr(e))
+        raise
+    try:
         inscription_obj = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")

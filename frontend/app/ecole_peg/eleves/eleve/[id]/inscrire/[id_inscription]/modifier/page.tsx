@@ -112,7 +112,6 @@ export default function ModifierInscriptionPage({
 
     const donnees_completes = {
       ...donnees,
-      id_session,
       preinscription,
       date_sortie,
       statut: inscription.statut ?? "A", // ⚡ assure que statut n’est jamais null
