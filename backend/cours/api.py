@@ -452,44 +452,41 @@ def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
     
 
 @router.put("/inscriptions/{inscription_id}/", response=InscriptionOut)
-def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):
+def update_inscription(
+    request,
+    inscription_id: int,
+    inscription: InscriptionUpdateIn
+):
     """
-    Met à jour une inscription existante sans changer la session.
-    Le statut est automatiquement défini selon la date de fin de la session.
+    Met à jour une inscription existante.
+    Autorise certaines modifications même si la session est fermée.
     """
     try:
         inscription_obj = Inscription.objects.get(id=inscription_id)
     except Inscription.DoesNotExist:
         raise HttpError(404, "Inscription non trouvée")
 
-    # 🔹 Mise à jour des champs modifiables
-    for field, value in inscription.dict(exclude_unset=True).items():
-        if value is not None:
-            setattr(inscription_obj, field, value)
-
-    # 🔹 Garder la session actuelle
     session = inscription_obj.session
 
-    # 🔹 Déterminer le statut automatiquement
+    # ⚡ Autoriser la modification même si session fermée
+    champs_modifiables = ["but", "frais_inscription", "date_sortie", "motif_sortie", "preinscription"]
+    for field, value in inscription.dict(exclude_unset=True).items():
+        if value is not None and field in champs_modifiables:
+            setattr(inscription_obj, field, value)
+
+    # Déterminer le statut automatiquement
     date_inscription = inscription_obj.date_inscription or date.today()
     if session.date_fin and date_inscription <= session.date_fin:
         inscription_obj.statut = StatutInscriptionChoices.ACTIF
     else:
-        inscription_obj.statut = StatutInscriptionChoices.INACTIF
-
-    print("DEBUG avant clean:", inscription_obj.id, inscription_obj.statut, inscription_obj.session_id)
-
-    try:
-        inscription_obj.full_clean()
-        # 🔒 Protection anti-null
-        if not inscription_obj.statut:
+        # Si date_sortie est définie, inactive
+        if inscription_obj.date_sortie:
+            inscription_obj.statut = StatutInscriptionChoices.INACTIF
+        else:
             inscription_obj.statut = StatutInscriptionChoices.ACTIF
 
-        print("DEBUG avant save:", inscription_obj.statut)
-        inscription_obj.save()
-    except Exception as e:
-        print("ERREUR:", str(e))
-        raise HttpError(400, f"Erreur de validation : {str(e)}")
+    inscription_obj.full_clean()
+    inscription_obj.save()
 
     return InscriptionOut(
         id=inscription_obj.id,
@@ -502,6 +499,7 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         date_sortie=inscription_obj.date_sortie,
         motif_sortie=inscription_obj.motif_sortie,
     )
+
 
 
 

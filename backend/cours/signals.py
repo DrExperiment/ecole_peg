@@ -17,7 +17,7 @@ def gerer_inscription_et_session(sender, instance, **kwargs):
     aujourd_hui = timezone.now().date()
 
     # 🟠 1. Si l’élève est sorti : on désactive seulement
-    if instance.date_sortie and instance.motif_sortie:
+    if instance.date_sortie:
         if instance.statut != StatutInscriptionChoices.INACTIF:
             instance.statut = StatutInscriptionChoices.INACTIF
             instance.save(update_fields=["statut"])
