@@ -159,15 +159,21 @@ class Inscription(models.Model):
     motif_sortie = models.CharField(max_length=100, blank=True, null=True)
 
     def clean(self):
-        super().clean()
-        if self.session.statut == StatutSessionChoices.FERMÉE:
-            raise ValidationError("Inscription impossible : session fermée.")
-        if self.date_sortie and self.date_sortie < self.date_inscription:
-            raise ValidationError(
-                "La date de sortie doit être postérieure à la date d'inscription."
-            )
+     super().clean()
+
+    # Vérification cohérente (garde)
+     if self.date_sortie and self.date_sortie < self.date_inscription:
+        raise ValidationError(
+            "La date de sortie doit être postérieure à la date d'inscription."
+        )
+
 
     def save(self, *args, **kwargs):
+    # ❗ Empêcher la création d'inscription si session fermée
+     if not self.pk:  # création uniquement
+         if self.session.statut == StatutSessionChoices.FERMÉE:
+            raise ValidationError("Inscription impossible : session fermée.")
+
     # 1. Sortie = inactif
      if self.date_sortie:
         self.statut = StatutInscriptionChoices.INACTIF
