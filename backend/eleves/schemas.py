@@ -74,7 +74,7 @@ class EleveIn(Schema):
     nom: str
     prenom: str
     date_naissance: date
-    lieu_naissance: str
+    lieu_naissance: Optional[str] = None
     sexe: str
     rue: Optional[str] = None
     numero: Optional[str] = None
@@ -108,7 +108,7 @@ class EleveOut(Schema, from_attributes=True):
     nom: str
     prenom: str
     date_naissance: date
-    lieu_naissance: str
+    lieu_naissance: Optional[str] = None
     sexe: str
     rue: Optional[str] = None
     numero: Optional[str] = None

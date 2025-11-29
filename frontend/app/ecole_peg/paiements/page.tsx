@@ -3,12 +3,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/button";
 import { Input } from "@/components/input";
-import {
-  Card,
-  CardContent,
-  CardHeader,
-  CardTitle,
-} from "@/components/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/card";
 import {
   Table,
   TableBody,
@@ -39,6 +34,7 @@ export default function PaiementsPage() {
   const [mois, setMois] = useState<number | "">("");
   const [annee, setAnnee] = useState<number | "">(2025);
   const [chargement, setChargement] = useState<boolean>(false);
+  const [methode, setMethode] = useState<string | "">("");
 
   useEffect(() => {
     const fetchPaiements = async () => {
@@ -59,11 +55,14 @@ export default function PaiementsPage() {
   const paiementsFiltres = useMemo(() => {
     return paiementsAll.filter((p) => {
       const date = new Date(p.date_paiement);
+
       const matchMois = mois ? date.getMonth() + 1 === mois : true;
       const matchAnnee = annee ? date.getFullYear() === annee : true;
-      return matchMois && matchAnnee;
+      const matchMethode = methode ? p.methode_paiement === methode : true;
+
+      return matchMois && matchAnnee && matchMethode;
     });
-  }, [paiementsAll, mois, annee]);
+  }, [paiementsAll, mois, annee, methode]);
 
   // 📄 Pagination locale
   const totalPages = Math.ceil(paiementsFiltres.length / ELEMENTS_PAR_PAGE);
@@ -121,14 +120,26 @@ export default function PaiementsPage() {
             <Button variant="outline" onClick={() => setNumPage(1)}>
               Filtrer
             </Button>
+            <select
+              className="border rounded-md px-2 py-1"
+              value={methode}
+              onChange={(e) => setMethode(e.target.value)}
+            >
+              <option value="">Toutes les méthodes</option>
+              <option value="ESP">Espèce</option>
+              <option value="CAR">Carte bancaire</option>
+              <option value="VIR">Virement</option>
+              <option value="TWI">Twint</option>
+              <option value="TEL">Téléphone</option>
+              <option value="PAY">PayPal</option>
+              <option value="AUT">Autre</option>
+            </select>
           </div>
 
           {/* Tableau */}
           {chargement ? (
             <div className="flex justify-center p-4">
-              <div className="text-sm text-muted-foreground">
-                Chargement...
-              </div>
+              <div className="text-sm text-muted-foreground">Chargement...</div>
             </div>
           ) : (
             <div className="rounded-md border">

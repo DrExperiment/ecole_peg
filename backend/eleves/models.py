@@ -91,7 +91,7 @@ class Garant(Personne):
 
 class Eleve(Personne):
     date_naissance = models.DateField()
-    lieu_naissance = models.CharField(max_length=100)
+    lieu_naissance = models.CharField(max_length=100, blank=True, null=True)
     sexe = models.CharField(max_length=1, choices=SexeChoices.choices)
     adresse_facturation = models.CharField(max_length=200, blank=True, null=True)
     type_permis = models.CharField(max_length=1, choices=TypePermisChoices.choices)
