@@ -89,7 +89,6 @@ class CoursPriveOut(Schema):
 
 # ------------------- INSCRIPTION -------------------
 class InscriptionIn(Schema):
-    frais_inscription: float
     but: Optional[str] = None
     preinscription: Optional[bool] = None
     id_session: int
@@ -98,7 +97,6 @@ class InscriptionIn(Schema):
 class InscriptionOut(Schema):
     id: int
     date_inscription: date
-    frais_inscription: float
     but: str
     statut: str
     date_sortie: Optional[date] = None
@@ -108,7 +106,6 @@ class InscriptionOut(Schema):
 
 
 class InscriptionUpdateIn(Schema):
-    frais_inscription: Optional[float] = None
     but: Optional[str] = None
     date_sortie: Optional[date] = None
     motif_sortie: Optional[str] = None

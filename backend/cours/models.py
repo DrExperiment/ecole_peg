@@ -152,9 +152,6 @@ class Inscription(models.Model):
     )
     preinscription = models.BooleanField(default=False)
     but = models.TextField(blank=True, null=True)
-    frais_inscription = models.DecimalField(
-        max_digits=10, decimal_places=2, validators=[MinValueValidator(0)]
-    )
     date_sortie = models.DateField(null=True, blank=True)
     motif_sortie = models.CharField(max_length=100, blank=True, null=True)
 

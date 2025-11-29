@@ -396,7 +396,6 @@ def get_inscription(request, eleve_id: int, inscription_id: int):
     return {
         "id": inscription.id,
         "date_inscription": inscription.date_inscription,
-        "frais_inscription": inscription.frais_inscription,
         "but": inscription.but,
         "statut": inscription.statut,
         "date_sortie": inscription.date_sortie,
@@ -415,7 +414,6 @@ def get_inscriptions_by_eleve(request, eleve_id: int):
         {
             "id": inscription.id,
             "date_inscription": inscription.date_inscription,
-            "frais_inscription": inscription.frais_inscription,
             "but": inscription.but,
             "statut": inscription.statut,
             "date_sortie": inscription.date_sortie,
@@ -498,7 +496,6 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         statut=inscription_obj.statut,
         preinscription=inscription_obj.preinscription,
         but=inscription_obj.but,
-        frais_inscription=float(inscription_obj.frais_inscription),
         date_sortie=inscription_obj.date_sortie,
         motif_sortie=inscription_obj.motif_sortie,
     )

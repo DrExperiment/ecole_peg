@@ -65,7 +65,6 @@ interface Inscription {
   id: number;
   date_inscription: Date;
   but: string;
-  frais_inscription: number;
   statut: string;
   date_sortie: Date;
   motif_sortie: string;
@@ -598,7 +597,6 @@ export default function ElevePage({
                     <TableRow className="hover:bg-muted/50">
                       <TableHead>Date</TableHead>
                       <TableHead>But</TableHead>
-                      <TableHead>Frais</TableHead>
                       <TableHead>Statut</TableHead>
                       <TableHead>Date de sortie</TableHead>
                       <TableHead>Motif de sortie</TableHead>
@@ -616,9 +614,6 @@ export default function ElevePage({
                           {formatDate(inscription.date_inscription)}
                         </TableCell>
                         <TableCell>{inscription.but || "-"}</TableCell>
-                        <TableCell>
-                          {inscription.frais_inscription} CHF
-                        </TableCell>
                         <TableCell>
                           <span
                             className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${

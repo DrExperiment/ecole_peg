@@ -34,7 +34,6 @@ interface Inscription {
   id_session: number;
   date_inscription: Date;
   but: string;
-  frais_inscription: number;
   preinscription: boolean;
   date_sortie: Date | undefined;
   motif_sortie: string | undefined;
@@ -83,7 +82,6 @@ export default function ModifierInscriptionPage({
 
         reset({
           but: insc.but,
-          frais_inscription: insc.frais_inscription,
           motif_sortie: insc.motif_sortie || "",
         });
       } catch (err) {
@@ -197,32 +195,6 @@ export default function ModifierInscriptionPage({
                 })()}
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div className="space-y-2">
-                  <Label htmlFor="frais_inscription" className="text-base">
-                    Frais d&apos;inscription (CHF)
-                  </Label>
-                  <div className="relative">
-                    <Input
-                      id="frais_inscription"
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      onWheel={(e) => e.currentTarget.blur()}
-                      className="pl-8 font-mono"
-                      placeholder="0.00"
-                      required
-                      {...register("frais_inscription", {
-                        required: "Les frais d'inscription sont obligatoires",
-                        min: {
-                          value: 0,
-                          message: "Les frais ne peuvent pas être négatifs",
-                        },
-                      })}
-                    />
-                  </div>
-                </div>
-              </div>
 
               <div className="space-y-2">
                 <Label htmlFor="but" className="text-base">

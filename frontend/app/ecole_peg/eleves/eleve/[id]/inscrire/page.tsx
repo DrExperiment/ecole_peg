@@ -185,28 +185,6 @@ export default function InscrirePage({
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="frais_inscription">
-                Frais d&apos;inscription (CHF)
-              </Label>
-              <Input
-                id="frais_inscription"
-                type="number"
-                min="0"
-                step="0.01"
-                onWheel={(e) => e.currentTarget.blur()}
-                placeholder="0.00"
-                className="font-mono w-full"
-                required
-                {...register("frais_inscription", {
-                  required: "Les frais d&apos;inscription sont obligatoires",
-                  min: {
-                    value: 0,
-                    message: "Les frais ne peuvent pas être négatifs",
-                  },
-                })}
-              />
-            </div>
 
             <div className="border-t pt-4">
               <div className="flex items-center space-x-2">
