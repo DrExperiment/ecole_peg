@@ -4,6 +4,7 @@ from django.http import Http404
 from django.shortcuts import get_object_or_404
 from django.core.exceptions import ValidationError
 from django.db import models
+from django.utils import timezone
 from ninja import Router
 from ninja.errors import HttpError
 from .models import (
@@ -15,7 +16,8 @@ from .models import (
     Inscription,
     FichePresences,
     StatutPresenceChoices,
-    StatutInscriptionChoices,  # <-- Add this import
+    StatutInscriptionChoices,
+    StatutSessionChoices,  # <-- Add this import
 )
 from eleves.models import Eleve
 from eleves.schemas import ElevesOut
@@ -136,6 +138,31 @@ def delete_enseignant(request, enseignant_id: int):
 
 
 # ------------------- SESSION -------------------
+def clean_expired_sessions():
+    """
+    Ferme automatiquement les sessions dont la date de fin est dépassée
+    et désactive les inscriptions associées.
+    """
+    aujourd_hui = timezone.now().date()
+    
+    # 1. Identifier les sessions à fermer
+    sessions_perimees = Session.objects.filter(
+        date_fin__lt=aujourd_hui,
+        statut=StatutSessionChoices.OUVERTE
+    )
+    
+    if sessions_perimees.exists():
+        with transaction.atomic():
+            # 2. Désactiver les inscriptions des sessions périmées
+            Inscription.objects.filter(
+                session__in=sessions_perimees,
+                statut=StatutInscriptionChoices.ACTIF
+            ).update(statut=StatutInscriptionChoices.INACTIF)
+
+            # 3. Marquer les sessions comme FERMÉE
+            sessions_perimees.update(statut=StatutSessionChoices.FERMÉE)
+
+# ------------------- SESSION -------------------
 @router.get("/sessions/")
 def sessions(
     request,
@@ -145,6 +172,9 @@ def sessions(
     niveau: Optional[str] = None,
     statut: Optional[str] = None,
 ):
+    # Appliquer le nettoyage avant de récupérer la liste
+    clean_expired_sessions()
+
     sessions_qs = (
         Session.objects.select_related("cours", "enseignant")
         .annotate(
@@ -177,6 +207,9 @@ def sessions(
 
 @router.get("/sessions/{id_session}/", response=SessionOut)
 def rechercher_session(request, id_session: int):
+    # Nettoyage également ici au cas où l'accès se fait par lien direct
+    clean_expired_sessions()
+
     session = get_object_or_404(
         Session.objects.select_related("cours", "enseignant").annotate(
             cours__nom=models.F("cours__nom"),
