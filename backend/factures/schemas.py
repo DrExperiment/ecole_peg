@@ -47,6 +47,7 @@ class FactureOut(Schema):
     eleve_numero: Optional[str] = None
     eleve_npa: Optional[str] = None
     eleve_localite: Optional[str] = None
+    eleve_adresse_facturation: Optional[str] = None
 
 
 class EcheanceIn(Schema):

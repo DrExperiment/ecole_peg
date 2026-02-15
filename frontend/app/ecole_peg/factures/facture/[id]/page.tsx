@@ -33,6 +33,7 @@ interface Facture {
   eleve_numero?: string | null;
   eleve_npa?: string | null;
   eleve_localite?: string | null;
+  eleve_adresse_facturation?: string | null; // 👈 nouveau champ d'adresse personnalisée
 }
 
 interface DetailFacture {
@@ -324,8 +325,16 @@ export default function FacturePage({
                 Facturé à
               </h3>
               <p className="text-lg font-semibold">
-                {facture?.eleve_nom} {facture?.eleve_prenom}
+                
+                {facture?.eleve_adresse_facturation}
               </p>
+              <p className="text-sm text-muted-foreground">
+                Concerne:
+                
+              </p>
+              <p className="text-sm text-muted-foreground">
+                          {facture?.eleve_nom} {facture?.eleve_prenom}
+                </p>
 
               {(facture?.eleve_rue || facture?.eleve_numero) && (
                 <p className="text-sm text-muted-foreground">

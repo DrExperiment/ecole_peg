@@ -234,7 +234,7 @@ def get_facture(request, facture_id: int):
         raise HttpError(500, "Aucun élève associé à la facture.")
 
     # Adresse principale = celle de l'élève
-    rue, numero, npa, localite = eleve.rue, eleve.numero, eleve.npa, eleve.localite
+    rue, numero, npa, localite, adresse_facturation = eleve.rue, eleve.numero, eleve.npa, eleve.localite,eleve.adresse_facturation
 
     # Si tout est vide, on essaie l'adresse du garant (fallback)
     if not any([rue, numero, npa, localite]) and eleve.garant_id:
@@ -253,6 +253,7 @@ def get_facture(request, facture_id: int):
         eleve_numero=numero,
         eleve_npa=npa,
         eleve_localite=localite,
+        eleve_adresse_facturation=adresse_facturation,
     )
 
 
