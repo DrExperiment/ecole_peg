@@ -409,7 +409,7 @@ export default function FacturePage({
                 </div>
                 <div className="flex justify-center md:justify-end">
                   <img
-                    src="/QR.png"
+                    src="/QR_bill.png"
                     alt="QR Code pour paiement"
                     width={120}
                     height={80}
