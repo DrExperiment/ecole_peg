@@ -9,12 +9,13 @@ def gerer_inscription_et_session(sender, instance, created, **kwargs):
     session = instance.session
     aujourd_hui = timezone.now().date()
 
-    # 1. Si élève sorti → statut doit être INACTIF (mais on NE resauve pas ici)
-    if instance.date_sortie and instance.statut != StatutInscriptionChoices.INACTIF:
-        # on ne fait plus instance.save() pour éviter la boucle
-        pass  
+    # 🔹 Si élève sorti → inscription devient INACTIF
+    if instance.date_sortie:
+        Inscription.objects.filter(id=instance.id).update(
+            statut=StatutInscriptionChoices.INACTIF
+        )
 
-    # 2. Session terminée → on ferme tout
+    # 🔹 Session terminée
     if session.date_fin < aujourd_hui:
         session.inscriptions.filter(statut=StatutInscriptionChoices.ACTIF).update(
             statut=StatutInscriptionChoices.INACTIF
@@ -23,8 +24,10 @@ def gerer_inscription_et_session(sender, instance, created, **kwargs):
         session.save(update_fields=["statut"])
         return
 
-    # 3. Gestion ouverture / fermeture session
-    nb_actifs = session.inscriptions.filter(statut=StatutInscriptionChoices.ACTIF).count()
+    # 🔹 recalcul
+    nb_actifs = session.inscriptions.filter(
+        statut=StatutInscriptionChoices.ACTIF
+    ).count()
 
     if nb_actifs < session.capacite_max:
         if session.statut != StatutSessionChoices.OUVERTE:

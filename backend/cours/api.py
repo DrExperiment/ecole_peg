@@ -507,6 +507,9 @@ def update_inscription(request, inscription_id: int, inscription: InscriptionUpd
         inscription_obj.statut = StatutInscriptionChoices.ACTIF
     else:
         inscription_obj.statut = StatutInscriptionChoices.INACTIF
+    
+    if inscription_obj.date_sortie:
+        inscription_obj.statut = StatutInscriptionChoices.INACTIF
 
     print("DEBUG avant clean:", inscription_obj.id, inscription_obj.statut, inscription_obj.session_id)
 
