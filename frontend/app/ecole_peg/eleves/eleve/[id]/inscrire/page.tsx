@@ -101,6 +101,7 @@ export default function InscrirePage({
       try {
         const params = {
           statut: "O",
+          taille: 20,
         };
 
         const reponse = await api.get("/cours/sessions/", { params });

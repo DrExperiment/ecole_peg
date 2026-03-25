@@ -186,7 +186,7 @@ def sessions(
             cours__type_cours=models.F("cours__type_cours"),
             cours__niveau=models.F("cours__niveau"),
         )
-        .order_by("date_debut")
+        .order_by("-date_debut")
     )
 
     if type and type != "tous":
