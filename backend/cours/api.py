@@ -458,29 +458,94 @@ def get_inscriptions_by_eleve(request, eleve_id: int):
     ]
 
 
+from django.db import transaction
+from django.utils import timezone
+from ninja.errors import HttpError
+
 @router.post("/{eleve_id}/inscription/")
 def create_inscription(request, eleve_id: int, inscription: InscriptionIn):
     try:
         with transaction.atomic():
-            eleve = get_object_or_404(Eleve, id=eleve_id)
-            session = get_object_or_404(Session, id=inscription.id_session)
-            if session.inscriptions.count() >= session.capacite_max:
-                return {"detail": "Session complète"}
-            session = Session.objects.select_for_update().get(id=inscription.id_session)
-
-            inscription_obj, created = Inscription.objects.get_or_create(
-                eleve=eleve,
-                session=session,
-                defaults=inscription.dict(exclude={"id_session"}),
+            # 🔒 Lock session pour éviter les courses
+            session = (
+                Session.objects
+                .select_for_update()
+                .select_related("cours")
+                .get(id=inscription.id_session)
             )
 
-            if not created:
-                return {"detail": "Inscription déjà existante"}
+            eleve = Eleve.objects.get(id=eleve_id)
 
-            return {"id": inscription_obj.id}
+            # 🔴 1. Vérifier session ouverte
+            if session.statut != StatutSessionChoices.OUVERTE:
+                raise HttpError(400, "Session fermée")
+
+            # 🔴 2. Vérifier date session
+            today = timezone.now().date()
+            if session.date_fin and today > session.date_fin:
+                raise HttpError(400, "Session terminée")
+
+            # 🔴 3. Vérifier capacité (uniquement actifs)
+            nb_actifs = session.inscriptions.filter(
+                statut=StatutInscriptionChoices.ACTIF
+            ).count()
+
+            if nb_actifs >= session.capacite_max:
+                raise HttpError(400, "Session complète")
+
+            # 🔴 4. Vérifier inscription existante
+            existing = Inscription.objects.filter(
+                eleve=eleve,
+                session=session
+            ).first()
+
+            if existing:
+                # 👉 Cas intelligent : réactiver au lieu de bloquer
+                if existing.statut == StatutInscriptionChoices.INACTIF:
+                    existing.statut = StatutInscriptionChoices.ACTIF
+                    existing.date_sortie = None
+                    existing.motif_sortie = None
+                    existing.preinscription = inscription.preinscription or False
+                    existing.but = inscription.but
+
+                    existing.full_clean()
+                    existing.save()
+
+                    return {
+                        "id": existing.id,
+                        "reactive": True
+                    }
+
+                raise HttpError(400, "Élève déjà inscrit à cette session")
+
+            # 🟢 5. Création propre
+            inscription_obj = Inscription(
+                eleve=eleve,
+                session=session,
+                preinscription=inscription.preinscription or False,
+                but=inscription.but,
+            )
+
+            inscription_obj.full_clean()
+            inscription_obj.save()
+
+            return {
+                "id": inscription_obj.id,
+                "reactive": False
+            }
+
+    except Eleve.DoesNotExist:
+        raise HttpError(404, "Élève introuvable")
+
+    except Session.DoesNotExist:
+        raise HttpError(404, "Session introuvable")
+
     except ValidationError as e:
-        return {"message": "Erreurs de validation.", "erreurs": e.message_dict}
-    
+        raise HttpError(400, f"Erreur validation: {e.message_dict}")
+
+    except Exception as e:
+        print("ERREUR INSCRIPTION:", str(e))
+        raise HttpError(500, "Erreur interne serveur")
 
 @router.put("/inscriptions/{inscription_id}/", response=InscriptionOut)
 def update_inscription(request, inscription_id: int, inscription: InscriptionUpdateIn):

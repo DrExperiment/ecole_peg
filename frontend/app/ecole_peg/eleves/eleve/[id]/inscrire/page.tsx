@@ -24,6 +24,7 @@ import { api } from "@/lib/api";
 import { useForm } from "react-hook-form";
 import { Checkbox } from "@/components/checkbox";
 import { formatDate } from "@/lib/utils";
+import axios from "axios";
 
 interface Eleve {
   id: number;
@@ -62,27 +63,48 @@ export default function InscrirePage({
   const [id_session, setIdSession] = useState<number>();
   const [preinscription, setPreinscription] = useState<boolean>(false);
 
-  const onSoumission = useCallback(
-    async (donnees: object) => {
-      const donnees_completes = {
-        ...donnees,
-        id_session,
-        preinscription,
-      };
+const onSoumission = useCallback(
+  async (donnees: object) => {
+    const donnees_completes = {
+      ...donnees,
+      id_session,
+      preinscription,
+    };
 
-      try {
-        await api.post(
-          `/cours/${resolvedParams.id}/inscription/`,
-          donnees_completes,
-        );
+    try {
+      const res = await api.post(
+        `/cours/${resolvedParams.id}/inscription/`,
+        donnees_completes,
+      );
+
+      // ✅ succès
+      if (res.data?.id) {
+        if (res.data.reactive) {
+          alert("Inscription réactivée avec succès");
+        } else {
+          alert("Inscription créée avec succès");
+        }
 
         router.push(`/ecole_peg/eleves/eleve/${resolvedParams?.id}/`);
-      } catch (err) {
-        console.error("Erreur: ", err);
       }
-    },
-    [id_session, preinscription, resolvedParams.id, router],
-  );
+
+    } catch (err: unknown) {
+  console.error("Erreur:", err);
+
+  let message = "Erreur lors de l'inscription";
+
+  if (axios.isAxiosError(err)) {
+    message =
+      err.response?.data?.detail ||
+      err.response?.data?.message ||
+      message;
+  }
+
+  alert(message);
+}
+  },
+  [id_session, preinscription, resolvedParams.id, router],
+);
 
   useEffect(() => {
     async function fetchEleve() {
