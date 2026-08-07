@@ -327,22 +327,31 @@ def statistiques_dashboard(request):
     )
 
     # === MONTANT TOTAL IMPAYÉ (toutes factures, toutes périodes) ===
-    impayees_qs = (
-        Facture.objects
-        .annotate(
-            total=Coalesce(Subquery(total_sq), Value(0), output_field=DecimalField()),
-            paye=Coalesce(Subquery(paye_sq), Value(0), output_field=DecimalField()),
-        )
-        .annotate(restant=F("total") - F("paye"))
-        .filter(restant__gt=0)
+    # === Factures impayées dont l'échéance est dépassée ===
+    factures_echeance_depassee_qs = (
+    Facture.objects.filter(
+        date_echeance__isnull=False,
+        date_echeance__lt=today,
+    )
+    .annotate(
+        total=Coalesce(Subquery(total_sq), Value(0), output_field=DecimalField()),
+        paye=Coalesce(Subquery(paye_sq), Value(0), output_field=DecimalField()),
+    )
+    .annotate(restant=F("total") - F("paye"))
+    .filter(restant__gt=0)
     )
 
-    montant_total_factures_impayees = impayees_qs.aggregate(
-        total_restant=Coalesce(Sum("restant"), Value(0), output_field=DecimalField())
+    montant_total_factures_echeance_depassee = (
+    factures_echeance_depassee_qs.aggregate(
+        total_restant=Coalesce(
+            Sum("restant"),
+            Value(0),
+            output_field=DecimalField(),
+        )
     )["total_restant"]
+    )
 
-    # (facultatif mais pratique pour le front)
-    nombre_factures_impayees = impayees_qs.count()
+    nombre_factures_echeance_depassee = factures_echeance_depassee_qs.count()
 
     # --- Montant total des paiements du mois ---
     montant_total_paiements_mois = Paiement.objects.filter(
@@ -351,41 +360,36 @@ def statistiques_dashboard(request):
         "total"
     ]
 
-    # --- Détail des factures impayées depuis ≥5 jours ---
-    factures_5j = (
-        Facture.objects.filter(date_emission__lte=five_days_ago)
-        .annotate(
-            total=Coalesce(Subquery(total_sq), Value(0), output_field=DecimalField()),
-            paye=Coalesce(Subquery(paye_sq), Value(0), output_field=DecimalField()),
-        )
-        .annotate(restant=F("total") - F("paye"))
-        .filter(restant__gt=0)
-        .select_related("eleve", "inscription__eleve")
-        .annotate(
-            eleve_nom=F("eleve__nom"),
-            eleve_prenom=F("eleve__prenom"),
-        )
-        .values(
-            "id",
-            "date_emission",
-            "total",
-            "restant",
-            "eleve_nom",
-            "eleve_prenom",
-        )
+    # --- Détail des factures dont l'échéance est dépassée ---
+    factures_echeance_depassee_data = (
+    factures_echeance_depassee_qs
+    .select_related("eleve", "inscription__eleve")
+    .annotate(
+        eleve_nom=F("eleve__nom"),
+        eleve_prenom=F("eleve__prenom"),
     )
-
-    factures_impayees_plus_5j = [
-        {
-            "id": f["id"],
-            "date_emission": f["date_emission"],
-            "montant_total": float(f["total"]),
-            "montant_restant": float(f["restant"]),
-            "eleve_nom": f["eleve_nom"],
-            "eleve_prenom": f["eleve_prenom"],
-        }
-        for f in factures_5j
-    ]
+    .values(
+        "id",
+        "date_emission",
+        "date_echeance",
+        "total",
+        "restant",
+        "eleve_nom",
+        "eleve_prenom",
+    )
+    )
+    factures_echeance_depassee = [
+    {
+        "id": f["id"],
+        "date_emission": f["date_emission"],
+        "date_echeance": f["date_echeance"],
+        "montant_total": float(f["total"]),
+        "montant_restant": float(f["restant"]),
+        "eleve_nom": f["eleve_nom"],
+        "eleve_prenom": f["eleve_prenom"],
+    }
+    for f in factures_echeance_depassee
+]
 
     # --- Répartition par cours-type-niveau des élèves actifs ---
     repartition_cours = list(
@@ -473,11 +477,11 @@ def statistiques_dashboard(request):
 
     return {
         "factures": {
-            "montant_total_paiements_mois": float(montant_total_paiements_mois),
-            "montant_total_factures_impayees": float(montant_total_factures_impayees),
-            "nombre_factures_impayees": nombre_factures_impayees,
-            "factures_impayees_plus_5j": factures_impayees_plus_5j,
-        },
+    "montant_total_paiements_mois": float(montant_total_paiements_mois),
+    "montant_total_factures_echeance_depassee": float(montant_total_factures_echeance_depassee),
+    "nombre_factures_echeance_depassee": nombre_factures_echeance_depassee,
+    "factures_echeance_depassee": factures_echeance_depassee,
+},
         "cours": {
             "total_cours": total_cours,
             "sessions_actives": sessions_actives,

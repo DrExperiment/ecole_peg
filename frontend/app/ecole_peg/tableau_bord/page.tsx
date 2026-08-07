@@ -72,6 +72,7 @@ type Niveau = "A1" | "A2" | "B1" | "B2" | "C1";
 interface FactureDetail {
   id: number;
   date_emission: Date;
+  date_echeance: Date;
   montant_total: number;
   montant_restant: number;
   eleve_nom: string;
@@ -87,10 +88,10 @@ interface RepartitionCours {
 
 interface Stats {
   factures: {
-    nombre_factures_impayees: number;
+    nombre_factures_echeance_depassee: number;
     montant_total_paiements_mois: number;
-    montant_total_factures_impayees: number;
-    factures_impayees_plus_5j: FactureDetail[];
+    montant_total_factures_echeance_depassee: number;
+    factures_echeance_depassee: FactureDetail[];
   };
   cours: {
     total_cours: number;
@@ -178,12 +179,13 @@ export default function TableauBordPage() {
 
   if (!stats) return <p>Aucune donnée disponible.</p>;
 
-  const factures_impayees = stats.factures.nombre_factures_impayees;
+  const factures_echeance_depassee =
+    stats.factures.nombre_factures_echeance_depassee;
   const eleves_absence = stats.eleves.eleves_presence_inferieur_80.length;
   const eleves_preinscription =
     stats.eleves.eleves_preinscription_plus_3j.length;
   const nombreAlertes =
-    (factures_impayees ? 1 : 0) +
+    (factures_echeance_depassee ? 1 : 0) +
     (eleves_absence ? 1 : 0) +
     (eleves_preinscription ? 1 : 0);
 
@@ -343,11 +345,11 @@ export default function TableauBordPage() {
 
                 <div className="space-y-2">
                   <p className="text-sm font-medium text-red-700">
-                    Montant impayé (total)
+                      Montant des factures échues
                   </p>
                   <div className="flex items-center">
                     <span className="text-2xl font-bold">
-                      {stats.factures.montant_total_factures_impayees.toLocaleString(
+                      {stats.factures.montant_total_factures_echeance_depassee.toLocaleString(
                         "fr-FR",
                         {
                           style: "currency",
@@ -526,46 +528,50 @@ export default function TableauBordPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {factures_impayees > 0 && (
+              {factures_echeance_depassee > 0 && (
                 <AlertBox
                   variant="error"
-                  title="Factures impayées"
+                  title="Factures dont l'échéance est dépassée"
                   icon={<FileText className="h-5 w-5" />}
                 >
                   <div className="flex items-center justify-between">
                     <p className="text-sm">
-                      {factures_impayees}{" "}
-                      {factures_impayees > 1
-                        ? "factures impayées"
-                        : "facture impayée"}{" "}
+                      {factures_echeance_depassee}{" "}
+                      {factures_echeance_depassee > 1
+                        ? "factures ont dépassé leur échéance"
+                        : "facture a dépassé son échéance"}{" "}
                       pour un montant total de{" "}
-                      {stats.factures.montant_total_factures_impayees.toLocaleString(
+                      {stats.factures.montant_total_factures_echeance_depassee.toLocaleString(
                         "fr-FR",
-                        { style: "currency", currency: "CHF" },
+                        {
+                          style: "currency",
+                          currency: "CHF",
+                        },
                       )}
                     </p>
+
                     <span className="text-2xl font-bold">
-                      {factures_impayees}
+                      {factures_echeance_depassee}
                     </span>
                   </div>
                 </AlertBox>
               )}
 
-              {stats.factures.factures_impayees_plus_5j.length > 0 && (
+              {stats.factures.factures_echeance_depassee.length > 0 && (
                 <Card className="p-4">
                   <h3 className="font-semibold mb-2">
-                    Factures impayées depuis 5 jours
+                    Factures en retard de paiement
                   </h3>
                   <ul className="space-y-1">
-                    {stats.factures.factures_impayees_plus_5j.map((inv) => (
+                    {stats.factures.factures_echeance_depassee.map((inv) => (
                       <li key={inv.id} className="flex justify-between">
                         <div>
                           <strong>
                             {inv.eleve_prenom} {inv.eleve_nom}
                           </strong>
                           <br />
-                          N° {inv.id} — émis le{" "}
-                          {format(new Date(inv.date_emission), "dd/MM/yyyy")}
+                          N° {inv.id} — échéance le{" "}
+                          {format(new Date(inv.date_echeance), "dd/MM/yyyy")}
                         </div>
                         <div className="text-right">
                           Total:{" "}
