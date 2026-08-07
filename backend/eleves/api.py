@@ -388,7 +388,7 @@ def statistiques_dashboard(request):
         "eleve_nom": f["eleve_nom"],
         "eleve_prenom": f["eleve_prenom"],
     }
-    for f in factures_echeance_depassee
+    for f in factures_echeance_depassee_data
 ]
 
     # --- Répartition par cours-type-niveau des élèves actifs ---
