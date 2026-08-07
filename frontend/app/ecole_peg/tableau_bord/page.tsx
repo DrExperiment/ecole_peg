@@ -49,6 +49,9 @@ interface Anniversaire {
 interface SessionOuverte {
   date_debut: Date;
   eleves_restants: number;
+  cours__nom: string;
+  cours__type_cours: string;
+  cours__niveau: string;
 }
 
 interface ElevePresenceInferieur {
@@ -119,7 +122,7 @@ export default function TableauBordPage() {
   const moisLibelle = format(
     new Date(anneeCourante, moisSel - 1, 1),
     "MMMM yyyy",
-    { locale: fr }
+    { locale: fr },
   );
 
   // 🔹 Récupérer les stats (1 seule fois)
@@ -129,7 +132,7 @@ export default function TableauBordPage() {
       try {
         setChargement(true);
         const reponse_stats = await api.get<Stats>(
-          "/eleves/statistiques/dashboard/"
+          "/eleves/statistiques/dashboard/",
         );
         if (mounted) setStats(reponse_stats.data);
       } catch (err) {
@@ -151,7 +154,7 @@ export default function TableauBordPage() {
       try {
         setChargement(true);
         const reponse_anniv = await api.get<Anniversaire[]>(
-          `/eleves/anniversaires/?mois=${moisSel}&annee=${anneeCourante}`
+          `/eleves/anniversaires/?mois=${moisSel}&annee=${anneeCourante}`,
         );
         if (mounted) setAnniversaires(reponse_anniv.data);
       } catch (err) {
@@ -332,7 +335,7 @@ export default function TableauBordPage() {
                         {
                           style: "currency",
                           currency: "CHF",
-                        }
+                        },
                       )}
                     </span>
                   </div>
@@ -349,7 +352,7 @@ export default function TableauBordPage() {
                         {
                           style: "currency",
                           currency: "CHF",
-                        }
+                        },
                       )}
                     </span>
                   </div>
@@ -389,16 +392,28 @@ export default function TableauBordPage() {
                     {stats.cours.sessions_ouvertes.map((s, index) => (
                       <div
                         key={`session-${index}-${new Date(
-                          s.date_debut
+                          s.date_debut,
                         ).toISOString()}`}
                         className="flex items-center justify-between"
                       >
                         <div className="space-y-1">
-                          <p className="text-sm font-medium leading-none">
+                          <p className="text-sm font-medium">
                             {format(new Date(s.date_debut), "dd MMMM yyyy", {
                               locale: fr,
                             })}
                           </p>
+
+                          <p className="text-sm text-muted-foreground">
+                            {s.cours__nom}
+                          </p>
+
+                          <p className="text-sm text-muted-foreground">
+                            {s.cours__type_cours === "I"
+                              ? "Intensif"
+                              : "Semi-intensif"}{" "}
+                            • {s.cours__niveau}
+                          </p>
+
                           <p className="text-sm text-muted-foreground">
                             {s.eleves_restants} places disponibles
                           </p>
@@ -526,7 +541,7 @@ export default function TableauBordPage() {
                       pour un montant total de{" "}
                       {stats.factures.montant_total_factures_impayees.toLocaleString(
                         "fr-FR",
-                        { style: "currency", currency: "CHF" }
+                        { style: "currency", currency: "CHF" },
                       )}
                     </p>
                     <span className="text-2xl font-bold">
@@ -602,7 +617,7 @@ export default function TableauBordPage() {
                               </p>
                             </div>
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                   </Card>
@@ -639,12 +654,12 @@ export default function TableauBordPage() {
                                 Né(e) le{" "}
                                 {format(
                                   new Date(eleve.date_naissance),
-                                  "dd/MM/yyyy"
+                                  "dd/MM/yyyy",
                                 )}
                               </p>
                             </div>
                           </div>
-                        )
+                        ),
                       )}
                     </div>
                   </Card>

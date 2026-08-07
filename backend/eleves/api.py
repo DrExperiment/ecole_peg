@@ -439,17 +439,26 @@ def statistiques_dashboard(request):
         date_cours_prive__gte=first_day_month
     ).count()
     sessions_ouvertes = list(
-        Session.objects.filter(statut="O")
-        .annotate(
-            eleves_restants=ExpressionWrapper(
-                F("capacite_max")
-                - Count("inscriptions", filter=Q(inscriptions__statut="A")),
-                output_field=DecimalField(),
-            )
+    Session.objects.filter(statut="O")
+    .annotate(
+        eleves_restants=ExpressionWrapper(
+            F("capacite_max")
+            - Count(
+                "inscriptions",
+                filter=Q(inscriptions__statut="A")
+            ),
+            output_field=DecimalField(),
         )
-        .values("date_debut", "eleves_restants")
-        .order_by("date_debut")
     )
+    .values(
+        "date_debut",
+        "eleves_restants",
+        "cours__nom",
+        "cours__type_cours",
+        "cours__niveau",
+    )
+    .order_by("date_debut")
+)
     nombre_enseignants = Enseignant.objects.count()
     total_eleves = Eleve.objects.count()
     eleves_actifs = Eleve.objects.filter(inscriptions__statut="A").distinct().count()
