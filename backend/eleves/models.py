@@ -102,7 +102,6 @@ class Eleve(Personne):
     langue_maternelle = models.CharField(max_length=100, blank=True, null=True)
     autres_langues = models.CharField(max_length=200, blank=True, null=True)
     src_decouverte = models.CharField(max_length=200, blank=True, null=True)
-    commentaires = models.TextField(blank=True, null=True)
     pays = models.ForeignKey(Pays, on_delete=models.CASCADE, related_name="eleves")
     garant = models.ForeignKey(
         Garant, on_delete=models.SET_NULL, null=True, blank=True, related_name="eleves"
@@ -162,3 +161,16 @@ class Document(models.Model):
 
     class Meta:
         ordering = ["-date_ajout"]
+
+class Commentaire(models.Model):
+    commentaire = models.TextField()
+    date_creation = models.DateTimeField(auto_now_add=True)
+
+    eleve = models.ForeignKey(
+        Eleve,
+        on_delete=models.CASCADE,
+        related_name="commentaires"
+    )
+
+    class Meta:
+        ordering = ["-date_creation"]

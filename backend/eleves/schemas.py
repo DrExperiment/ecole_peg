@@ -1,6 +1,8 @@
-from datetime import date
-from typing import Optional
+from datetime import date, datetime
+from typing import Annotated, Optional
 from ninja import Schema, UploadedFile, File
+from pydantic import StringConstraints
+from pydantic import StringConstraints
 
 # ------------------- GARANT -------------------
 class GarantIn(Schema):
@@ -68,6 +70,15 @@ class DocumentUpdateIn(Schema):
     nom: Optional[str] = None
     fichier: Optional[UploadedFile] = File(None)
 
+CommentaireStr = Annotated[str, StringConstraints(min_length=1, strip_whitespace=True)]
+
+class CommentaireIn(Schema):
+    commentaire: CommentaireStr
+
+class CommentaireOut(Schema):
+    id: int
+    commentaire: str
+    date_creation: datetime
 
 # ------------------- ELEVE -------------------
 class EleveIn(Schema):
@@ -89,7 +100,6 @@ class EleveIn(Schema):
     langue_maternelle: Optional[str] = None
     autres_langues: Optional[str] = None
     src_decouverte: Optional[str] = None
-    commentaires: Optional[str] = None
     pays_id: int
 
 
@@ -123,7 +133,6 @@ class EleveOut(Schema, from_attributes=True):
     langue_maternelle: Optional[str] = None
     autres_langues: Optional[str] = None
     src_decouverte: Optional[str] = None
-    commentaires: Optional[str] = None
     pays_id: int
     pays__nom: str
 

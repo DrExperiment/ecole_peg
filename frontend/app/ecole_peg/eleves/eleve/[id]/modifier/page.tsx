@@ -47,7 +47,6 @@ interface Eleve {
   langue_maternelle?: string;
   autres_langues?: string;
   src_decouverte?: string;
-  commentaires?: string;
 }
 
 export default function ModifierElevePage({
@@ -114,7 +113,6 @@ export default function ModifierElevePage({
         langue_maternelle: eleve.langue_maternelle,
         autres_langues: eleve.autres_langues,
         src_decouverte: eleve.src_decouverte,
-        commentaires: eleve.commentaires,
       });
     } catch (err) {
       console.error(err);
@@ -572,20 +570,6 @@ export default function ModifierElevePage({
                 />
               </div>
 
-              <div className="space-y-2">
-                <Label htmlFor="commentaires" className="text-base">
-                  Commentaires
-                  <span className="text-sm text-muted-foreground ml-2">
-                    (optionnel)
-                  </span>
-                </Label>
-                <Textarea
-                  id="commentaires"
-                  placeholder="Informations supplémentaires..."
-                  className="min-h-[100px]"
-                  {...register("commentaires")}
-                />
-              </div>
             </div>
           </CardContent>
         </Card>

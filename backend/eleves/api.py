@@ -41,7 +41,8 @@ from .schemas import (
     ElevesOut,
 )
 from cours.models import Cours, CoursPrive, Session, Enseignant
-
+from .models import Commentaire
+from .schemas import CommentaireIn, CommentaireOut
 
 router = Router()
 
@@ -297,7 +298,35 @@ def supprimer_document_eleve(request, eleve_id: int, document_id: int):
         document.delete()
         return {"success": True}
 
+# ------------------- COMMENTAIRES -------------------
 
+@router.get("/eleves/{eleve_id}/commentaires/", response=list[CommentaireOut])
+def get_commentaires(request, eleve_id: int):
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+    return eleve.commentaires.all()
+
+@router.post("/eleves/{eleve_id}/commentaires/", response=CommentaireOut)
+def creer_commentaire(request, eleve_id: int, data: CommentaireIn):
+    eleve = get_object_or_404(Eleve, id=eleve_id)
+
+    commentaire = Commentaire.objects.create(
+        eleve=eleve,
+        commentaire=data.commentaire
+    )
+
+    return commentaire
+
+@router.delete("/eleves/{eleve_id}/commentaires/{commentaire_id}/")
+def supprimer_commentaire(request, eleve_id: int, commentaire_id: int):
+    commentaire = get_object_or_404(
+        Commentaire,
+        id=commentaire_id,
+        eleve_id=eleve_id
+    )
+
+    commentaire.delete()
+
+    return {"success": True}
 # ------------------- PAYS -------------------
 @router.get("/pays/")
 def pays(request):

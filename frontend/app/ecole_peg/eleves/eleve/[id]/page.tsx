@@ -101,6 +101,16 @@ interface Garant {
   npa: string;
 }
 
+interface Commentaire {
+  id: number;
+  commentaire: string;
+  date_creation: string;
+}
+
+interface CommentaireIn {
+  commentaire: string;
+}
+
 interface Test {
   id: number;
   date_test: Date;
@@ -157,7 +167,9 @@ export default function ElevePage({
   const [chargement_paiements, setChargementPaiements] = useState(false);
   const [num_page_paiements, setNumPagePaiements] = useState(1);
   const taille_page_paiements = 10;
-
+  const [commentaires, setCommentaires] = useState<Commentaire[]>([]);
+  const [nouveauCommentaire, setNouveauCommentaire] = useState("");
+  const [chargementCommentaires, setChargementCommentaires] = useState(false);
   const [factures, setFactures] = useState<Facture[]>([]);
   const [nombre_total_factures, setNombreFacturesTotal] = useState(0);
   const [chargement_factures, setChargementFactures] = useState(false);
@@ -175,7 +187,7 @@ export default function ElevePage({
   const fetchDocuments = useCallback(async () => {
     try {
       const reponse = await api.get<Document[]>(
-        `/eleves/eleves/${resolvedParams.id}/documents/`
+        `/eleves/eleves/${resolvedParams.id}/documents/`,
       );
 
       setDocuments(reponse.data);
@@ -184,10 +196,25 @@ export default function ElevePage({
     }
   }, [resolvedParams.id]);
 
+  const fetchCommentaires = useCallback(async () => {
+    setChargementCommentaires(true);
+    try {
+      const reponse = await api.get<Commentaire[]>(
+        `/eleves/eleves/${resolvedParams.id}/commentaires/`,
+      );
+
+      setCommentaires(reponse.data);
+    } catch (err) {
+      console.error("Erreur: ", err);
+      setCommentaires([]);
+    }
+    setChargementCommentaires(false);
+  }, [resolvedParams.id]);
+
   const fetchInscriptions = useCallback(async () => {
     try {
       const reponse = await api.get<Inscription[]>(
-        `/cours/${resolvedParams.id}/inscriptions/`
+        `/cours/${resolvedParams.id}/inscriptions/`,
       );
 
       setInscriptions(reponse.data);
@@ -199,7 +226,7 @@ export default function ElevePage({
   const fetchTests = useCallback(async () => {
     try {
       const reponse = await api.get<Test[]>(
-        `/eleves/eleves/${resolvedParams.id}/tests/`
+        `/eleves/eleves/${resolvedParams.id}/tests/`,
       );
 
       setTests(reponse.data);
@@ -211,7 +238,7 @@ export default function ElevePage({
   const fetchCoursPrives = useCallback(async () => {
     try {
       const reponse = await api.get<CoursPrive[]>(
-        `/cours/eleves/${resolvedParams.id}/cours_prives/`
+        `/cours/eleves/${resolvedParams.id}/cours_prives/`,
       );
 
       setCoursPrives(reponse.data);
@@ -225,7 +252,7 @@ export default function ElevePage({
     async function fetchEleve() {
       try {
         const reponse = await api.get<Eleve>(
-          `/eleves/eleve/${resolvedParams.id}/`
+          `/eleves/eleve/${resolvedParams.id}/`,
         );
 
         setEleve(reponse.data);
@@ -237,7 +264,7 @@ export default function ElevePage({
     async function fetchGarant() {
       try {
         const reponse = await api.get<Garant>(
-          `/eleves/eleves/${resolvedParams.id}/garant/`
+          `/eleves/eleves/${resolvedParams.id}/garant/`,
         );
 
         if (reponse.data?.id) {
@@ -260,7 +287,7 @@ export default function ElevePage({
 
         const reponse = await api.get(
           `/factures/paiements/eleve/${resolvedParams.id}/`,
-          { params }
+          { params },
         );
 
         setPaiements(reponse.data.paiements);
@@ -285,17 +312,17 @@ export default function ElevePage({
         if (filtre_factures === "impayees") {
           reponse = await api.get(
             `/factures/factures/eleve/${resolvedParams.id}/impayees/`,
-            { params }
+            { params },
           );
         } else if (filtre_factures === "payees") {
           reponse = await api.get(
             `/factures/factures/eleve/${resolvedParams.id}/payees/`,
-            { params }
+            { params },
           );
         } else {
           reponse = await api.get(
             `/factures/factures/eleve/${resolvedParams.id}/`,
-            { params }
+            { params },
           );
         }
 
@@ -317,8 +344,10 @@ export default function ElevePage({
     fetchCoursPrives();
     fetchFactures();
     fetchPaiements();
+    fetchCommentaires();
   }, [
     fetchDocuments,
+    fetchCommentaires,
     fetchInscriptions,
     fetchTests,
     fetchCoursPrives,
@@ -375,7 +404,7 @@ export default function ElevePage({
     try {
       await api.post(
         `/eleves/eleves/${resolvedParams.id}/documents/`,
-        formData
+        formData,
       );
 
       form.reset();
@@ -393,7 +422,7 @@ export default function ElevePage({
 
     try {
       await api.delete(
-        `/eleves/eleves/${resolvedParams.id}/documents/${id_document}/`
+        `/eleves/eleves/${resolvedParams.id}/documents/${id_document}/`,
       );
 
       fetchDocuments();
@@ -404,6 +433,46 @@ export default function ElevePage({
     }
   }
 
+  async function ajouterCommentaire(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+
+    if (!nouveauCommentaire.trim()) {
+      return;
+    }
+
+    try {
+      const data: CommentaireIn = { commentaire: nouveauCommentaire.trim() };
+
+      await api.post(`/eleves/eleves/${resolvedParams.id}/commentaires/`, data);
+
+      setNouveauCommentaire("");
+
+      fetchCommentaires();
+    } catch (err) {
+      console.error("Erreur d'ajout de commentaire", err);
+
+      alert("Une erreur est survenue lors de l'ajout du commentaire.");
+    }
+  }
+
+  async function supprimerCommentaire(id_commentaire: number) {
+    if (!confirm("Êtes-vous sûr de vouloir supprimer ce commentaire ?")) {
+      return;
+    }
+
+    try {
+      await api.delete(
+        `/eleves/eleves/${resolvedParams.id}/commentaires/${id_commentaire}/`,
+      );
+
+      fetchCommentaires();
+    } catch (err) {
+      console.error("Erreur: ", err);
+
+      alert("Une erreur est survenue lors de la suppression du commentaire.");
+    }
+  }
+
   async function supprimerInscription(id_insription: number) {
     if (!confirm("Êtes-vous sûr de vouloir supprimer cette inscription ?")) {
       return;
@@ -411,7 +480,7 @@ export default function ElevePage({
 
     try {
       await api.delete(
-        `/cours/${resolvedParams.id}/inscriptions/${id_insription}/`
+        `/cours/${resolvedParams.id}/inscriptions/${id_insription}/`,
       );
 
       fetchInscriptions();
@@ -453,13 +522,13 @@ export default function ElevePage({
           <TabsTrigger value="fiche">Fiche élève</TabsTrigger>
           <TabsTrigger value="garant">Garant</TabsTrigger>
           <TabsTrigger value="inscriptions">Inscriptions</TabsTrigger>
+          <TabsTrigger value="commentaires">Commentaires</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
           <TabsTrigger value="tests">Tests</TabsTrigger>
           <TabsTrigger value="factures">Factures</TabsTrigger>
           <TabsTrigger value="paiements">Paiements</TabsTrigger>
           <TabsTrigger value="cours_prives">Cours privés</TabsTrigger>
         </TabsList>
-
         <TabsContent value="fiche">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
@@ -488,8 +557,8 @@ export default function ElevePage({
                     eleve?.sexe === "H"
                       ? "Homme"
                       : eleve?.sexe === "F"
-                      ? "Femme"
-                      : "-",
+                        ? "Femme"
+                        : "-",
                 },
                 { label: "Rue", value: eleve?.rue || "-" },
                 { label: "Numéro", value: eleve?.numero || "-" },
@@ -508,12 +577,12 @@ export default function ElevePage({
                     eleve?.type_permis === "E"
                       ? "Étudiant"
                       : eleve?.type_permis === "P"
-                      ? "Pas de permis"
-                      : eleve?.type_permis === "S"
-                      ? "Permis S"
-                      : eleve?.type_permis === "B"
-                      ? "Permis B"
-                      : "-",
+                        ? "Pas de permis"
+                        : eleve?.type_permis === "S"
+                          ? "Permis S"
+                          : eleve?.type_permis === "B"
+                            ? "Permis B"
+                            : "-",
                 },
                 {
                   label: "Date d'expiration permis",
@@ -534,7 +603,6 @@ export default function ElevePage({
                   label: "Source de découverte",
                   value: eleve?.src_decouverte || "-",
                 },
-                { label: "Commentaires", value: eleve?.commentaires || "-" },
               ].map((item, index) => (
                 <div key={index} className="space-y-1.5">
                   <p className="text-sm font-medium text-muted-foreground">
@@ -549,7 +617,7 @@ export default function ElevePage({
                   className="w-full"
                   onClick={() =>
                     router.push(
-                      `/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/`
+                      `/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/`,
                     )
                   }
                   disabled={!resolvedParams.id}
@@ -564,7 +632,7 @@ export default function ElevePage({
                 variant="outline"
                 onClick={() => {
                   router.push(
-                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/modifier/`
+                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/modifier/`,
                   );
                 }}
                 disabled={!resolvedParams.id}
@@ -581,7 +649,6 @@ export default function ElevePage({
             </CardFooter>
           </Card>
         </TabsContent>
-
         <TabsContent value="inscriptions">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
@@ -650,7 +717,7 @@ export default function ElevePage({
                             size="sm"
                             onClick={() => {
                               router.push(
-                                `/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/${inscription?.id}/modifier/`
+                                `/ecole_peg/eleves/eleve/${resolvedParams.id}/inscrire/${inscription?.id}/modifier/`,
                               );
                             }}
                           >
@@ -678,7 +745,6 @@ export default function ElevePage({
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="factures">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
@@ -709,7 +775,7 @@ export default function ElevePage({
                   className="flex items-center gap-2"
                   onClick={() =>
                     router.push(
-                      `/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`
+                      `/ecole_peg/eleves/eleve/${resolvedParams.id}/facture/`,
                     )
                   }
                 >
@@ -747,7 +813,7 @@ export default function ElevePage({
                               <div className="text-sm text-muted-foreground">
                                 Restant:{" "}
                                 {facture.montant_restant.toLocaleString(
-                                  "fr-CH"
+                                  "fr-CH",
                                 )}{" "}
                                 CHF
                               </div>
@@ -770,7 +836,7 @@ export default function ElevePage({
                               size="sm"
                               onClick={() => {
                                 router.push(
-                                  `/ecole_peg/factures/facture/${facture.id}`
+                                  `/ecole_peg/factures/facture/${facture.id}`,
                                 );
                               }}
                             >
@@ -822,16 +888,16 @@ export default function ElevePage({
                       setNumPageFactures((p) =>
                         Math.min(
                           Math.ceil(
-                            nombre_total_factures / taille_page_factures
+                            nombre_total_factures / taille_page_factures,
                           ),
-                          p + 1
-                        )
+                          p + 1,
+                        ),
                       )
                     }
                     disabled={
                       num_page_factures ===
                         Math.ceil(
-                          nombre_total_factures / taille_page_factures
+                          nombre_total_factures / taille_page_factures,
                         ) || nombre_total_factures === 0
                     }
                   >
@@ -842,7 +908,6 @@ export default function ElevePage({
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="paiements">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
@@ -924,7 +989,7 @@ export default function ElevePage({
                   <span className="text-sm text-muted-foreground">
                     Page {num_page_paiements} sur{" "}
                     {Math.ceil(
-                      nombre_total_paiements / taille_page_paiements
+                      nombre_total_paiements / taille_page_paiements,
                     ) || 1}
                   </span>
 
@@ -935,16 +1000,16 @@ export default function ElevePage({
                       setNumPagePaiements((p) =>
                         Math.min(
                           Math.ceil(
-                            nombre_total_paiements / taille_page_paiements
+                            nombre_total_paiements / taille_page_paiements,
                           ),
-                          p + 1
-                        )
+                          p + 1,
+                        ),
                       )
                     }
                     disabled={
                       num_page_paiements ===
                         Math.ceil(
-                          nombre_total_paiements / taille_page_paiements
+                          nombre_total_paiements / taille_page_paiements,
                         ) || nombre_total_paiements === 0
                     }
                   >
@@ -955,7 +1020,6 @@ export default function ElevePage({
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="garant">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
@@ -998,7 +1062,7 @@ export default function ElevePage({
                     variant="outline"
                     onClick={() => {
                       router.push(
-                        `/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/`
+                        `/ecole_peg/eleves/eleve/${resolvedParams.id}/garant/`,
                       );
                     }}
                   >
@@ -1020,7 +1084,66 @@ export default function ElevePage({
             )}
           </Card>
         </TabsContent>
+        <TabsContent value="commentaires">
+          <Card className="shadow-sm">
+            <CardHeader className="border-b">
+              <CardTitle>Commentaires</CardTitle>
+              <CardDescription>
+                Suivi et évènements particuliers concernant l&apos;élève
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="p-6 space-y-6">
+              <form onSubmit={ajouterCommentaire} className="space-y-2">
+                <Label htmlFor="nouveau-commentaire">Nouveau commentaire</Label>
+                <textarea
+                  id="nouveau-commentaire"
+                  value={nouveauCommentaire}
+                  onChange={(e) => setNouveauCommentaire(e.target.value)}
+                  placeholder="Ajouter un commentaire..."
+                  required
+                  rows={3}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm shadow-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
+                />
+                <Button type="submit" disabled={!nouveauCommentaire.trim()}>
+                  Ajouter
+                </Button>
+              </form>
 
+              <div className="rounded-lg border divide-y">
+                {commentaires.length > 0 ? (
+                  commentaires.map((com) => (
+                    <div
+                      key={com.id}
+                      className="flex items-start justify-between gap-4 p-4 hover:bg-muted/50"
+                    >
+                      <div className="space-y-1">
+                        <p className="text-sm whitespace-pre-wrap">
+                          {com.commentaire}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(com.date_creation).toLocaleString("fr-CH")}
+                        </p>
+                      </div>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => supprimerCommentaire(com.id)}
+                      >
+                        Supprimer
+                      </Button>
+                    </div>
+                  ))
+                ) : (
+                  <div className="p-4 text-center text-muted-foreground">
+                    {chargementCommentaires
+                      ? "Chargement..."
+                      : "Aucun commentaire trouvé."}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
         <TabsContent value="documents">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
@@ -1097,7 +1220,6 @@ export default function ElevePage({
             </CardContent>
           </Card>
         </TabsContent>
-
         <TabsContent value="tests">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
@@ -1166,7 +1288,7 @@ export default function ElevePage({
               <Button
                 onClick={() => {
                   router.push(
-                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`
+                    `/ecole_peg/eleves/eleve/${resolvedParams.id}/test/`,
                   );
                 }}
               >
@@ -1174,7 +1296,8 @@ export default function ElevePage({
               </Button>
             </CardFooter>
           </Card>
-        </TabsContent>        <TabsContent value="cours_prives">
+        </TabsContent>{" "}
+        <TabsContent value="cours_prives">
           <Card className="shadow-sm">
             <CardHeader className="border-b">
               <CardTitle>Cours privés</CardTitle>
@@ -1216,8 +1339,8 @@ export default function ElevePage({
                               {cours.lieu === "E"
                                 ? "École"
                                 : cours.lieu === "D"
-                                ? "Domicile"
-                                : cours.lieu}
+                                  ? "Domicile"
+                                  : cours.lieu}
                             </span>
                           </TableCell>
                           <TableCell className="whitespace-nowrap font-medium">

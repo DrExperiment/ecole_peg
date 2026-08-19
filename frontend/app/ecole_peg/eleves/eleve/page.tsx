@@ -358,16 +358,6 @@ export default function NouveauElevePage() {
                   {...register("src_decouverte")}
                 />
               </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="commentaire">Commentaires</Label>
-                <Textarea
-                  id="commentaires"
-                  placeholder="Commentaires additionnels"
-                  className="min-h-[80px]"
-                  {...register("commentaires")}
-                />
-              </div>
             </CardContent>
           </Card>
 
